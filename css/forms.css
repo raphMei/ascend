@@ -1,0 +1,18 @@
+/* Formulaires et saisies. */
+/* ----- Formulaires ----- */
+.fields { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 720px) { .fields { grid-template-columns: repeat(4, 1fr); } }
+label.f { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+input[type=number], input[type=time], input[type=text], select {
+  font: inherit; font-size: 17px; color: var(--ink); background: var(--surface2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px; min-height: 46px; width: 100%;
+}
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.days7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.days7 > div { text-align: center; font-size: 12px; color: var(--muted); display: grid; gap: 4px; }
+.days7 i { display: block; height: 28px; border-radius: 8px; background: var(--surface2); }
+.days7 i.on { background: var(--dc); }
+.ex { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 11px 0; border-top: 1px solid var(--line); }
+.ex:first-child { border-top: 0; }
+.ex b { font-weight: 500; }

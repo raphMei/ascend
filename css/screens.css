@@ -1,0 +1,19 @@
+/* Écrans spéciaux (connexion, Chabbat), états de synchro et animations d'entrée. */
+/* ----- Connexion + Chabbat ----- */
+.center { min-height: 100vh; display: grid; place-content: center; text-align: center; gap: 22px; padding: 30px; max-width: 520px; margin: 0 auto; }
+.center .logo { width: 84px; height: 84px; border-radius: 22px; margin: 0 auto; box-shadow: var(--shadow); }
+.center h1 { font-size: 54px; }
+.center p { color: var(--muted); font-size: 18px; }
+.shabbat { background: radial-gradient(900px 500px at 50% -10%, color-mix(in srgb, var(--c-chabbat) 30%, transparent), transparent 65%), var(--bg); }
+.err { color: var(--c-sport); font-size: 14px; }
+.toast { position: fixed; z-index: 50; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 500; box-shadow: var(--shadow); }
+.sync { font: 500 12px "DM Mono", monospace; color: var(--muted); }
+.sync.bad { color: var(--c-sport); }
+
+@media (prefers-reduced-motion: no-preference) {
+  main > * { animation: rise .45s cubic-bezier(.2,.7,.2,1) both; }
+  main > *:nth-child(2) { animation-delay: .05s; } main > *:nth-child(3) { animation-delay: .1s; }
+  main > *:nth-child(4) { animation-delay: .15s; } main > *:nth-child(5) { animation-delay: .2s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

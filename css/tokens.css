@@ -1,0 +1,28 @@
+/* Design tokens : couleurs, ombres, rayons. Une couleur par domaine (--c-*). Thèmes clair / sombre / automatique. */
+:root {
+  --bg: #f3efe6; --surface: #fffdf8; --surface2: #ebe5d7; --ink: #17181c; --muted: #62646c; --line: #dcd5c4;
+  --accent: #e0561f; --accent-ink: #fff;
+  --c-matin: #c88a00; --c-sport: #d9393b; --c-alim: #2f9e63; --c-sommeil: #6c5ce7; --c-miage: #1f78d1; --c-java: #d9741a;
+  --c-pro: #6b7280; --c-trajet: #9aa0ab; --c-chabbat: #a8884a;
+  --shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 30px -18px rgba(40,30,10,.35);
+  --r: 20px; --nav-h: 68px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0e12; --surface: #16181f; --surface2: #20232d; --ink: #f3efe6; --muted: #a2a3ae; --line: #2b2e3a;
+    --accent: #ff7a3d; --accent-ink: #1a0d05;
+    --c-matin: #f2c14e; --c-sport: #ff6b6b; --c-alim: #6fcf97; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
+    --c-pro: #8b93a5; --c-trajet: #6b7280; --c-chabbat: #d8c08a;
+    --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 40px -22px rgba(0,0,0,.8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0e12; --surface: #16181f; --surface2: #20232d; --ink: #f3efe6; --muted: #a2a3ae; --line: #2b2e3a;
+  --accent: #ff7a3d; --accent-ink: #1a0d05;
+  --c-matin: #f2c14e; --c-sport: #ff6b6b; --c-alim: #6fcf97; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
+  --c-pro: #8b93a5; --c-trajet: #6b7280; --c-chabbat: #d8c08a;
+  --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 40px -22px rgba(0,0,0,.8);
+  color-scheme: dark;
+}

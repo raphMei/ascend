@@ -1,0 +1,19 @@
+/* Base : reset, typographie, utilitaires. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.5 "DM Sans", system-ui, sans-serif; font-feature-settings: "ss01";
+  background-image: radial-gradient(1200px 500px at 85% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%);
+  background-repeat: no-repeat; min-height: 100vh;
+}
+h1, h2, h3 { font-family: "Syne", "DM Sans", sans-serif; letter-spacing: -.02em; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(30px, 6vw, 44px); font-weight: 800; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.mono { font-family: "DM Mono", ui-monospace, monospace; }
+.muted { color: var(--muted); }
+.sr { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }

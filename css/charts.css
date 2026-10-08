@@ -1,0 +1,5 @@
+/* Graphiques SVG. */
+/* ----- Graphiques ----- */
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart text { font: 500 11px "DM Mono", monospace; fill: var(--muted); }
+svg.chart .gl { stroke: var(--line); stroke-width: 1; }

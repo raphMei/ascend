@@ -1,0 +1,33 @@
+/* Mise en page : coque de l'app, navigation basse (mobile) / latérale (bureau). */
+/* ----- Shell ----- */
+#root { min-height: 100vh; }
+.shell { display: block; }
+.nav {
+  position: fixed; z-index: 20; left: 0; right: 0; bottom: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line);
+}
+.nav button {
+  background: none; border: 0; border-radius: 14px; padding: 8px 4px 6px; display: grid; justify-items: center; gap: 3px;
+  color: var(--muted); font-size: 12px; font-weight: 500; min-height: 52px;
+}
+.nav button svg { width: 24px; height: 24px; }
+.nav button[aria-current="page"] { color: var(--ink); background: var(--surface2); }
+.nav button[aria-current="page"] svg { color: var(--accent); }
+.brand { display: none; }
+main {
+  max-width: 1080px; margin: 0 auto; padding: calc(24px + env(safe-area-inset-top)) 18px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom));
+  display: grid; gap: 22px;
+}
+@media (min-width: 900px) {
+  .shell { display: grid; grid-template-columns: 240px 1fr; }
+  .nav {
+    position: sticky; top: 0; height: 100vh; grid-template-columns: 1fr; align-content: start; gap: 6px;
+    padding: 28px 16px; border-top: 0; border-right: 1px solid var(--line); background: transparent; backdrop-filter: none;
+  }
+  .nav button { grid-auto-flow: column; justify-content: start; gap: 12px; font-size: 16px; padding: 12px 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 800 24px "Syne"; padding: 0 14px 18px; }
+  .brand img { width: 34px; height: 34px; border-radius: 9px; }
+  main { padding: 36px 36px 60px; width: 100%; }
+}

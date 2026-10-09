@@ -14,7 +14,7 @@
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {
-    "firebase": "10.14.1",
+    "firebase": "13.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.4"

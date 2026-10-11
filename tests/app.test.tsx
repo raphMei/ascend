@@ -19,8 +19,8 @@ describe('accueil', () => {
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Salut Raphaël' })).toBeInTheDocument();
     expect(screen.getByLabelText('Message du coach')).toBeInTheDocument();
-    ['Accueil', "Aujourd'hui", 'Domaines', 'Réglages'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Accueil' })).toHaveAttribute('aria-current', 'page');
+    ['Bilan', "Aujourd'hui", 'Domaines', 'Réglages'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Bilan' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('navigue vers les autres écrans', async () => {
@@ -212,7 +212,8 @@ describe('édition libre des blocs', () => {
 
   it('déplacer un créneau enregistre le nouvel horaire', async () => {
     const { writes } = renderApp({ hash: '#/today' });
-    await userEvent.click(await screen.findByRole('button', { name: 'Modifier Séance : Pousser' }).catch(() => screen.findByRole('button', { name: /Modifier Séance/ })));
+    await userEvent.click(await screen.findByRole('button', { name: /Séance/, expanded: false }));
+    await userEvent.click(await screen.findByRole('button', { name: /Modifier Séance/ }));
     const dialog = await screen.findByRole('dialog');
     const start = within(dialog).getByLabelText('Début');
     fireEvent.change(start, { target: { value: '19:30' } });
@@ -222,6 +223,7 @@ describe('édition libre des blocs', () => {
 
   it('passer un bloc le retire de la frise et propose de le rétablir', async () => {
     const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('button', { name: /Séance/, expanded: false }));
     await userEvent.click(await screen.findByRole('button', { name: /Modifier Séance/ }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /Passer ce bloc/ }));
     expect(todayWrites(writes)).toEqual([{ edits: { skip: { sport: true } } }]);
@@ -488,5 +490,77 @@ describe('Mon mois', () => {
     renderApp({ hash: '#/domains' });
     await userEvent.click(await screen.findByRole('link', { name: /Mon mois/ }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
+  });
+});
+
+describe('liste d\'habitudes (mode Grit)', () => {
+  it('l\'application s\'ouvre sur « Aujourd\'hui », en liste groupée par moments', async () => {
+    window.location.hash = '';
+    renderApp({ hash: '' });
+    expect(await screen.findByRole('navigation', { name: 'Semaine' })).toBeInTheDocument();
+    // Mardi 3 nov. = jour de cours : pas d'après-midi libre.
+    for (const g of ['Matin', 'Trajet', 'Travail et cours', 'Soirée', 'Avant de dormir']) expect(screen.getByRole('region', { name: g })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Liste' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Moments' })).toBeChecked();
+  });
+
+  it('chaque groupe affiche son avancement et la routine du matin se coche depuis la liste', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    const matin = await screen.findByRole('region', { name: 'Matin' });
+    expect(within(matin).getByText('0/4')).toBeInTheDocument();
+    await userEvent.click(within(matin).getByRole('checkbox', { name: 'Téphila' }));
+    expect(within(await screen.findByRole('region', { name: 'Matin' })).getByText('1/4')).toBeInTheDocument();
+    expect(writes.days.filter(([d]) => d === TUESDAY.today).at(-1)![1]).toMatchObject({ done: { tephila: true } });
+  });
+
+  it('un groupe se replie et se déplie, et l\'état est mémorisé', async () => {
+    renderApp({ hash: '#/today' });
+    const head = within(await screen.findByRole('region', { name: 'Matin' })).getByRole('button', { name: /Matin/ });
+    expect(head).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(head);
+    expect(head).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('checkbox', { name: 'Téphila' })).not.toBeInTheDocument();
+    expect(localStorage.getItem('ascend-collapsed')).toContain('matin');
+    await userEvent.click(head);
+    expect(await screen.findByRole('checkbox', { name: 'Téphila' })).toBeInTheDocument();
+    localStorage.removeItem('ascend-collapsed');
+  });
+
+  it('regrouper par thèmes : Productivité, Santé, Repas…, et le choix est enregistré', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('radio', { name: 'Thèmes' }));
+    expect(writes.settings).toEqual([{ ui: { group: 'themes' } }]);
+    for (const g of ['Routine du matin', 'Productivité', 'Santé', 'Repas', 'Sommeil']) expect(await screen.findByRole('region', { name: g })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Soirée' })).not.toBeInTheDocument();
+  });
+
+  it('la frise horaire reste disponible', async () => {
+    renderApp({ hash: '#/today', seed: { settings: { ui: { today: 'frise' } } } });
+    expect(await screen.findByRole('region', { name: 'Frise de la journée' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Matin' })).not.toBeInTheDocument();
+  });
+
+  it('le bandeau de la semaine permet de changer de jour et marque le jour affiché', async () => {
+    renderApp({ hash: '#/today' });
+    const week = await screen.findByRole('navigation', { name: 'Semaine' });
+    expect(within(week).getAllByRole('link')).toHaveLength(7);
+    expect(within(week).getByRole('link', { current: 'date' })).toHaveAccessibleName(/mar\. 3/);
+    await userEvent.click(within(week).getByRole('link', { name: /jeu\. 5/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'jeudi 5 novembre' })).toBeInTheDocument();
+  });
+
+  it('les objectifs sont listés en bas de la liste du jour', async () => {
+    renderApp({ hash: '#/today', seed: { settings: { weightGoal: 80 }, days: { '2026-10-20': { weight: 90 }, [TUESDAY.today]: { weight: 85 } } } });
+    const goals = await screen.findByRole('region', { name: 'Objectifs' });
+    expect(within(goals).getByText('Cours MIAGE')).toBeInTheDocument();
+    expect(within(goals).getByText('85 → 80 kg')).toBeInTheDocument();
+    expect(within(goals).getByText('50%')).toBeInTheDocument();
+  });
+
+  it('une habitude affiche sa série 🔥 quand elle est tenue plusieurs jours', async () => {
+    const done = { tephila: true, pompes: true, stretch: true, petitdej: true };
+    renderApp({ hash: '#/today', seed: { days: { '2026-11-01': { done }, '2026-11-02': { done } } } });
+    const matin = await screen.findByRole('region', { name: 'Matin' });
+    expect(within(matin).getAllByLabelText('2 jours d\'affilée').length).toBeGreaterThan(0);
   });
 });

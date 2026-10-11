@@ -28,6 +28,8 @@ export interface Settings {
   months?: Record<string, MonthPlan>;
   /** Réajuste automatiquement le planning après un retard (activé si absent). */
   autoReschedule?: boolean;
+  /** Préférences d'affichage (synchronisées entre appareils). */
+  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes' };
 }
 
 /** Intensité d'un domaine pour un mois. */

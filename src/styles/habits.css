@@ -1,0 +1,69 @@
+/* Liste d'habitudes : bandeau de la semaine, groupes repliables, grandes cases rondes, séries, objectifs. */
+
+/* ----- Bandeau de la semaine ----- */
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wd { display: grid; justify-items: center; gap: 4px; padding: 6px 0 4px; border-radius: 16px; text-decoration: none; color: var(--muted); min-height: 64px; }
+.wd .l { font: 500 12px "DM Mono", monospace; }
+.wd .ring { position: relative; width: 40px; height: 40px; display: grid; place-content: center; }
+.wd .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.wd .ring b { position: relative; font: 700 15px "DM Sans"; color: var(--ink); }
+.wd.on { background: var(--surface); box-shadow: var(--shadow); color: var(--ink); outline: 1px solid var(--line); }
+.wd.today .l { color: var(--accent); font-weight: 500; }
+
+/* ----- Commutateurs ----- */
+.seg { display: inline-flex; background: var(--surface2); border-radius: 14px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; color: var(--muted); font-weight: 500; padding: 8px 14px; border-radius: 11px; min-height: 40px; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); font-weight: 700; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+
+/* ----- Résumé du jour ----- */
+.daysum { display: flex; align-items: center; gap: 16px; }
+.daysum .ring { width: 78px; height: 78px; flex: none; }
+.daysum .num b { font-size: 22px; }
+.daysum .txt b { font: 700 20px "Syne"; display: block; letter-spacing: -.01em; }
+
+/* ----- Groupes ----- */
+.groups { display: grid; gap: 14px; }
+.group { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); overflow: hidden; }
+.group-head { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; cursor: pointer; min-height: 56px; }
+.group-head.static { cursor: default; }
+.group-head:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.group-ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-content: center; font-size: 20px; background: color-mix(in srgb, var(--dc) 20%, var(--surface)); flex: none; }
+.group-name { font: 700 18px "Syne"; letter-spacing: -.01em; flex: 1; }
+.group-count { font: 500 13px "DM Mono", monospace; color: var(--muted); }
+.group.complete .group-count { color: var(--dc); font-weight: 500; }
+.chev { color: var(--muted); font-size: 20px; width: 18px; text-align: center; }
+.group-bar { height: 4px; background: var(--surface2); }
+.group-bar i { display: block; height: 100%; background: var(--dc); transition: width .3s; }
+.group-body { display: grid; }
+
+/* ----- Habitudes ----- */
+.habit { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 6px 12px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.habit-ico { width: 42px; height: 42px; border-radius: 50%; display: grid; place-content: center; font-size: 21px; background: color-mix(in srgb, var(--dc) 16%, var(--surface2)); flex: none; }
+.habit-main { all: unset; box-sizing: border-box; display: grid; gap: 2px; cursor: pointer; min-width: 0; padding: 4px 0; }
+.habit-main:disabled { cursor: default; }
+.habit-main:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.habit-title { font-weight: 700; font-size: 16px; overflow-wrap: anywhere; }
+.habit-sub { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.habit.done .habit-title { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.habit.done .habit-ico { filter: grayscale(.6); opacity: .75; }
+.habit.info { opacity: .85; }
+.habit.info .habit-ico { background: var(--surface2); }
+.habit.now { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); box-shadow: inset 4px 0 0 var(--accent); }
+.habit-streak { font: 500 13px "DM Mono", monospace; color: var(--c-java); background: color-mix(in srgb, var(--c-java) 14%, var(--surface)); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.habit-more { grid-column: 1 / -1; display: grid; gap: 8px; padding: 2px 0 6px 54px; justify-items: start; }
+.habit-more .how .txt { font-size: 15px; }
+.cb.big { width: 40px; height: 40px; }
+.cb.big .box { border-width: 2.5px; }
+.cb.big .box svg { width: 22px; height: 22px; }
+.cb.big input:checked + .box { animation: pop .25s cubic-bezier(.2,.9,.3,1.4); }
+@keyframes pop { 0% { transform: scale(.82); } 100% { transform: scale(1); } }
+
+/* ----- Objectifs ----- */
+.goal { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 12px; padding: 12px 16px; border-top: 1px solid var(--line); text-decoration: none; }
+.goal-pct { font: 700 17px "DM Sans"; color: var(--ink); }
+.goal-bar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--surface2); overflow: hidden; margin-left: 54px; }
+.goal-bar i { display: block; height: 100%; background: var(--dc); border-radius: 999px; }
+
+@media (min-width: 900px) { .groups { grid-template-columns: 1fr 1fr; align-items: start; } }
+@media (prefers-reduced-motion: reduce) { .cb.big input:checked + .box { animation: none; } }

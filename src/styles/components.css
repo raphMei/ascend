@@ -49,8 +49,8 @@
 select { font: inherit; }
 .blk.compact { grid-template-columns: 1fr; }
 .blk.compact .time { display: none; }
-.group > summary { cursor: pointer; font-weight: 700; list-style: none; min-height: 28px; }
-.group > summary::-webkit-details-marker { display: none; }
-.group .tl { margin-top: 10px; }
+.smallgroup > summary { cursor: pointer; font-weight: 700; list-style: none; min-height: 28px; }
+.smallgroup > summary::-webkit-details-marker { display: none; }
+.smallgroup .tl { margin-top: 10px; }
 .iconbtn { background: none; border: 0; color: var(--muted); padding: 6px; min-width: 44px; min-height: 44px; font-size: 18px; border-radius: 10px; }
 .iconbtn:hover { color: var(--ink); background: var(--surface2); }

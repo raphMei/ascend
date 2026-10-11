@@ -40,7 +40,7 @@ export function App() {
       <Toast />
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/home" replace />} />
+          <Route index element={<Navigate to="/today" replace />} />
           <Route path="home" element={<HomeScreen />} />
           <Route path="today" element={<TodayScreen />} />
           <Route path="today/:date" element={<TodayScreen />} />
@@ -49,7 +49,7 @@ export function App() {
           <Route path="dom/:id" element={<DomainPage />} />
           <Route path="dom/:id/:sub" element={<DomainPage />} />
           <Route path="settings" element={<SettingsScreen />} />
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          <Route path="*" element={<Navigate to="/today" replace />} />
         </Route>
       </Routes>
     </HashRouter>

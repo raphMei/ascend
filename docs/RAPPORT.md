@@ -30,6 +30,9 @@
 
 **Contenu MIAGE** : mécanisme prêt (un fichier par matière remplace les tâches génériques ; jalons, examen). Mode d'emploi : `CONTENU-MIAGE.md`.
 
+**Liste d'habitudes (mode « Grit »)**
+- L'application s'ouvre sur « Aujourd'hui » : bandeau de la semaine, liste de tâches en groupes repliables avec avancement, grandes cases rondes, séries 🔥, section Objectifs. Regroupement par **moments** (Matin, Trajet, Travail, Après-midi, Soirée, Avant de dormir) ou par **thèmes** (Productivité, Santé, Apprentissage, Repas, Finances…). La frise horaire reste disponible. Le tableau de bord complet s'appelle désormais **Bilan**.
+
 **Ajustement intelligent et « Mon mois »**
 - Après un retard, le planning redistribue les tâches sur les jours à venir selon la place réellement disponible, la priorité des tâches et le sport manqué. Chaque déplacement est expliqué et s'annule (remettre à sa date, faire aujourd'hui, laisser tomber, reprendre). Désactivable dans les réglages.
 - **Mon mois** : intensité par domaine (désactivé / léger / normal / intensif) pour chaque mois ; le planning de tous les jours du mois s'adapte, avec une jauge de charge qui prévient quand les domaines réservent presque tout le temps libre.

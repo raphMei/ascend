@@ -13,9 +13,13 @@ const TUESDAY = new Date('2026-11-03T10:00:00');
 test.describe('application (mode démo)', () => {
   test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(TUESDAY); });
 
-  test('démarre sans erreur et affiche l\'accueil', async ({ page }) => {
+  test('démarre sans erreur sur « Aujourd\'hui » (liste groupée), le bilan est dans l\'onglet Bilan', async ({ page }) => {
     const errors = consoleErrors(page);
     await page.goto('/ascend/?demo');
+    await expect(page.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Semaine' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Matin' })).toBeVisible();
+    await page.getByRole('button', { name: 'Bilan', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Salut Raphaël' })).toBeVisible();
     await expect(page.getByText('Mode démo')).toBeVisible();
     expect(errors).toEqual([]);
@@ -150,5 +154,32 @@ test.describe('ajustement automatique et Mon mois', () => {
     await expect(page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Normal' })).toBeChecked();
     await page.evaluate(() => { location.hash = '#/today/2026-11-11'; });
     await expect(page.getByRole('checkbox', { name: 'Anglais' })).toBeVisible();
+  });
+});
+
+test.describe('liste d\'habitudes', () => {
+  test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(TUESDAY); });
+
+  test('cocher dans la liste met à jour le groupe, la semaine et persiste ; replier un groupe est mémorisé', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today');
+    const matin = page.getByRole('region', { name: 'Matin' });
+    await expect(matin.getByText('0/4')).toBeVisible();
+    await page.locator('label.cb', { has: page.getByRole('checkbox', { name: 'Téphila' }) }).click();
+    await expect(matin.getByText('1/4')).toBeVisible();
+    await matin.getByRole('button', { name: /Matin/ }).click();
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Matin' }).getByRole('button', { name: /Matin/ })).toHaveAttribute('aria-expanded', 'false');
+    await page.getByRole('region', { name: 'Matin' }).getByRole('button', { name: /Matin/ }).click();
+    await expect(page.getByRole('region', { name: 'Matin' }).getByRole('checkbox', { name: 'Téphila' })).toBeChecked();
+  });
+
+  test('changer de regroupement et de vue persiste', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today');
+    await page.getByRole('radio', { name: 'Thèmes' }).click();
+    await expect(page.getByRole('region', { name: 'Productivité' })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('radio', { name: 'Thèmes' })).toBeChecked();
+    await page.getByRole('radio', { name: 'Frise' }).click();
+    await expect(page.getByRole('region', { name: 'Frise de la journée' })).toBeVisible();
   });
 });

@@ -4,6 +4,7 @@ import { dow, type ISODate } from '@/core/dates';
 import { hm, toMin } from '@/core/format';
 import { planDay } from './planner';
 import { adjustedTasks } from './task-schedule';
+import { buildSchedule } from './schedule';
 import type { DayData, Plan, Progress, Settings } from './types';
 
 export type ReminderKind = 'routine' | 'sport' | 'bilan' | 'saisie';
@@ -66,10 +67,14 @@ export interface RunInput {
   progress: Progress; day: DayData | undefined;
   /** Rappels déjà envoyés (clé → date d'envoi). */
   sent: Record<string, unknown>;
+  /** Derniers jours (au moins les 7 derniers) : sert au rattrapage du sport. Par défaut : seulement le jour courant. */
+  days?: Record<ISODate, DayData>;
 }
 
 /** Calcul complet pour un utilisateur : plan du jour → programme des rappels → ceux à envoyer maintenant. */
 export function remindersToSend(i: RunInput): Reminder[] {
-  const plan = planDay({ date: i.date, settings: i.settings, progress: i.progress, day: i.day, today: i.date, tasks: adjustedTasks(i.settings) });
+  const tasks = adjustedTasks(i.settings);
+  const sched = buildSchedule({ tasks, progress: i.progress, settings: i.settings, days: i.days ?? (i.day ? { [i.date]: i.day } : {}), today: i.date, now: i.now });
+  const plan = planDay({ date: i.date, settings: i.settings, progress: i.progress, day: i.day, today: i.date, tasks, schedule: sched ?? undefined });
   return dueReminders(reminderSchedule(i.date, plan, i.day, i.settings), i.date, i.now, i.sent, i.settings, plan);
 }

@@ -24,7 +24,18 @@ export interface Settings {
   livre?: string; toeicGoal?: number | null;
   /** Rappels activés par type (absent = activé). Ne sert qu'une fois les notifications autorisées sur un appareil. */
   reminders?: Partial<Record<'routine' | 'sport' | 'bilan' | 'saisie', boolean>>;
+  /** Intensité de chaque domaine, par mois (« AAAA-MM »). Un mois sans réglage reprend celui du mois précédent. */
+  months?: Record<string, MonthPlan>;
+  /** Réajuste automatiquement le planning après un retard (activé si absent). */
+  autoReschedule?: boolean;
 }
+
+/** Intensité d'un domaine pour un mois. */
+export type Level = 'off' | 'leger' | 'normal' | 'intensif';
+/** Domaines réglables mois par mois. */
+export type MonthDomain = 'miage' | 'sport' | 'java' | 'front' | 'anglais' | 'lecture' | 'projets' | 'finances';
+/** `null` : retour au réglage du mois précédent (une fusion Firestore ne peut pas supprimer une clé). */
+export type MonthPlan = Partial<Record<MonthDomain, Level | null>>;
 
 /** Instantané recalculé à chaque case cochée (alimente les graphiques). */
 export interface DayStatsSnapshot {
@@ -65,6 +76,8 @@ export interface MonthFinance { savings?: number | null; invested?: number | nul
 /** users/{uid}/progress/main : tâches MIAGE (d:…, s:…), Java (p1t1…), dev front (f1t1…) et points finances (fin:AAAA-MM:…) cochés. */
 export interface Progress {
   done: Record<string, boolean>;
+  /** Dates imposées par toi pour une tâche MIAGE (annule le réajustement automatique). */
+  pins?: Record<string, string | null>;
   projects?: Record<string, Project | null>;
   finance?: Record<string, MonthFinance>;      // clé « AAAA-MM »
   toeic?: Record<string, number | null>;       // clé = date du test blanc, valeur = score /990
@@ -99,6 +112,8 @@ export interface Plan {
   isShabbatDay: boolean;
   /** Blocs que l'utilisateur a passés ce jour-là (absent si aucun). */
   skipped?: Block[];
+  /** Minutes libres après le sport (uniquement quand le plan est demandé en mode « mesure », pour le réajustement). */
+  freeMin?: number;
 }
 
 export interface DayStats {

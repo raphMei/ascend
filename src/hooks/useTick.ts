@@ -6,6 +6,7 @@ import { dayStats } from '@/domain/stats';
 import type { DayData, Progress } from '@/domain/types';
 import { useData } from '@/state/DataContext';
 import { useClock } from './useClock';
+import { useSchedule } from './useSchedule';
 
 export type TickTarget = { scope: 'day'; key: string } | { scope: 'prog'; key: string };
 
@@ -14,12 +15,13 @@ export type TickTarget = { scope: 'day'; key: string } | { scope: 'prog'; key: s
 export function useTick() {
   const { state, settings, tasks, setDay, setProgress } = useData();
   const { today } = useClock();
+  const sched = useSchedule();
   return useCallback((date: ISODate, target: TickTarget, value: boolean) => {
     const patch = { done: { [target.key]: value } };
     const progress: Progress = target.scope === 'prog' ? merge(state.progress, patch) : state.progress;
     const day: DayData | undefined = target.scope === 'day' ? merge(state.days[date], patch) : state.days[date];
-    const st = dayStats(planDay({ date, settings, progress, day, today, tasks }));
+    const st = dayStats(planDay({ date, settings, progress, day, today, tasks, schedule: sched ?? undefined }));
     const stats = { pct: st.pct, pl: st.pl, dn: st.dn, planned: st.planned, done: st.done };
     if (target.scope === 'prog') { setProgress(patch); setDay(date, { stats }); } else setDay(date, { ...patch, stats });
-  }, [state, settings, tasks, today, setDay, setProgress]);
+  }, [state, settings, tasks, today, sched, setDay, setProgress]);
 }

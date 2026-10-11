@@ -9,7 +9,8 @@ import type { MiageTask } from '@/content/types';
 import { shabbatTimesForDate } from './shabbat';
 import { SPORT, SPORT_WEEK } from './sport';
 import { habitItems } from './habits';
-import type { Block, DayData, DayEdits, Plan, PlanItem, Progress, Settings, ShabbatWindow } from './types';
+import { settingsForDate } from './month';
+import type { Block, DayData, DayEdits, Plan, PlanItem, Progress, Settings, ShabbatWindow, SportKind } from './types';
 
 export interface PlanInput {
   date: ISODate;
@@ -19,12 +20,23 @@ export interface PlanInput {
   today: ISODate;
   /** Tâches MIAGE avec échéances ajustées (voir `adjustedTasks`). */
   tasks: readonly MiageTask[];
+  /** Réajustement automatique (voir `buildSchedule`). Absent : tout le retard s'empile sur aujourd'hui, comme avant. */
+  schedule?: PlanSchedule;
+  /** Mode « mesure » : s'arrête après le sport et renvoie les minutes libres (à partir de `fromMin`). Sert au réajustement. */
+  measure?: { fromMin?: number };
+}
+
+/** Ce que le planificateur lit du réajustement : jour assigné à chaque tâche, séances de sport remplacées. */
+export interface PlanSchedule {
+  dayOf: Readonly<Record<string, ISODate>>;
+  sport: Readonly<Record<ISODate, { kind: SportKind; reason: string }>>;
 }
 
 type NewBlock = Partial<Block> & Pick<Block, 'id' | 'start' | 'end' | 'title' | 'domain'>;
 type Item = PlanItem;
 
-export function planDay({ date, settings: S, progress: prog, day: DD, today, tasks: T }: PlanInput): Plan {
+export function planDay({ date, settings, progress: prog, day: DD, today, tasks: T, schedule, measure }: PlanInput): Plan {
+  const S = settingsForDate(settings, date);
   const w = dow(date), type = dayType(date), blocks: Block[] = [], warnings: string[] = [], overflow = { n: 0, min: 0 };
   const wake = toMin(S.wake), bed = toMin(S.bed);
   const sh = shabbatTimesForDate(date, S);
@@ -132,11 +144,12 @@ export function planDay({ date, settings: S, progress: prog, day: DD, today, tas
   };
 
   /* Sport */
-  const sp = SPORT_WEEK[w];
+  const override = schedule?.sport[date];
+  const sp = override ? override.kind : (S.sportWeek ?? SPORT_WEEK)[w];
   const sat = (w === 6);
   if (sp) {
     const k = SPORT[sp], len = sportShort ? 45 : 75;
-    const it: Item = { min: len, blk: { id: 'sport', fixed: false, checkable: true, title: 'Séance : ' + k.name, domain: 'sport', sub: k.sub, sport: sp, detail: k.ex.map((e) => e[0] + ' : ' + e[1]).join('\n') + '\nFinisher : corde à sauter, 3 × 2 minutes.\nAdapte les charges à ton programme actuel.' } };
+    const it: Item = { min: len, blk: { id: 'sport', fixed: false, checkable: true, title: 'Séance : ' + k.name + (override ? ' (rattrapage)' : ''), domain: 'sport', sub: override ? override.reason : k.sub, sport: sp, detail: k.ex.map((e) => e[0] + ' : ' + e[1]).join('\n') + '\nFinisher : corde à sauter, 3 × 2 minutes.\nAdapte les charges à ton programme actuel.' } };
     if (!place(it, w === 0 ? 600 : 960)) { overflow.n++; overflow.min += it.left ?? it.min; }
   }
   if (sat) {
@@ -144,9 +157,17 @@ export function planDay({ date, settings: S, progress: prog, day: DD, today, tas
     if (!(DD && DD.done && DD.done.sport)) place(it, areaStart);
   }
 
-  /* MIAGE : tâches du jour (et retards si aujourd'hui) */
+  /* Mode mesure : on s'arrête ici et on rapporte le temps libre restant (à partir de `fromMin`). */
+  if (measure) {
+    const from = measure.fromMin ?? 0;
+    const freeMin = wins.reduce((s, x) => s + Math.max(0, x[1] - Math.max(x[0], from)), 0);
+    return { date, type, onsite, blocks, warnings, overflow, sh, late: 0, isShabbatDay: w === 6, freeMin };
+  }
+
+  /* MIAGE : tâches du jour. Avec réajustement : celles qui lui sont assignées. Sans : celles du jour, et tout le retard si aujourd'hui. */
   let mi: MiageTask[];
-  if (date === today) mi = T.filter((t) => t.due <= date && !(prog.done && prog.done[t.id]));
+  if (schedule && date >= today) mi = T.filter((t) => schedule.dayOf[t.id] === date);
+  else if (date === today) mi = T.filter((t) => t.due <= date && !(prog.done && prog.done[t.id]));
   else mi = T.filter((t) => t.due === date);
   mi.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
   const miLate = mi.filter((t) => t.due < date).length;

@@ -402,3 +402,91 @@ describe('rappels (notifications)', () => {
     await waitFor(() => expect(writes.push).toEqual([{ subscriptions: { abc123: null } }]));
   });
 });
+
+describe('ajustement automatique', () => {
+  // Mardi 3 nov. 2026, 10 h : plusieurs tâches des jours précédents n'ont pas été faites.
+  const clickTodayCard = async () => screen.findByRole('region', { name: 'Ajustements automatiques du planning' });
+
+  it('affiche ce qui a été déplacé, avec la raison', async () => {
+    renderApp({ hash: '#/today' });
+    const card = await clickTodayCard();
+    expect(card).toHaveTextContent(/tâche[s]? déplacée/);
+    expect(within(card).getAllByText(/En retard depuis/).length).toBeGreaterThan(0);
+  });
+
+  it('« Laisser tomber » enregistre le choix et fait disparaître la tâche des retards', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    const card = await clickTodayCard();
+    await userEvent.click(within(card).getAllByRole('button', { name: 'Laisser tomber' })[0]);
+    expect(writes.progress).toHaveLength(1);
+    expect(Object.values((writes.progress[0] as { pins: Record<string, string> }).pins)).toEqual(['skip']);
+  });
+
+  it('« Faire aujourd\'hui » impose la date du jour', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    const card = await clickTodayCard();
+    await userEvent.click(within(card).getAllByRole('button', { name: "Faire aujourd'hui" })[0]);
+    expect(Object.values((writes.progress[0] as { pins: Record<string, string> }).pins)).toEqual([TUESDAY.today]);
+  });
+
+  it('une date imposée peut être annulée', async () => {
+    const seed = { progress: { done: {}, pins: { 'dl:f0': '2026-11-10' } } };
+    const { writes } = renderApp({ hash: '#/today', seed });
+    const card = await clickTodayCard();
+    await userEvent.click(within(card).getByRole('button', { name: 'Annuler' }));
+    expect(writes.progress[0]).toEqual({ pins: { 'dl:f0': null } });
+  });
+
+  it('désactiver l\'ajustement le retire, et les réglages le rétablissent', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(within(await clickTodayCard()).getByRole('button', { name: "Désactiver l'ajustement automatique" }));
+    expect(writes.settings).toEqual([{ autoReschedule: false }]);
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Ajustements automatiques du planning' })).not.toBeInTheDocument());
+  });
+
+  it('la page d\'accueil signale l\'ajustement', async () => {
+    renderApp();
+    expect(await screen.findByText(/Planning ajusté automatiquement/)).toBeInTheDocument();
+  });
+
+  it('sans retard au départ de la saison : rien à signaler', async () => {
+    renderApp({ hash: '#/today', clock: { today: '2026-10-08', now: 360 } });
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByText(/En retard depuis/)).not.toBeInTheDocument();
+  });
+});
+
+describe('Mon mois', () => {
+  it('liste les domaines et enregistre l\'intensité choisie pour le mois', async () => {
+    const { writes } = renderApp({ hash: '#/month' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
+    for (const n of ['Cours MIAGE', 'Sport', 'Java backend', 'Dev front', 'Anglais', 'Lecture', 'Projets perso', 'Finances']) expect(screen.getByRole('radiogroup', { name: `Intensité : ${n}` })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' }));
+    expect(writes.settings).toEqual([{ months: { '2026-11': { anglais: 'intensif' } } }]);
+    expect(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' })).toBeChecked();
+  });
+
+  it('le choix du mois change le planning des jours de ce mois', async () => {
+    renderApp({ hash: '#/today/2026-11-11', seed: { settings: { months: { '2026-11': { anglais: 'normal' } } } } });
+    expect(await screen.findByRole('checkbox', { name: 'Anglais' })).toBeInTheDocument();
+  });
+
+  it('on peut régler le mois suivant, sans toucher à celui-ci', async () => {
+    const { writes } = renderApp({ hash: '#/month' });
+    await userEvent.click(await screen.findByRole('button', { name: 'Mois suivant' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Décembre 2026' })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Lecture' })).getByRole('radio', { name: 'Léger' }));
+    expect(writes.settings).toEqual([{ months: { '2026-12': { lecture: 'leger' } } }]);
+  });
+
+  it('prévient quand les domaines réservent presque tout le temps libre', async () => {
+    renderApp({ hash: '#/month', seed: { settings: { months: { '2026-11': { anglais: 'intensif', lecture: 'intensif', front: 'intensif', projets: 'intensif', java: 'intensif' } } } } });
+    expect(await screen.findByRole('alert')).toHaveTextContent('Allège un domaine');
+  });
+
+  it('accessible depuis « Mes domaines »', async () => {
+    renderApp({ hash: '#/domains' });
+    await userEvent.click(await screen.findByRole('link', { name: /Mon mois/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
+  });
+});

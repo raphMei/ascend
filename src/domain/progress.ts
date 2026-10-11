@@ -8,13 +8,13 @@ import type { Progress } from './types';
 export interface Counter { n: number; d: number; h: number; hd: number; late: number }
 
 /** Avancement MIAGE : par matière (`per`), global (`g`) et pourcentage pondéré par les heures. `tasks` = tâches aux échéances ajustées. */
-export function mStats(tasks: readonly MiageTask[], prog: Progress, today: ISODate) {
+export function mStats(tasks: readonly MiageTask[], prog: Progress, today: ISODate, excluded?: ReadonlySet<string>) {
   const per: Record<string, Counter> = {}; SUBJ.forEach((s) => { per[s.id] = { n: 0, d: 0, h: 0, hd: 0, late: 0 }; });
   const g: Counter = { n: 0, d: 0, h: 0, hd: 0, late: 0 };
   tasks.forEach((t) => {
     const p = per[t.s], dn = !!(prog.done && prog.done[t.id]);
     p.n++; p.h += t.h; g.n++; g.h += t.h;
-    if (dn) { p.d++; p.hd += t.h; g.d++; g.hd += t.h; } else if (t.due < today) { p.late++; g.late++; }
+    if (dn) { p.d++; p.hd += t.h; g.d++; g.hd += t.h; } else if (t.due < today && !excluded?.has(t.id)) { p.late++; g.late++; }
   });
   return { per, g, pct: g.h ? Math.round(100 * g.hd / g.h) : 0 };
 }

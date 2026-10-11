@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { App } from '@/App';
 import { ClockProvider, type Clock } from '@/hooks/useClock';
+import { ScheduleProvider } from '@/hooks/useSchedule';
 import { DataProvider } from '@/state/DataContext';
 import type { DayData, Progress, Settings } from '@/domain/types';
 import type { AuthUser, Backend, BackendListener } from '@/services/types';
@@ -44,7 +45,7 @@ export function renderApp(opts: { seed?: Seed; clock?: Clock; hash?: string } = 
   const fb = fakeBackend(opts.seed);
   const view = render(
     <DataProvider backend={fb.backend}>
-      <ClockProvider fixed={opts.clock ?? TUESDAY}><App /></ClockProvider>
+      <ClockProvider fixed={opts.clock ?? TUESDAY}><ScheduleProvider><App /></ScheduleProvider></ClockProvider>
     </DataProvider>
   );
   return { ...view, ...fb };

@@ -30,6 +30,9 @@ let sentCount = 0, users = 0;
 
 for (const userRef of await db.collection('users').listDocuments()) {
   try {
+    const recent = await userRef.collection('days').where(FieldPath.documentId(), '>=', addDays(date, -8)).get();
+    const days: Record<string, DayData> = {};
+    recent.forEach((d) => { days[d.id] = d.data() as DayData; });
     const [pushSnap, setSnap, progSnap, daySnap] = await Promise.all([
       userRef.collection('push').doc('main').get(), userRef.collection('settings').doc('main').get(),
       userRef.collection('progress').doc('main').get(), userRef.collection('days').doc(date).get()
@@ -40,7 +43,7 @@ for (const userRef of await db.collection('users').listDocuments()) {
     users++;
     const settings: Settings = resolveSettings(setSnap.data() as Partial<Settings> | undefined);
     const progress: Progress = { done: {}, ...(progSnap.data() as Partial<Progress> | undefined) };
-    const due = remindersToSend({ date, now: minutes, settings, progress, day: daySnap.data() as DayData | undefined, sent: push?.sent ?? {} });
+    const due = remindersToSend({ date, now: minutes, settings, progress, day: daySnap.data() as DayData | undefined, sent: push?.sent ?? {}, days });
 
     for (const r of due) {
       const payload = JSON.stringify({ title: r.title, body: r.body, tag: r.key, url: './#/today' });

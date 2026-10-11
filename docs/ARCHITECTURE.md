@@ -45,8 +45,21 @@ Règles tenues par la structure :
 ## Planning
 
 `planDay(entrées) → plan` est pur. Ordre de placement dans les créneaux libres : sport → tâches MIAGE → domaines optionnels
-(anglais, lecture, dev front, projets, point finances ; actifs si leurs minutes > 0) → Java (prend le reste).
-Puis `applyEdits` applique les **modifications libres** du jour (`days/{date}.edits` : `skip`, `move`, `extra`) et signale chevauchements et blocs tombant pendant Chabbat.
+(anglais, lecture, dev front, projets, point finances) → Java (prend le reste). Puis `applyEdits` applique les **modifications libres**
+du jour (`days/{date}.edits` : `skip`, `move`, `extra`).
+
+**Mon mois** (`domain/month.ts`) : `settings.months['AAAA-MM']` donne l'intensité de chaque domaine (désactivé, léger, normal, intensif).
+`settingsForDate(réglages, date)` en déduit les minutes par jour, la durée de Java, le programme de sport (3, 5 ou 6 séances) et le niveau MIAGE.
+Un mois sans réglage reprend le précédent, domaine par domaine. Sans aucun réglage, le planning est identique à celui d'avant.
+
+**Ajustement automatique** (`domain/schedule.ts`, `buildSchedule`) : calculé à partir des données, **jamais enregistré** (donc toujours à jour).
+1. Place disponible par jour = temps libre mesuré par le planificateur (`planDay(..., measure)`) − temps réservé aux domaines du mois − 10 % de marge ; aujourd'hui, seule la fin de journée compte ; samedi = 0.
+2. Les examens restent à leur date ; les dates imposées (`progress.pins`) passent d'abord ; les tâches de routine de plus de 2 jours sont abandonnées.
+3. Le reste est réparti jour après jour : important d'abord (révisions/projets, fiches, mise en place, tâches du jour), puis le plus ancien. Mois « léger » : plus de tâches du jour ; « intensif » : on avance les tâches des 7 jours suivants.
+4. Sport : jambes manquées → rattrapées une fois, à la place de la prochaine séance qui n'est pas des jambes.
+5. Chaque déplacement est expliqué (`changes`) et s'annule en un toucher (`pins` : date, `'skip'`, ou `null`).
+Le résultat (`Schedule`) est fourni à toute l'application par `ScheduleProvider` ; le planificateur ne lit que `dayOf` et `sport`.
+Sans ajustement (désactivé dans les réglages), le retard s'empile sur aujourd'hui, comme avant.
 L'affichage regroupe les petites tâches MIAGE consécutives (`domain/grouping.ts`).
 
 ## Rappels
@@ -72,7 +85,7 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 | Commande | Contenu |
 |---|---|
-| `npm test` (133 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
+| `npm test` (174 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
 | `npm run test:e2e` | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, **audit d'accessibilité axe** en clair et en sombre |
 | `npm run test:rules` | **émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections connues, requête fenêtrée) et script d'envoi des rappels de bout en bout (nécessite Java) |
 | `npm run test:all` | tout ce qui précède |

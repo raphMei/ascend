@@ -5,6 +5,7 @@ import { dur, hm, hours } from '@/core/format';
 import { DOM } from '@/domain/domains';
 import { groupSmallBlocks } from '@/domain/grouping';
 import type { DomainId } from '@/domain/types';
+import { AdjustmentsCard } from '@/components/AdjustmentsCard';
 import { AddBlock } from '@/components/BlockEditor';
 import { BlockRow } from '@/components/BlockRow';
 import { EntryReminder } from '@/components/EntryReminder';
@@ -59,6 +60,7 @@ export function TodayScreen() {
       {plan.overflow.n > 0 && (
         <div className="warn"><b>Trop chargé aujourd'hui.</b> {plan.overflow.n} élément{plan.overflow.n > 1 ? 's' : ''} n'ont pas trouvé de place (≈ {hours(plan.overflow.min)}). Ils restent en retard et reviennent demain : décide ce que tu coupes ou ce que tu déplaces.</div>
       )}
+      {date === today && <AdjustmentsCard />}
       {date === today && trackable && <EntryReminder date={date} />}
       <section className="tl" aria-label="Frise de la journée">
         {items.map((it) => it.kind === 'block'

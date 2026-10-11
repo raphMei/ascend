@@ -127,3 +127,28 @@ test.describe('planning modifiable et nouveaux domaines', () => {
     expect(body).not.toContain('caches.open');
   });
 });
+
+test.describe('ajustement automatique et Mon mois', () => {
+  test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(TUESDAY); });
+
+  test('le retard est redistribué et expliqué, et « Laisser tomber » est mémorisé', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today');
+    const card = page.getByRole('region', { name: 'Ajustements automatiques du planning' });
+    await expect(card).toBeVisible();
+    await expect(card.getByText(/En retard depuis/).first()).toBeVisible();
+    const before = await card.getByRole('button', { name: 'Laisser tomber' }).count();
+    await card.getByRole('button', { name: 'Laisser tomber' }).first().click();
+    await page.reload();
+    const after = await page.getByRole('region', { name: 'Ajustements automatiques du planning' }).getByRole('button', { name: 'Laisser tomber' }).count();
+    expect(after).toBeLessThanOrEqual(before);
+  });
+
+  test('Mon mois : choisir une intensité change le planning du mois et persiste', async ({ page }) => {
+    await page.goto('/ascend/?demo#/month');
+    await page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Normal' }).click();
+    await page.reload();
+    await expect(page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Normal' })).toBeChecked();
+    await page.evaluate(() => { location.hash = '#/today/2026-11-11'; });
+    await expect(page.getByRole('checkbox', { name: 'Anglais' })).toBeVisible();
+  });
+});

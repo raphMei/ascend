@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { JOURS, addDays, diffDays, dow, fmt, fmtLong, fmtShort, lastDays } from '@/core/dates';
 import { hm, hours, sleepDuration } from '@/core/format';
@@ -17,6 +18,7 @@ import { Ring } from '@/components/charts/Ring';
 import { StackedBars } from '@/components/charts/StackedBars';
 import { useClock } from '@/hooks/useClock';
 import { usePlan } from '@/hooks/usePlan';
+import { useSchedule } from '@/hooks/useSchedule';
 import { useDayAmounts } from '@/hooks/useWeekAmounts';
 import { useData } from '@/state/DataContext';
 import { useShabbat } from '@/features/shell/useShabbat';
@@ -29,6 +31,8 @@ export function HomeScreen() {
   const { today, now } = useClock();
   const { plan, stats: st } = usePlan(today);
   const amounts = useDayAmounts(7);
+  const sched = useSchedule();
+  const droppedSet = useMemo(() => new Set(sched?.dropped ?? []), [sched]);
   const shab = useShabbat();
   const stk = streak(state.days, today);
   const routine = plan.blocks.filter((b) => b.domain === 'matin' && b.checkable);
@@ -38,7 +42,7 @@ export function HomeScreen() {
   });
   const nextB = plan.blocks.find((b) => b.checkable && !b.done && b.end > now);
   const week = lastDays(7, today).reduce((a, d) => a + (d === today ? st.dn : (state.days[d]?.stats?.dn ?? 0)), 0);
-  const ms = mStats(tasks, state.progress, today), js = jStats(state.progress);
+  const ms = mStats(tasks, state.progress, today, droppedSet), js = jStats(state.progress);
   const upcoming = KEY_DATES.filter((k) => k[0] >= today).slice(0, 4);
   const projects = tasks.filter((t) => t.k === 'proj' && !state.progress.done[t.id] && t.due >= today).slice(0, 3);
   const friday = dow(today) === 6 ? addDays(today, -1) : addDays(today, (5 - dow(today) + 7) % 7);
@@ -67,6 +71,11 @@ export function HomeScreen() {
         </div>
       </PageHead>
       <section className="card coach" aria-label="Message du coach"><div className="eyebrow">Ton coach</div><p className="big">{line}</p><p className="small">{sub}</p></section>
+      {sched && sched.changes.length > 0 && (
+        <Link to="/today" className="warn" style={{ textDecoration: 'none', display: 'block' }}>
+          <b>Planning ajusté automatiquement :</b> {sched.changes.filter((c) => c.reason !== 'abandon').length} tâche{sched.changes.filter((c) => c.reason !== 'abandon').length > 1 ? 's' : ''} déplacée{sched.changes.filter((c) => c.reason !== 'abandon').length > 1 ? 's' : ''}{sched.dropped.length ? `, ${sched.dropped.length} abandonnée${sched.dropped.length > 1 ? 's' : ''}` : ''}. Voir pourquoi →
+        </Link>
+      )}
       <section className="card hero">
         <div className="ring"><Ring pct={st.pct} color="var(--accent)" /><div className="num"><b>{st.pct}%</b><span>du jour</span></div></div>
         <div className="grid" style={{ gap: 14 }}>

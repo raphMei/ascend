@@ -1,5 +1,6 @@
 import type { ThemeMode } from '@/domain/types';
 import { CommitInput } from '@/components/CommitInput';
+import { Link } from 'react-router-dom';
 import { PageHead } from '@/components/PageHead';
 import { exportData } from '@/services/exportData';
 import { useData } from '@/state/DataContext';
@@ -52,6 +53,11 @@ export function SettingsScreen() {
           <label className="f">Sommeil (h)<CommitInput type="number" step={0.5} value={s.sleepGoal} onCommit={num('sleepGoal')} /></label>
           <label className="f">Poids visé (kg)<CommitInput type="number" step={0.1} min={30} max={250} value={s.weightGoal} placeholder="facultatif" onCommit={(v) => setSettings({ weightGoal: v === '' ? null : v })} /></label>
         </div>
+      </section>
+      <section className="card"><h2>Ajustement automatique</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Quand tu prends du retard, le planning redistribue les tâches sur les jours à venir selon la place disponible, et explique chaque déplacement.</p>
+        <label className="row" style={{ cursor: 'pointer' }}><span>Ajuster automatiquement le planning</span>
+          <input type="checkbox" checked={s.autoReschedule !== false} onChange={(e) => setSettings({ autoReschedule: e.target.checked })} aria-label="Ajuster automatiquement le planning" style={{ width: 24, height: 24 }} /></label>
+        <div className="quick"><Link to="/month" className="btn" style={{ textDecoration: 'none' }}>Régler mon mois</Link></div>
       </section>
       <section className="card"><h2>Mes domaines</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Minutes par jour dans ton planning pour chaque domaine. 0 = désactivé : rien n'est ajouté à ta journée.</p>
         <div className="fields">

@@ -12,6 +12,7 @@ import { DomainCard } from '@/components/DomainCard';
 import { HowTo } from '@/components/HowTo';
 import { dc } from '@/components/Icon';
 import { useClock } from '@/hooks/useClock';
+import { useSchedule } from '@/hooks/useSchedule';
 import { useTick } from '@/hooks/useTick';
 import { useData } from '@/state/DataContext';
 import type { DomainModule } from '../types';
@@ -19,7 +20,8 @@ import type { DomainModule } from '../types';
 function useMiage() {
   const { state, tasks } = useData();
   const { today } = useClock();
-  return { stats: mStats(tasks, state.progress, today), tasks, progress: state.progress, today };
+  const sched = useSchedule();
+  return { stats: mStats(tasks, state.progress, today, new Set(sched?.dropped ?? [])), tasks, progress: state.progress, today };
 }
 
 function Card() {
@@ -29,12 +31,15 @@ function Card() {
 
 function TaskRow({ t, done, late, today }: { t: MiageTask; done: boolean; late: boolean; today: string }) {
   const tick = useTick();
+  const sched = useSchedule();
+  const to = sched?.dayOf[t.id];
+  const dropped = sched?.dropped.includes(t.id);
   return (
     <div className={'item' + (done ? ' done' : '')}>
       <Checkbox checked={done} onChange={(v) => tick(today, { scope: 'prog', key: t.id }, v)} domain="miage" label={t.t} />
       <div>
         <div className="t">{t.t}</div>
-        <div className="sub"><span className="chip">{fmt(t.due)}</span><span className="chip">{hours(t.h * 60)}</span>{late && <span className="chip" style={{ color: 'var(--late)' }}>En retard</span>}</div>
+        <div className="sub"><span className="chip">{fmt(t.due)}</span><span className="chip">{hours(t.h * 60)}</span>{late && !dropped && <span className="chip" style={{ color: 'var(--late)' }}>En retard</span>}{to && to !== t.due && !done && <span className="chip">Reprogrammée · {fmt(to)}</span>}{dropped && !done && <span className="chip">Abandonnée automatiquement</span>}</div>
         <HowTo text={t.d} />
       </div>
     </div>

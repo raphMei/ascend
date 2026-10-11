@@ -30,6 +30,10 @@
 
 **Contenu MIAGE** : mécanisme prêt (un fichier par matière remplace les tâches génériques ; jalons, examen). Mode d'emploi : `CONTENU-MIAGE.md`.
 
+**Ajustement intelligent et « Mon mois »**
+- Après un retard, le planning redistribue les tâches sur les jours à venir selon la place réellement disponible, la priorité des tâches et le sport manqué. Chaque déplacement est expliqué et s'annule (remettre à sa date, faire aujourd'hui, laisser tomber, reprendre). Désactivable dans les réglages.
+- **Mon mois** : intensité par domaine (désactivé / léger / normal / intensif) pour chaque mois ; le planning de tous les jours du mois s'adapte, avec une jauge de charge qui prévient quand les domaines réservent presque tout le temps libre.
+
 ## À faire par toi (je ne peux pas le faire à ta place)
 
 1. **Pousser** ce lot (commandes dans le message de fin de session).
@@ -47,6 +51,7 @@
 |---|---|---|
 | 1 | **Firebase 10.14.1** | Montée de version non faite volontairement : elle change le poids du site (≈ +70 Ko gzip en v13) et le comportement de la connexion, qui ne peut se tester que sur ton iPhone. Les alertes `npm audit` viennent de dépendances Node de Firebase, absentes du code envoyé au navigateur. À faire dans une branche, une fois l'étape 5 validée. |
 | 2 | **Connexion Google non automatisable** | Les tests couvrent le chargement du SDK, l'écran de connexion, les règles et l'envoi des rappels. Le flux OAuth réel ne l'est pas (il faudrait l'émulateur Auth avec une version de l'application branchée dessus). |
+| 0 | **Charge de départ élevée** | Dès le premier jour, le programme livré dépasse la place libre sur plusieurs jours (surtout les jours de cours) : l'ajustement décale environ 50 tâches. Ce n'est pas un défaut de l'algorithme : le programme est trop dense. À toi de choisir un mois « léger » côté MIAGE ou de laisser tomber des tâches de routine. |
 | 3 | **Journée exceptionnelle** | Les blocs de travail et de trajet ne sont pas modifiables (congé, maladie, télétravail exceptionnel) : seuls les blocs « pour toi » le sont. |
 | 4 | **Rappels plus riches** | Pas encore de rappel pour les tâches MIAGE en retard, les échéances, ni pour les nouveaux domaines. Précision de ±20 minutes (planificateur GitHub). |
 | 5 | **Stats dépendantes du plan actuel** | Un instantané est figé à l'écriture ; si tu changes tes réglages (jours sur site…), les jours passés ne sont pas recalculés. |

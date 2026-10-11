@@ -4,6 +4,7 @@ import { Toast } from '@/components/Toast';
 import { DomainPage } from '@/features/domains/DomainPage';
 import { DomainsScreen } from '@/features/domains/DomainsScreen';
 import { HomeScreen } from '@/features/home/HomeScreen';
+import { MonthScreen } from '@/features/month/MonthScreen';
 import { SettingsScreen } from '@/features/settings/SettingsScreen';
 import { Layout } from '@/features/shell/Layout';
 import { ShabbatScreen } from '@/features/shell/ShabbatScreen';
@@ -44,6 +45,7 @@ export function App() {
           <Route path="today" element={<TodayScreen />} />
           <Route path="today/:date" element={<TodayScreen />} />
           <Route path="domains" element={<DomainsScreen />} />
+          <Route path="month" element={<MonthScreen />} />
           <Route path="dom/:id" element={<DomainPage />} />
           <Route path="dom/:id/:sub" element={<DomainPage />} />
           <Route path="settings" element={<SettingsScreen />} />

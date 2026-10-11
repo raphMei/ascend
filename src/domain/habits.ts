@@ -6,7 +6,8 @@ import { FRONT_TASKS } from '@/content/front/path';
 import { frNum } from '@/core/format';
 import type { PlanItem, Progress, Settings } from './types';
 
-export const monthOf = (date: ISODate): string => date.slice(0, 7);
+export { monthOf } from './month';
+import { monthOf } from './month';
 /** Premier dimanche du mois ? */
 export const isFirstSunday = (date: ISODate): boolean => dow(date) === 0 && +date.slice(8, 10) <= 7;
 /** Identifiant de la tâche « point du mois » (clé dans progress.done). */

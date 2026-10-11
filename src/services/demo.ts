@@ -16,10 +16,12 @@ export function demoBackend(): Backend {
       l.onDays(o.days ?? {}); l.onSettings(o.settings ?? {}); l.onProgress(o.prog ?? { done: {} });
       l.onAuth({ uid: 'demo', displayName: 'Démo', email: 'demo@local' });
     },
+    loadHistory() { /* tout est déjà en mémoire */ },
     async signIn() { /* rien à faire en démo */ },
     async signOut() { try { localStorage.removeItem(DEMO_KEY); } catch { /* ignore */ } window.location.reload(); },
-    writeDay(date, patch) { const o = load(); o.days = o.days ?? {}; o.days[date] = merge(o.days[date], patch); save(o); },
-    writeSettings(patch) { const o = load(); o.settings = merge(o.settings, patch); save(o); },
-    writeProgress(patch) { const o = load(); o.prog = merge(o.prog ?? { done: {} }, patch); save(o); }
+    async writeDay(date, patch) { const o = load(); o.days = o.days ?? {}; o.days[date] = merge(o.days[date], patch); save(o); },
+    async writeSettings(patch) { const o = load(); o.settings = merge(o.settings, patch); save(o); },
+    async writePush() { /* pas de serveur en démo */ },
+    async writeProgress(patch) { const o = load(); o.prog = merge(o.prog ?? { done: {} }, patch); save(o); }
   };
 }

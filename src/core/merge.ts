@@ -11,3 +11,15 @@ export function merge<T extends object>(a: T | undefined, b: Obj): T {
   }
   return out as T;
 }
+
+/** Patch qui annule `patch` sur `prev` : pour chaque champ touché, la valeur d'avant (undefined si le champ n'existait pas).
+    Sert au retour arrière d'une écriture optimiste refusée. */
+export function inverse(prev: object | undefined, patch: Obj): Obj {
+  const p = (prev ?? {}) as Obj;
+  const out: Obj = {};
+  for (const k of Object.keys(patch)) {
+    const pv = patch[k];
+    out[k] = isObj(pv) ? inverse(isObj(p[k]) ? (p[k] as Obj) : undefined, pv) : p[k];
+  }
+  return out;
+}

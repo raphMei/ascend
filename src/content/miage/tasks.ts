@@ -3,8 +3,13 @@ import { range, dow, type ISODate } from '../../core/dates';
 import { dayType } from '../calendar';
 import { SUBJ, byId } from './subjects';
 import type { MiageTask, TaskKind } from '../types';
+import { PLANS } from './plans';
+import type { SubjectPlan } from './plans/types';
+import { ENGLISH_EXERCISES } from '../english';
 
 /** Liste des tâches. Triée par échéance ; jamais modifiée après le chargement (voir `adjustedTasks` pour les décalages). */
+/** Construit toutes les tâches MIAGE. Avec des plans de matière, les séances précises remplacent les tâches génériques du jour. */
+export function buildTasks(plans: Record<string, SubjectPlan> = {}): MiageTask[] {
 const tasks: MiageTask[] = [];
 function push(id: string, s: string, k: TaskKind, t: string, d: string, due: ISODate, h: number) { tasks.push({ id, s, k, t, d, due, h }); }
 const ALL = range("2026-10-08", "2027-02-26");
@@ -18,7 +23,7 @@ SUBJ.forEach((s, i) => {
   if (s.id === "org") return;
   push(s.id + ":s1", s.id, "setup", "Récupérer les supports et créer le dossier",
     "Télécharge tous les supports de « " + s.name + " » (cours, TD, sujets d'annales s'il y en a). Crée un dossier à ce nom avec quatre sous-dossiers : cours, td, fiches, projet. Cinq minutes, mais tout le reste s'appuie dessus.", "2026-10-11", 0.25);
-  push(s.id + ":s2", s.id, "setup", "Envoyer le contenu de la matière à Claude",
+  if (!plans[s.id]) push(s.id + ":s2", s.id, "setup", "Envoyer le contenu de la matière à Claude",
     "Envoie-moi le programme de « " + s.name + " » : plan du cours, liste des chapitres, ce qui a déjà été vu, et les consignes des travaux demandés. Je remplace alors les tâches génériques de cette matière par des tâches précises sur ton vrai contenu.", SETUP_DAYS[i], 0.25);
   push(s.id + ":s3", s.id, "setup", "Noter les modalités du contrôle continu et de l'examen",
     "Écris au même endroit : la date et le format du contrôle continu, son coefficient, la durée et le format de l'examen final, et les documents autorisés. Si une information manque, demande-la au responsable de la matière. Reporte ensuite chaque date dans ton agenda.", "2026-11-01", 0.25);
@@ -31,19 +36,14 @@ const MICRO: [string, (n: string) => string][] = [
   ["Cinq questions-réponses", (n) => { return "Écris 5 questions sur ce que tu as vu en « " + n + " », avec la réponse au dos (papier ou application de cartes mémoire). Garde-les : elles serviront pour les révisions de janvier."; }],
   ["Explique-le à un débutant", (n) => { return "Choisis une notion de « " + n + " » et explique-la à voix haute en 3 minutes, comme à quelqu'un qui n'y connaît rien, avec un exemple concret. Là où tu bloques, ouvre le cours et complète."; }]
 ];
-const MICRO_T: [string, string][] = [
-  ["Écoute active", "Écoute 15 minutes d'anglais (podcast, vidéo sans sous-titres). Note 5 mots ou expressions que tu ne connaissais pas, avec la phrase où ils apparaissent."],
-  ["Dix mots du jour", "Apprends 10 mots de vocabulaire professionnel (réunions, e-mails, voyages). Écris une phrase par mot, puis cache les définitions et teste-toi."],
-  ["Une partie de grammaire", "Fais une série d'exercices sur un point de grammaire du TOEIC (temps, prépositions, mots de liaison). Relis chaque erreur et écris la règle en une ligne."],
-  ["Lecture chronométrée", "Lis un texte court en 5 minutes puis réponds à 5 questions. Relis ce que tu as raté pour comprendre pourquoi la bonne réponse était la bonne."]
-];
 let rc = 0;
 const occ: Record<string, number> = {};
 ent.forEach((d) => {
   const sid = ROT[rc % ROT.length]; rc++;
-  const s = byId[sid]; occ[sid] = occ[sid] || 0; const k = occ[sid] % 4; occ[sid]++;
+  const s = byId[sid]; occ[sid] = occ[sid] || 0; const k = occ[sid] % 4; const unit = plans[sid]?.units[occ[sid]]; occ[sid]++;
   const m = s.cr >= 4.5 ? 45 : (s.cr >= 3 ? 30 : 20);
-  if (sid === "toeic") push("d:" + d, sid, "daily", MICRO_T[k][0] + " · " + s.short, MICRO_T[k][1], d, m / 60);
+  if (unit) push("d:" + d, sid, "daily", unit.title + " · " + s.short, unit.detail, d, unit.hours ?? m / 60);
+  else if (sid === "toeic") push("d:" + d, sid, "daily", ENGLISH_EXERCISES[k][0] + " · " + s.short, ENGLISH_EXERCISES[k][1], d, m / 60);
   else push("d:" + d, sid, "daily", MICRO[k][0] + " · " + s.short, MICRO[k][1](s.name), d, m / 60);
 });
 
@@ -96,8 +96,20 @@ const PROJ: { s: string; due: ISODate; h: number; t: string; d: string; k?: Task
   { s: "toeic", due: "2027-02-14", h: 2, k: "rev", t: "Test blanc TOEIC n°3", d: "Dernier test complet avant l'examen. Sers-toi du résultat pour décider où passer ton temps de révision de la dernière semaine." }
 ];
 PROJ.forEach((p, i) => { push(p.s + ":p" + i, p.s, p.k || "proj", p.t, p.d, p.due, p.h); });
+
+/* Jalons et modalités fournis par les plans de matière. */
+Object.values(plans).forEach((pl) => {
+  const s = byId[pl.subject]; if (!s) return;
+  (pl.milestones ?? []).forEach((ms, i) => push(pl.subject + ":m" + i, pl.subject, "rev", "Préparer : " + ms.label, "Date : " + ms.date + ". Revois les séances déjà faites sur ce point, refais un exercice sans correction et prépare ce qu'il faut apporter.", ms.date, ms.hours ?? 1));
+  if (pl.exam) {
+    const t = tasks.find((x) => x.id === pl.subject + ":exam");
+    if (t) t.d = "Examen de « " + s.name + " » : " + pl.exam.format + ". Documents autorisés : " + pl.exam.allowed + ". " + t.d;
+  }
+});
 tasks.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.id < b.id ? -1 : 1));
+return tasks;
+}
 
 
 /** Tâches MIAGE brutes (échéances d'origine). */
-export const RAW_TASKS: readonly MiageTask[] = tasks;
+export const RAW_TASKS: readonly MiageTask[] = buildTasks(PLANS);

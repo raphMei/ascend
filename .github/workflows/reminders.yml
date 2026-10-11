@@ -1,0 +1,25 @@
+name: Rappels
+# Envoie les notifications push (routine, sport, bilan du soir, saisie). Gratuit tant que le dépôt est public.
+# Toutes les 20 minutes de 5 h à 23 h environ (heure de Paris). Les heures de Chabbat sont exclues par le code.
+on:
+  schedule:
+    - cron: '*/20 3-21 * * *'
+  workflow_dispatch:
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsx scripts/send-reminders.ts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}

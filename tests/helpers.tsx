@@ -8,25 +8,30 @@ import type { AuthUser, Backend, BackendListener } from '@/services/types';
 export const USER: AuthUser = { uid: 'u1', email: 'test@ascend.dev', displayName: 'Test' };
 
 export interface Seed { user?: AuthUser | null; days?: Record<string, DayData>; settings?: Partial<Settings>; progress?: Progress }
-export type Writes = { days: [string, Record<string, unknown>][]; settings: Record<string, unknown>[]; progress: Record<string, unknown>[] };
+export type Writes = { days: [string, Record<string, unknown>][]; settings: Record<string, unknown>[]; progress: Record<string, unknown>[]; push: Record<string, unknown>[] };
 
 /** Backend factice : rejoue les données de départ et enregistre toutes les écritures. */
 export function fakeBackend(seed: Seed = {}) {
-  const writes: Writes = { days: [], settings: [], progress: [] };
+  const writes: Writes = { days: [], settings: [], progress: [], push: [] };
   const signIn = vi.fn(async () => {});
+  const failWrites = { on: false };
+  const history: string[] = [];
+  const startedFrom = { value: '' };
   const ref: { listener: BackendListener | null } = { listener: null };
   const backend: Backend = {
-    async start(l) {
-      ref.listener = l;
+    async start(l, from) {
+      ref.listener = l; startedFrom.value = from;
       l.onDays(seed.days ?? {}); l.onSettings(seed.settings ?? {}); l.onProgress(seed.progress ?? { done: {} });
       l.onAuth(seed.user === undefined ? USER : seed.user);
     },
     signIn, async signOut() {},
-    writeDay(date, patch) { writes.days.push([date, patch]); },
-    writeSettings(patch) { writes.settings.push(patch); },
-    writeProgress(patch) { writes.progress.push(patch); }
+    loadHistory(from) { history.push(from); },
+    async writeDay(date, patch) { if (failWrites.on) throw new Error('denied'); writes.days.push([date, patch]); },
+    async writeSettings(patch) { if (failWrites.on) throw new Error('denied'); writes.settings.push(patch); },
+    async writePush(patch) { writes.push.push(patch); },
+    async writeProgress(patch) { if (failWrites.on) throw new Error('denied'); writes.progress.push(patch); }
   };
-  return { backend, writes, signIn, ref };
+  return { backend, writes, signIn, ref, failWrites, history, startedFrom };
 }
 
 /** Un mardi de novembre, 10 h : jour d'entreprise (sur site), pas de Chabbat. */

@@ -8,7 +8,8 @@ import { JT } from '@/content/java/path';
 import type { MiageTask } from '@/content/types';
 import { shabbatTimesForDate } from './shabbat';
 import { SPORT, SPORT_WEEK } from './sport';
-import type { Block, DayData, Plan, Progress, Settings } from './types';
+import { habitItems } from './habits';
+import type { Block, DayData, DayEdits, Plan, PlanItem, Progress, Settings, ShabbatWindow } from './types';
 
 export interface PlanInput {
   date: ISODate;
@@ -21,7 +22,7 @@ export interface PlanInput {
 }
 
 type NewBlock = Partial<Block> & Pick<Block, 'id' | 'start' | 'end' | 'title' | 'domain'>;
-interface Item { min: number; left?: number; blk: Partial<Block> & Pick<Block, 'id' | 'title' | 'domain'> }
+type Item = PlanItem;
 
 export function planDay({ date, settings: S, progress: prog, day: DD, today, tasks: T }: PlanInput): Plan {
   const w = dow(date), type = dayType(date), blocks: Block[] = [], warnings: string[] = [], overflow = { n: 0, min: 0 };
@@ -156,6 +157,12 @@ export function planDay({ date, settings: S, progress: prog, day: DD, today, tas
     if (free < 15 || !place(it)) { overflow.n++; overflow.min += it.left == null ? it.min : Math.max(it.left, 0); }
   }
 
+  /* Domaines optionnels (anglais, lecture, dev front, projets, point finances) : avant Java, qui prend le temps restant. */
+  for (const it of habitItems(date, S, prog)) {
+    const free = wins.reduce((s, x) => s + (x[1] - x[0]), 0);
+    if (free < 15 || !place(it)) { overflow.n++; overflow.min += it.left == null ? it.min : Math.max(it.left, 0); }
+  }
+
   /* Java : séance quotidienne */
   const jmin = Math.round(S.javaHours * 60);
   if (jmin >= 25 && type !== 'exam') {
@@ -167,7 +174,40 @@ export function planDay({ date, settings: S, progress: prog, day: DD, today, tas
     }
   }
 
+  const skipped = applyEdits(blocks, DD?.edits, warnings, sh);
   blocks.sort((a, b) => a.start - b.start || a.end - b.end);
   blocks.forEach((b) => { b.done = b.checkable ? done(b) : false; });
-  return { date, type, onsite, blocks, warnings, overflow, sh, late: miLate, isShabbatDay: w === 6 };
+  const plan: Plan = { date, type, onsite, blocks, warnings, overflow, sh, late: miLate, isShabbatDay: w === 6 };
+  if (skipped.length) plan.skipped = skipped;
+  return plan;
+}
+
+/** Applique les modifications libres de l'utilisateur après le placement automatique : blocs passés, déplacés, ajoutés.
+    Retourne les blocs passés. Signale (sans bloquer) les chevauchements et les blocs placés pendant Chabbat. */
+function applyEdits(blocks: Block[], edits: DayEdits | undefined, warnings: string[], sh: ShabbatWindow | null): Block[] {
+  if (!edits) return [];
+  const skipped: Block[] = [];
+  const touched: Block[] = [];
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const b = blocks[i];
+    if (edits.skip?.[b.id] && b.checkable && !b.blocked) { skipped.unshift(b); blocks.splice(i, 1); }
+  }
+  const moved = new Set<string>();
+  for (const b of blocks) {
+    const m = edits.move?.[b.id];
+    if (m && !moved.has(b.id) && !b.cont && !b.blocked) { b.start = m.start; b.end = m.end; moved.add(b.id); touched.push(b); }
+  }
+  for (const [id, x] of Object.entries(edits.extra ?? {})) {
+    if (!x) continue;
+    const b: Block = { id: 'x:' + id, start: x.start, end: x.end, title: x.title, domain: x.domain, fixed: false, checkable: x.checkable !== false, done: false, sub: 'Ajouté par toi' };
+    blocks.push(b); touched.push(b);
+  }
+  for (const t of touched) {
+    const other = blocks.find((o) => o !== t && !o.blocked && o.start < t.end && t.start < o.end);
+    if (other) warnings.push('« ' + t.title + ' » (' + hm(t.start) + '–' + hm(t.end) + ') chevauche « ' + other.title + ' » (' + hm(other.start) + '–' + hm(other.end) + ').');
+    if (sh && ((t.end > sh.candle && t.start < 1440 && blocks.some((o) => o.id === 'chabbat-ven')) || (t.start < sh.havdalah && blocks.some((o) => o.id === 'chabbat-sam')))) {
+      warnings.push('« ' + t.title + ' » tombe pendant Chabbat.');
+    }
+  }
+  return skipped;
 }

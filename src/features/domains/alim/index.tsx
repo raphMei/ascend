@@ -1,4 +1,5 @@
-import { JOURS, dow, fmtShort, lastDays } from '@/core/dates';
+import { useEffect, useState } from 'react';
+import { JOURS, addDays, dow, fmtShort, lastDays } from '@/core/dates';
 import { BackLink, PageHead } from '@/components/PageHead';
 import { Bar } from '@/components/Bar';
 import { DomainCard } from '@/components/DomainCard';
@@ -9,6 +10,7 @@ import { DOM } from '@/domain/domains';
 import type { DayData } from '@/domain/types';
 import { useClock } from '@/hooks/useClock';
 import { useData } from '@/state/DataContext';
+import { HISTORY_DAYS } from '@/state/constants';
 import type { DomainModule } from '../types';
 
 function Card() {
@@ -19,12 +21,15 @@ function Card() {
 }
 
 function Page() {
-  const { state, settings: s } = useData();
+  const { state, settings: s, loadHistory } = useData();
   const { today } = useClock();
+  const [range, setRange] = useState(30);
+  // Au-delà de la fenêtre chargée au démarrage, on va chercher l'historique à la demande.
+  useEffect(() => { if (range > HISTORY_DAYS) loadHistory(addDays(today, -range)); }, [range, today, loadHistory]);
   const dates = lastDays(10, today);
   const series = (key: keyof Pick<DayData, 'protein' | 'water' | 'kcal'>, scale = 1) =>
     dates.map((d) => { const v = state.days[d]?.[key]; return { x: JOURS[dow(d)].slice(0, 2), y: v != null ? +v / scale : null }; });
-  const weight = lastDays(30, today).map((d) => { const w = state.days[d]?.weight; return { x: fmtShort(d), y: w != null ? +w : null }; });
+  const weight = lastDays(range, today).map((d) => { const w = state.days[d]?.weight; return { x: fmtShort(d), y: w != null ? +w : null }; });
   return (
     <>
       <BackLink to="/domains" label="Domaines" /><PageHead eyebrow="Domaine" title={DOM.alim.name} />
@@ -33,7 +38,11 @@ function Page() {
         <section className="card"><h2>Protéines</h2><p className="muted" style={{ margin: '4px 0 8px' }}>grammes par jour</p><BarsChart items={series('protein')} color="--c-alim" goal={s.protGoal} goalLabel={s.protGoal + ' g'} label="Protéines" /></section>
         <section className="card"><h2>Eau</h2><p className="muted" style={{ margin: '4px 0 8px' }}>litres par jour</p><BarsChart items={series('water', 1000)} color="--c-sommeil" goal={s.waterGoal / 1000} goalLabel={s.waterGoal / 1000 + ' L'} label="Eau" /></section>
         <section className="card"><h2>Calories</h2><p className="muted" style={{ margin: '4px 0 8px' }}>par jour</p><BarsChart items={series('kcal')} color="--c-java" goal={s.kcalGoal} goalLabel={String(s.kcalGoal)} label="Calories" /></section>
-        <section className="card"><h2>Poids</h2><p className="muted" style={{ margin: '4px 0 8px' }}>30 derniers jours</p><LineChart points={weight} color="--c-alim" label="Poids" /></section>
+        <section className="card"><h2>Poids</h2><p className="muted" style={{ margin: '4px 0 8px' }}>{range} derniers jours{s.weightGoal ? ` · objectif ${String(s.weightGoal).replace('.', ',')} kg` : ''}</p>
+          <div className="quick" role="group" aria-label="Période du graphique de poids" style={{ margin: '0 0 8px' }}>
+            {[[30, '30 jours'], [90, '90 jours'], [365, '1 an']].map(([n, l]) => <button key={n} type="button" className="btn small" aria-pressed={range === n} style={range === n ? { outline: '2px solid var(--accent)' } : undefined} onClick={() => setRange(n as number)}>{l}</button>)}
+          </div>
+          <LineChart points={weight} color="--c-alim" goal={s.weightGoal ?? undefined} label="Poids" /></section>
       </div>
     </>
   );

@@ -5,6 +5,7 @@ on:
     branches-ignore: [main]
 jobs:
   check:
+    name: Types, lint, tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,3 +14,24 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+  e2e:
+    name: Bout en bout (Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+  rules:
+    name: Règles Firestore et envoi des rappels (émulateur)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npm run test:rules

@@ -41,3 +41,12 @@ describe('merge', () => {
     expect(merge(undefined, { a: { b: 1 } })).toEqual({ a: { b: 1 } });
   });
 });
+
+describe('inverse', () => {
+  it('reconstruit les valeurs d\'avant pour annuler un patch', async () => {
+    const { inverse } = await import('@/core/merge');
+    const prev = { done: { a: true }, weight: 80 };
+    expect(inverse(prev, { done: { a: false, b: true }, weight: 81 })).toEqual({ done: { a: true, b: undefined }, weight: 80 });
+    expect(merge(merge(prev, { done: { a: false }, weight: 81 }), inverse(prev, { done: { a: false }, weight: 81 }))).toEqual(prev);
+  });
+});

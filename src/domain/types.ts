@@ -14,6 +14,16 @@ export interface Settings {
   workMin: number;
   candle: number; havdalah: number; // minutes avant le coucher / après le coucher du soleil
   theme: ThemeMode;
+  /** Objectif de poids (kg), optionnel : affiché en pointillés sur la courbe. */
+  weightGoal?: number | null;
+  /** Minutes par jour consacrées aux nouveaux domaines (0 = désactivé : aucun bloc dans le planning). */
+  anglaisMin: number; lectureMin: number; frontMin: number; projetsMin: number;
+  /** Durée du « point finances » le premier dimanche de chaque mois (0 = désactivé). */
+  financesMin: number;
+  /** Livre en cours (affiché dans le bloc de lecture) et score visé au TOEIC. */
+  livre?: string; toeicGoal?: number | null;
+  /** Rappels activés par type (absent = activé). Ne sert qu'une fois les notifications autorisées sur un appareil. */
+  reminders?: Partial<Record<'routine' | 'sport' | 'bilan' | 'saisie', boolean>>;
 }
 
 /** Instantané recalculé à chaque case cochée (alimente les graphiques). */
@@ -22,18 +32,46 @@ export interface DayStatsSnapshot {
   planned: Record<string, number>; done: Record<string, number>;
 }
 
+/** Bloc ajouté à la main sur une journée. */
+export interface ExtraBlock { title: string; start: number; end: number; domain: DomainId; checkable?: boolean }
+
+/** Modifications libres du planning d'un jour. `null` = annulé (une fusion Firestore ne peut pas supprimer une clé). */
+export interface DayEdits {
+  /** Blocs passés (non faits volontairement), par identifiant de bloc. */
+  skip?: Record<string, boolean | null>;
+  /** Horaire déplacé d'un bloc, par identifiant de bloc. */
+  move?: Record<string, { start: number; end: number } | null>;
+  /** Blocs ajoutés, par identifiant libre. */
+  extra?: Record<string, ExtraBlock | null>;
+}
+
 /** users/{uid}/days/{AAAA-MM-JJ}. `done` : blocs cochés (routine, sport, java, bilan, coucher). */
 export interface DayData {
   done?: Record<string, boolean>;
   weight?: number | null; water?: number | null; kcal?: number | null; protein?: number | null;
+  /** Pages lues ce jour-là (domaine Lecture). */
+  pages?: number | null;
   sleep?: { bed?: string | null; wake?: string | null };
   stats?: DayStatsSnapshot;
+  edits?: DayEdits;
 }
 
-/** users/{uid}/progress/main : tâches MIAGE (d:…, s:…) et Java (p1t1…) cochées. */
-export interface Progress { done: Record<string, boolean> }
+export type ProjectStatus = 'actif' | 'pause' | 'fini';
+/** Projet perso / freelance (users/{uid}/progress/main → projects). */
+export interface Project { name: string; next: string; status: ProjectStatus; minutes: number; created: string }
+/** Versements du mois (finances) — chiffres saisis par toi, jamais de conseil d'investissement. */
+export interface MonthFinance { savings?: number | null; invested?: number | null }
 
-export type DomainId = 'matin' | 'sport' | 'alim' | 'sommeil' | 'miage' | 'java' | 'pro' | 'trajet' | 'chabbat';
+/** users/{uid}/progress/main : tâches MIAGE (d:…, s:…), Java (p1t1…), dev front (f1t1…) et points finances (fin:AAAA-MM:…) cochés. */
+export interface Progress {
+  done: Record<string, boolean>;
+  projects?: Record<string, Project | null>;
+  finance?: Record<string, MonthFinance>;      // clé « AAAA-MM »
+  toeic?: Record<string, number | null>;       // clé = date du test blanc, valeur = score /990
+}
+
+export type DomainId = 'matin' | 'sport' | 'alim' | 'sommeil' | 'miage' | 'java' | 'pro' | 'trajet' | 'chabbat' | 'autre'
+  | 'anglais' | 'lecture' | 'front' | 'finances' | 'projets';
 export type SportKind = 'push' | 'pull' | 'legs';
 
 /** Un créneau de la journée. `fixed` : imposé (travail, repas) ; sinon placé dans un créneau libre. */
@@ -43,6 +81,9 @@ export interface Block {
   blocked?: boolean; sub?: string; detail?: string; link?: string;
   scope?: 'prog'; taskId?: string; due?: ISODate; cont?: boolean; sport?: SportKind;
 }
+
+/** Élément à placer dans les créneaux libres : durée voulue + modèle de bloc. */
+export interface PlanItem { min: number; left?: number; blk: Partial<Block> & Pick<Block, 'id' | 'title' | 'domain'> }
 
 export interface ShabbatWindow { candle: number; havdalah: number }
 
@@ -56,6 +97,8 @@ export interface Plan {
   sh: ShabbatWindow | null;
   late: number;
   isShabbatDay: boolean;
+  /** Blocs que l'utilisateur a passés ce jour-là (absent si aucun). */
+  skipped?: Block[];
 }
 
 export interface DayStats {

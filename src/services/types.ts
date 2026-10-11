@@ -14,12 +14,16 @@ export interface BackendListener {
 }
 
 export interface Backend {
-  /** Démarre l'écoute (authentification puis données). */
-  start(listener: BackendListener): Promise<void>;
+  /** Démarre l'écoute (authentification puis données). Seuls les jours depuis `historyFrom` sont chargés. */
+  start(listener: BackendListener, historyFrom: ISODate): Promise<void>;
+  /** Élargit la fenêtre d'historique (jours depuis `from`), par exemple pour afficher un graphique plus long. */
+  loadHistory(from: ISODate): void;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
-  /** Écritures en « merge » : on n'envoie que les champs modifiés. */
-  writeDay(date: ISODate, patch: Record<string, unknown>): void;
-  writeSettings(patch: Record<string, unknown>): void;
-  writeProgress(patch: Record<string, unknown>): void;
+  /** Écritures en « merge » : on n'envoie que les champs modifiés. La promesse est rejetée si l'écriture est refusée. */
+  writeDay(date: ISODate, patch: Record<string, unknown>): Promise<void>;
+  writeSettings(patch: Record<string, unknown>): Promise<void>;
+  writeProgress(patch: Record<string, unknown>): Promise<void>;
+  /** Abonnements aux notifications de cet utilisateur (users/{uid}/push/main), lus par le script d'envoi. */
+  writePush(patch: Record<string, unknown>): Promise<void>;
 }

@@ -1,6 +1,7 @@
 /** Fournit l'état des données (jours, réglages, progression) et les actions d'écriture à toute l'application. */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
-import type { ISODate } from '@/core/dates';
+import { addDays, todayISO, type ISODate } from '@/core/dates';
+import { inverse } from '@/core/merge';
 import { resolveSettings } from '@/domain/settings';
 import type { Settings } from '@/domain/types';
 import { adjustedTasks } from '@/domain/task-schedule';
@@ -8,7 +9,8 @@ import type { MiageTask } from '@/content/types';
 import { isDemo } from '@/services/config';
 import { createBackend } from '@/services/createBackend';
 import type { Backend } from '@/services/types';
-import { initialState, reducer, type DataState } from './reducer';
+import { HISTORY_DAYS } from './constants';
+import { initialState, reducer, type Action, type DataState } from './reducer';
 
 export interface DataApi {
   state: DataState;
@@ -19,6 +21,11 @@ export interface DataApi {
   setDay(date: ISODate, patch: Record<string, unknown>): void;
   setSettings(patch: Record<string, unknown>): void;
   setProgress(patch: Record<string, unknown>): void;
+  /** Charge l'historique depuis `from` (si pas déjà chargé). */
+  loadHistory(from: ISODate): void;
+  /** Enregistre un abonnement aux notifications (ou le retire avec `null`). */
+  savePush(patch: Record<string, unknown>): Promise<void>;
+  dismissNotice(): void;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
 }
@@ -27,7 +34,9 @@ const Ctx = createContext<DataApi | null>(null);
 
 export function DataProvider({ children, backend: injected }: { children: ReactNode; backend?: Backend }) {
   const demo = isDemo();
-  const [state, dispatch] = useReducer(reducer, demo, initialState);
+  const [state, dispatch] = useReducer(reducer, demo, (d: boolean) => initialState(d, addDays(todayISO(), -HISTORY_DAYS)));
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const backendRef = useRef<Backend | null>(injected ?? null);
   const started = useRef(false);
 
@@ -43,22 +52,46 @@ export function DataProvider({ children, backend: injected }: { children: ReactN
         onSettings: (settings) => dispatch({ type: 'settings', settings }),
         onProgress: (progress) => dispatch({ type: 'progress', progress }),
         onError: (code) => dispatch({ type: 'error', code })
-      });
+      }, stateRef.current.historyFrom);
       dispatch({ type: 'ready', error: loadError });
     })();
   }, [demo]);
 
-  const setDay = useCallback((date: ISODate, patch: Record<string, unknown>) => { dispatch({ type: 'patchDay', date, patch }); backendRef.current?.writeDay(date, patch); }, []);
-  const setSettings = useCallback((patch: Record<string, unknown>) => { dispatch({ type: 'patchSettings', patch }); backendRef.current?.writeSettings(patch); }, []);
-  const setProgress = useCallback((patch: Record<string, unknown>) => { dispatch({ type: 'patchProgress', patch }); backendRef.current?.writeProgress(patch); }, []);
+  /** Écriture optimiste avec retour arrière : si le backend refuse, on rétablit les valeurs d'avant et on prévient. */
+  const optimistic = useCallback((apply: Action, undo: () => Action, send: () => Promise<void> | undefined) => {
+    dispatch(apply);
+    send()?.catch(() => {
+      dispatch(undo());
+      dispatch({ type: 'notice', message: "Enregistrement impossible : la valeur précédente a été rétablie. Vérifie ta connexion et réessaie." });
+    });
+  }, []);
+  const setDay = useCallback((date: ISODate, patch: Record<string, unknown>) => {
+    const undo = inverse(stateRef.current.days[date], patch);
+    optimistic({ type: 'patchDay', date, patch }, () => ({ type: 'patchDay', date, patch: undo }), () => backendRef.current?.writeDay(date, patch));
+  }, [optimistic]);
+  const setSettings = useCallback((patch: Record<string, unknown>) => {
+    const undo = inverse(stateRef.current.settings, patch);
+    optimistic({ type: 'patchSettings', patch }, () => ({ type: 'patchSettings', patch: undo }), () => backendRef.current?.writeSettings(patch));
+  }, [optimistic]);
+  const setProgress = useCallback((patch: Record<string, unknown>) => {
+    const undo = inverse(stateRef.current.progress, patch);
+    optimistic({ type: 'patchProgress', patch }, () => ({ type: 'patchProgress', patch: undo }), () => backendRef.current?.writeProgress(patch));
+  }, [optimistic]);
+  const loadHistory = useCallback((from: ISODate) => {
+    if (from >= stateRef.current.historyFrom) return;
+    dispatch({ type: 'historyFrom', from });
+    backendRef.current?.loadHistory(from);
+  }, []);
+  const savePush = useCallback(async (patch: Record<string, unknown>) => { await backendRef.current?.writePush(patch); }, []);
+  const dismissNotice = useCallback(() => dispatch({ type: 'notice', message: null }), []);
   const signIn = useCallback(async () => { await backendRef.current?.signIn(); }, []);
   const signOut = useCallback(async () => { await backendRef.current?.signOut(); }, []);
 
   const settings = useMemo(() => resolveSettings(state.settings), [state.settings]);
   const tasks = useMemo(() => adjustedTasks(settings), [settings]);
   const api = useMemo<DataApi>(
-    () => ({ state, settings, tasks, setDay, setSettings, setProgress, signIn, signOut }),
-    [state, settings, tasks, setDay, setSettings, setProgress, signIn, signOut]
+    () => ({ state, settings, tasks, setDay, setSettings, setProgress, loadHistory, savePush, dismissNotice, signIn, signOut }),
+    [state, settings, tasks, setDay, setSettings, setProgress, loadHistory, savePush, dismissNotice, signIn, signOut]
   );
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

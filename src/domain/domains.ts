@@ -1,7 +1,7 @@
 /** Registre des domaines de vie : nom, couleur (variable CSS), icône. Pour en ajouter un, voir docs/ARCHITECTURE.md. */
 import type { DomainId } from './types';
 
-export type IconName = 'sun' | 'dumbbell' | 'leaf' | 'moon' | 'book' | 'code' | 'briefcase' | 'route' | 'star';
+export type IconName = 'sun' | 'dumbbell' | 'leaf' | 'moon' | 'book' | 'code' | 'briefcase' | 'route' | 'star' | 'globe' | 'bookopen' | 'layout' | 'coins' | 'rocket';
 export interface DomainInfo { name: string; c: string; ico: IconName; blurb: string }
 
 export const DOM: Record<DomainId, DomainInfo> = {
@@ -13,6 +13,12 @@ export const DOM: Record<DomainId, DomainInfo> = {
   java: { name: 'Java backend', c: '--c-java', ico: 'code', blurb: 'Quatorze phases, de la remise à niveau au système design.' },
   pro: { name: 'Travail et cours', c: '--c-pro', ico: 'briefcase', blurb: '' },
   trajet: { name: 'Trajet', c: '--c-trajet', ico: 'route', blurb: '' },
-  chabbat: { name: 'Chabbat', c: '--c-chabbat', ico: 'star', blurb: '' }
+  chabbat: { name: 'Chabbat', c: '--c-chabbat', ico: 'star', blurb: '' },
+  autre: { name: 'Autre', c: '--c-autre', ico: 'star', blurb: '' },
+  anglais: { name: 'Anglais', c: '--c-anglais', ico: 'globe', blurb: 'Une courte séance par jour, jusqu\'au score TOEIC visé.' },
+  lecture: { name: 'Lecture', c: '--c-lecture', ico: 'bookopen', blurb: 'Un livre à la fois, quelques pages chaque jour.' },
+  front: { name: 'Dev front', c: '--c-front', ico: 'layout', blurb: 'Du HTML au React testé et accessible, en neuf phases.' },
+  finances: { name: 'Finances', c: '--c-finances', ico: 'coins', blurb: 'Point mensuel, épargne et versements.' },
+  projets: { name: 'Projets perso', c: '--c-projets', ico: 'rocket', blurb: 'Tes projets perso et freelance, une prochaine action chacun.' }
 };
-export const TRACKED: DomainId[] = ['matin', 'sport', 'sommeil', 'miage', 'java'];
+export const TRACKED: DomainId[] = ['matin', 'sport', 'sommeil', 'miage', 'java', 'anglais', 'lecture', 'front', 'projets'];

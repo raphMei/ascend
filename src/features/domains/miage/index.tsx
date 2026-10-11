@@ -34,7 +34,7 @@ function TaskRow({ t, done, late, today }: { t: MiageTask; done: boolean; late: 
       <Checkbox checked={done} onChange={(v) => tick(today, { scope: 'prog', key: t.id }, v)} domain="miage" label={t.t} />
       <div>
         <div className="t">{t.t}</div>
-        <div className="sub"><span className="chip">{fmt(t.due)}</span><span className="chip">{hours(t.h * 60)}</span>{late && <span className="chip" style={{ color: 'var(--c-sport)' }}>En retard</span>}</div>
+        <div className="sub"><span className="chip">{fmt(t.due)}</span><span className="chip">{hours(t.h * 60)}</span>{late && <span className="chip" style={{ color: 'var(--late)' }}>En retard</span>}</div>
         <HowTo text={t.d} />
       </div>
     </div>
@@ -52,7 +52,7 @@ function SubjectPage({ id }: { id: string }) {
     <>
       <BackLink to="/dom/miage" label="Cours MIAGE" /><PageHead eyebrow={sj.cr ? `${sj.cr} crédits · ${sj.ch} h de cours` : 'Organisation'} title={sj.name} />
       <section className="card"><div className="sectionhead"><h2>Progression</h2><span className="mono muted">{p.n ? Math.round((100 * p.hd) / p.h) : 0}%</span></div><Bar pct={p.n ? (100 * p.hd) / p.h : 0} domain="miage" />
-        <p className="muted" style={{ marginTop: 10 }}>{p.d} tâches sur {p.n} faites · {hours(p.h * 60 - p.hd * 60)} restantes{p.late ? <> · <b style={{ color: 'var(--c-sport)' }}>{p.late} en retard</b></> : null}.</p></section>
+        <p className="muted" style={{ marginTop: 10 }}>{p.d} tâches sur {p.n} faites · {hours(p.h * 60 - p.hd * 60)} restantes{p.late ? <> · <b style={{ color: 'var(--late)' }}>{p.late} en retard</b></> : null}.</p></section>
       <section className="card"><h2>À faire</h2><div className="list" style={{ marginTop: 8 }}>{todo.length ? todo.map(row) : <p className="muted">Tout est fait. Bravo.</p>}</div></section>
       {done.length > 0 && <section className="card"><h2>Terminé</h2><div className="list" style={{ marginTop: 8 }}>{done.map(row)}</div></section>}
     </>
@@ -72,7 +72,7 @@ function Page({ sub }: { sub?: string }) {
           const p = ms.per[sj.id], pc = p.h ? Math.round((100 * p.hd) / p.h) : 0;
           return (
             <Link key={sj.id} className="go" style={dc('miage')} to={`/dom/miage/${sj.id}`}>
-              <div><div style={{ fontWeight: 700 }}>{sj.name}</div><div className="muted" style={{ fontSize: 14 }}>{p.d} / {p.n} tâches{p.late ? <> · <span style={{ color: 'var(--c-sport)' }}>{p.late} en retard</span></> : null}</div></div>
+              <div><div style={{ fontWeight: 700 }}>{sj.name}</div><div className="muted" style={{ fontSize: 14 }}>{p.d} / {p.n} tâches{p.late ? <> · <span style={{ color: 'var(--late)' }}>{p.late} en retard</span></> : null}</div></div>
               <span className="arrow">›</span><Bar pct={pc} domain="miage" />
             </Link>
           );

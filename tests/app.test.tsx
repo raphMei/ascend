@@ -1,6 +1,10 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FRIDAY_NIGHT, TUESDAY, renderApp } from './helpers';
+import * as push from '@/services/push';
+
+vi.mock('@/services/push', async (orig) => ({ ...(await orig<typeof import('@/services/push')>()), readEnv: vi.fn(() => ({ hasServiceWorker: true, hasPushManager: true, hasNotification: true, permission: 'default', standalone: true, ios: true })), currentSubscription: vi.fn(async () => null), enablePush: vi.fn(), disablePush: vi.fn(), showTestNotification: vi.fn(async () => {}), VAPID_PUBLIC_KEY: 'cle-test' }));
+const env = (o: Partial<ReturnType<typeof push.readEnv>> = {}) => ({ hasServiceWorker: true, hasPushManager: true, hasNotification: true, permission: 'default' as const, standalone: true, ios: true, ...o });
 
 describe('connexion', () => {
   it('affiche l\'écran de connexion quand personne n\'est connecté, puis lance Google', async () => {
@@ -35,8 +39,9 @@ describe('aujourd\'hui', () => {
     expect(box).not.toBeChecked();
     await userEvent.click(box);
     expect(box).toBeChecked();
-    expect(writes.days).toHaveLength(1);
-    const [date, patch] = writes.days[0];
+    const mine = writes.days.filter(([d]) => d === TUESDAY.today);
+    expect(mine).toHaveLength(1);
+    const [date, patch] = mine[0];
     expect(date).toBe(TUESDAY.today);
     expect(patch).toMatchObject({ done: { tephila: true }, stats: { dn: 20 } });
   });
@@ -45,15 +50,16 @@ describe('aujourd\'hui', () => {
     const { writes } = renderApp({ hash: '#/today' });
     const input = await screen.findByLabelText('Poids (kg)');
     await userEvent.type(input, '86.5');
-    expect(writes.days).toHaveLength(0);
+    const today = () => writes.days.filter(([d]) => d === TUESDAY.today);
+    expect(today()).toHaveLength(0);
     await userEvent.tab();
-    expect(writes.days).toEqual([[TUESDAY.today, { weight: 86.5 }]]);
+    expect(today()).toEqual([[TUESDAY.today, { weight: 86.5 }]]);
   });
 
   it('+ 500 ml ajoute à l\'eau déjà bue', async () => {
     const { writes } = renderApp({ hash: '#/today', seed: { days: { [TUESDAY.today]: { water: 1000 } } } });
     await userEvent.click(await screen.findByRole('button', { name: '+ 500 ml' }));
-    expect(writes.days[0][1]).toEqual({ water: 1500 });
+    expect(writes.days.filter(([d]) => d === TUESDAY.today).map(([, p]) => p)).toEqual([{ water: 1500 }]);
   });
 
   it('navigue au jour précédent', async () => {
@@ -164,5 +170,235 @@ describe('synchronisation', () => {
     await screen.findByRole('heading', { name: 'Salut Raphaël' });
     act(() => ref.listener!.onError('permission-denied'));
     expect(await screen.findByText('Synchronisation interrompue (permission-denied)')).toBeInTheDocument();
+  });
+});
+
+describe('écriture refusée', () => {
+  it('rétablit la valeur d\'avant et prévient (retour arrière)', async () => {
+    const { failWrites } = renderApp({ hash: '#/today' });
+    const box = await screen.findByRole('checkbox', { name: 'Téphila' });
+    failWrites.on = true;
+    await userEvent.click(box);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enregistrement impossible');
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Téphila' })).not.toBeChecked());
+  });
+});
+
+describe("rattrapage et fenêtre d'historique", () => {
+  it('enregistre les stats des jours passés une seule fois, sans toucher aux jours qui en ont', async () => {
+    const seeded = { stats: { pct: 50, pl: 100, dn: 50, planned: {}, done: {} } };
+    const { writes } = renderApp({ seed: { days: { '2026-11-02': seeded } } });
+    await screen.findByRole('heading', { name: 'Salut Raphaël' });
+    await waitFor(() => expect(writes.days.length).toBeGreaterThan(0));
+    const dates = writes.days.map(([d]) => d);
+    expect(dates).toContain('2026-11-01');
+    expect(dates).not.toContain('2026-11-02');
+    expect(new Set(dates).size).toBe(dates.length);
+    writes.days.forEach(([, patch]) => expect(Object.keys(patch)).toEqual(['stats']));
+  });
+
+  it('ne charge qu\'une fenêtre d\'historique au démarrage', async () => {
+    const { startedFrom } = renderApp();
+    await screen.findByRole('heading', { name: 'Salut Raphaël' });
+    expect(startedFrom.value).toMatch(/^\d{4}-\d\d-\d\d$/);
+    const days = (Date.now() - new Date(startedFrom.value + 'T12:00:00Z').getTime()) / 86400000;
+    expect(Math.round(days)).toBeGreaterThanOrEqual(179);
+    expect(Math.round(days)).toBeLessThanOrEqual(181);
+  });
+});
+
+describe('édition libre des blocs', () => {
+  const todayWrites = (writes: { days: [string, Record<string, unknown>][] }) => writes.days.filter(([d, p]) => d === TUESDAY.today && 'edits' in p).map(([, p]) => p);
+
+  it('déplacer un créneau enregistre le nouvel horaire', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('button', { name: 'Modifier Séance : Pousser' }).catch(() => screen.findByRole('button', { name: /Modifier Séance/ })));
+    const dialog = await screen.findByRole('dialog');
+    const start = within(dialog).getByLabelText('Début');
+    fireEvent.change(start, { target: { value: '19:30' } });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
+    expect(todayWrites(writes)).toEqual([{ edits: { move: { sport: { start: 1170, end: 1215 } } } }]);
+  });
+
+  it('passer un bloc le retire de la frise et propose de le rétablir', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('button', { name: /Modifier Séance/ }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /Passer ce bloc/ }));
+    expect(todayWrites(writes)).toEqual([{ edits: { skip: { sport: true } } }]);
+    expect(screen.queryByRole('checkbox', { name: /Séance/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Rétablir' }));
+    expect(await screen.findByRole('checkbox', { name: /Séance/ })).toBeInTheDocument();
+  });
+
+  it('ajouter un bloc à la main', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('button', { name: '+ Ajouter un bloc' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Titre'), 'Dentiste');
+    fireEvent.change(within(dialog).getByLabelText('Début'), { target: { value: '21:00' } });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Ajouter' }));
+    const [edit] = todayWrites(writes) as { edits: { extra: Record<string, { title: string; start: number; end: number }> } }[];
+    expect(Object.values(edit.edits.extra)[0]).toMatchObject({ title: 'Dentiste', start: 1260, end: 1290 });
+    expect(await screen.findByRole('checkbox', { name: 'Dentiste' })).toBeInTheDocument();
+  });
+
+  it('refuse un bloc sans titre', async () => {
+    renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('button', { name: '+ Ajouter un bloc' }));
+    expect(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Ajouter' })).toBeDisabled();
+  });
+
+  it('Échap ferme la fenêtre', async () => {
+    renderApp({ hash: '#/today' });
+    await userEvent.click(await screen.findByRole('button', { name: '+ Ajouter un bloc' }));
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('rappel de saisie', () => {
+  it('invite à saisir poids et nuit après le réveil, puis disparaît quand c\'est fait', async () => {
+    renderApp({ hash: '#/today' });
+    expect(await screen.findByRole('status')).toHaveTextContent('ton poids et ta nuit');
+  });
+  it('absent si tout est saisi', async () => {
+    renderApp({ hash: '#/today', seed: { days: { [TUESDAY.today]: { weight: 80, sleep: { bed: '22:30', wake: '06:00' } } } } });
+    await screen.findByRole('checkbox', { name: 'Téphila' });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+describe('poids : objectif et historique', () => {
+  it('l\'objectif de poids est enregistré depuis les réglages', async () => {
+    const { writes } = renderApp({ hash: '#/settings' });
+    const input = await screen.findByLabelText('Poids visé (kg)');
+    fireEvent.change(input, { target: { value: '82' } });
+    fireEvent.blur(input);
+    expect(writes.settings).toEqual([{ weightGoal: 82 }]);
+  });
+  it('« 1 an » charge l\'historique plus ancien à la demande', async () => {
+    const { history } = renderApp({ hash: '#/dom/alim' });
+    await userEvent.click(await screen.findByRole('button', { name: '1 an' }));
+    expect(history).toHaveLength(1);
+    expect(history[0]).toBe('2025-11-03');   // 365 jours avant l'horloge figée (3 nov. 2026)
+  });
+  it('« 30 jours » ne charge rien de plus', async () => {
+    const { history } = renderApp({ hash: '#/dom/alim' });
+    await screen.findByRole('button', { name: '30 jours' });
+    expect(history).toHaveLength(0);
+  });
+});
+
+describe('nouveaux domaines', () => {
+  it('onze domaines dans « Mes domaines »', async () => {
+    renderApp({ hash: '#/domains' });
+    for (const name of ['Dev front', 'Anglais', 'Lecture', 'Finances', 'Projets perso']) expect(await screen.findByRole('heading', { level: 3, name })).toBeInTheDocument();
+  });
+
+  it('un domaine sans créneau propose de l\'activer dans les réglages', async () => {
+    renderApp({ hash: '#/dom/anglais' });
+    expect(await screen.findByRole('note')).toHaveTextContent('Active-le dans Réglages › Mes domaines');
+  });
+
+  it('activer l\'anglais ajoute un bloc cochable à la journée', async () => {
+    renderApp({ hash: '#/today/2026-10-14', seed: { settings: { anglaisMin: 20 } } });
+    expect(await screen.findByRole('checkbox', { name: 'Anglais' })).toBeInTheDocument();
+  });
+
+  it('réglage : les minutes d\'un domaine sont enregistrées', async () => {
+    const { writes } = renderApp({ hash: '#/settings' });
+    const input = await screen.findByLabelText('Lecture (min)');
+    fireEvent.change(input, { target: { value: '25' } });
+    fireEvent.blur(input);
+    expect(writes.settings).toEqual([{ lectureMin: 25 }]);
+  });
+
+  it('lecture : les pages lues sont enregistrées dans le jour', async () => {
+    const { writes } = renderApp({ hash: '#/dom/lecture' });
+    const input = await screen.findByLabelText("Pages lues aujourd'hui");
+    fireEvent.change(input, { target: { value: '18' } });
+    fireEvent.blur(input);
+    expect(writes.days.filter(([d]) => d === TUESDAY.today).map(([, p]) => p)).toEqual([{ pages: 18 }]);
+  });
+
+  it('anglais : le score TOEIC est enregistré avec la date', async () => {
+    const { writes } = renderApp({ hash: '#/dom/anglais' });
+    const input = await screen.findByLabelText("Score du test d'aujourd'hui");
+    fireEvent.change(input, { target: { value: '720' } });
+    fireEvent.blur(input);
+    expect(writes.progress).toEqual([{ toeic: { [TUESDAY.today]: 720 } }]);
+  });
+
+  it('finances : cocher une étape du mois et saisir l\'épargne', async () => {
+    const { writes } = renderApp({ hash: '#/dom/finances' });
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Budget du mois revu' }));
+    expect(writes.progress[0]).toEqual({ done: { 'fin:2026-11:budget': true } });
+    const input = screen.getByLabelText('Épargné ce mois (€)');
+    fireEvent.change(input, { target: { value: '300' } });
+    fireEvent.blur(input);
+    expect(writes.progress.at(-1)).toEqual({ finance: { '2026-11': { savings: 300 } } });
+  });
+
+  it('projets : ajouter, changer le statut, ajouter du temps, supprimer', async () => {
+    const { writes } = renderApp({ hash: '#/dom/projets' });
+    await userEvent.type(await screen.findByLabelText('Nom'), 'Site client');
+    await userEvent.type(screen.getByLabelText('Première action concrète'), 'Maquette');
+    await userEvent.click(screen.getByRole('button', { name: 'Ajouter le projet' }));
+    const created = Object.values((writes.progress[0] as { projects: Record<string, unknown> }).projects)[0];
+    expect(created).toMatchObject({ name: 'Site client', next: 'Maquette', status: 'actif', minutes: 0 });
+    await userEvent.click(await screen.findByRole('button', { name: '+ 30 min' }));
+    expect(Object.values((writes.progress[1] as { projects: Record<string, unknown> }).projects)[0]).toEqual({ minutes: 30 });
+    await userEvent.selectOptions(screen.getByLabelText('Statut'), 'pause');
+    expect(Object.values((writes.progress[2] as { projects: Record<string, unknown> }).projects)[0]).toEqual({ status: 'pause' });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+    expect(Object.values((writes.progress[3] as { projects: Record<string, unknown> }).projects)[0]).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Site client')).not.toBeInTheDocument());
+  });
+
+  it('dev front : une phase se parcourt et se coche', async () => {
+    const { writes } = renderApp({ hash: '#/dom/front/f1' });
+    await userEvent.click((await screen.findAllByRole('checkbox'))[0]);
+    expect(writes.progress[0]).toEqual({ done: { f1t1: true } });
+  });
+});
+
+describe('rappels (notifications)', () => {
+  beforeEach(() => { vi.mocked(push.readEnv).mockReturnValue(env()); vi.mocked(push.currentSubscription).mockResolvedValue(null); });
+
+  it('iPhone hors écran d\'accueil : explique comment installer l\'application', async () => {
+    vi.mocked(push.readEnv).mockReturnValue(env({ standalone: false }));
+    renderApp({ hash: '#/settings' });
+    expect(await screen.findByText(/Sur iPhone, les notifications ne marchent que pour une application ajoutée/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Activer les rappels' })).not.toBeInTheDocument();
+  });
+
+  it('activer : demande l\'autorisation puis enregistre l\'abonnement dans Firestore', async () => {
+    vi.mocked(push.enablePush).mockResolvedValue({ id: 'abc123', sub: { endpoint: 'https://push/x', keys: { p256dh: 'p', auth: 'a' }, created: 'now', ua: 'test' } });
+    const { writes } = renderApp({ hash: '#/settings' });
+    await userEvent.click(await screen.findByRole('button', { name: 'Activer les rappels' }));
+    await waitFor(() => expect(writes.push).toEqual([{ subscriptions: { abc123: expect.objectContaining({ endpoint: 'https://push/x' }) } }]));
+    expect(await screen.findByText('Rappels activés sur cet appareil.')).toBeInTheDocument();
+  });
+
+  it('autorisation refusée : message clair, rien d\'enregistré', async () => {
+    vi.mocked(push.enablePush).mockRejectedValue(new Error('permission-denied'));
+    const { writes } = renderApp({ hash: '#/settings' });
+    await userEvent.click(await screen.findByRole('button', { name: 'Activer les rappels' }));
+    expect(await screen.findByText(/Autorisation refusée/)).toBeInTheDocument();
+    expect(writes.push).toEqual([]);
+  });
+
+  it('actifs : choix des rappels par type, désactivation retire l\'abonnement', async () => {
+    vi.mocked(push.readEnv).mockReturnValue(env({ permission: 'granted' }));
+    vi.mocked(push.currentSubscription).mockResolvedValue({ endpoint: 'e' } as PushSubscription);
+    vi.mocked(push.disablePush).mockResolvedValue('abc123');
+    const { writes } = renderApp({ hash: '#/settings' });
+    const sport = await screen.findByRole('checkbox', { name: 'Séance de sport' });
+    expect(sport).toBeChecked();
+    await userEvent.click(sport);
+    expect(writes.settings).toEqual([{ reminders: { sport: false } }]);
+    await userEvent.click(screen.getByRole('button', { name: 'Désactiver sur cet appareil' }));
+    await waitFor(() => expect(writes.push).toEqual([{ subscriptions: { abc123: null } }]));
   });
 });

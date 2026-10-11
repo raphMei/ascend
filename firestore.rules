@@ -1,10 +1,21 @@
 rules_version = '2';
-// Règles publiées dans la console Firebase (référence versionnée ici) :
-// chaque utilisateur ne lit et n'écrit que ses propres données, et seulement connecté.
+// Règles Firestore d'Ascend. Référence versionnée : à publier dans la console Firebase
+// (Firestore › Règles) ou avec `npx firebase deploy --only firestore:rules --project ascend-raphael`.
+//
+// Chacun ne lit et n'écrit que ses propres données, seulement connecté, et seulement dans les quatre
+// collections connues. Le script d'envoi des rappels utilise un compte de service (il contourne ces règles).
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+
+    // Une journée : l'identifiant est une date AAAA-MM-JJ.
+    match /users/{uid}/days/{date} {
+      allow read: if owner(uid);
+      allow write: if owner(uid) && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
+    // Réglages, progression, abonnements aux notifications : un seul document « main » chacun.
+    match /users/{uid}/settings/main { allow read, write: if owner(uid); }
+    match /users/{uid}/progress/main { allow read, write: if owner(uid); }
+    match /users/{uid}/push/main { allow read, write: if owner(uid); }
   }
 }

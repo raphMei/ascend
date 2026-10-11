@@ -3,3 +3,8 @@ dist
 .DS_Store
 *.local
 coverage
+firestore-debug.log
+ui-debug.log
+firebase-debug.log
+test-results
+playwright-report

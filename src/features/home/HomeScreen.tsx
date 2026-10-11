@@ -88,7 +88,7 @@ export function HomeScreen() {
       <div className="grid two">
         <section className="card">
           <div className="sectionhead"><h2>Cours MIAGE</h2><span className="mono muted">{ms.pct}%</span></div><Bar pct={ms.pct} domain="miage" />
-          <p className="muted" style={{ marginTop: 10 }}>{ms.g.d} tâches sur {ms.g.n} faites{ms.g.late ? <> · <b style={{ color: 'var(--c-sport)' }}>{ms.g.late} en retard</b></> : ' · à jour'}.</p>
+          <p className="muted" style={{ marginTop: 10 }}>{ms.g.d} tâches sur {ms.g.n} faites{ms.g.late ? <> · <b style={{ color: 'var(--late)' }}>{ms.g.late} en retard</b></> : ' · à jour'}.</p>
           <Link className="btn small" style={{ display: 'inline-block', marginTop: 12, textDecoration: 'none' }} to="/dom/miage">Ouvrir mes cours</Link>
         </section>
         <section className="card">

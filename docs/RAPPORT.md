@@ -1,43 +1,62 @@
-# Rapport de migration React — et ce qu'il reste à faire
+# Rapport : ce qui est fait, ce qu'il reste à faire
 
-## Ce qui est fait
+## Fait
 
-- **Pile** : React 18 + TypeScript strict + Vite + React Router (HashRouter : les anciennes adresses `#/today/…` fonctionnent toujours) + Vitest / Testing Library + ESLint.
-- **Logique métier conservée à l'identique** : l'empreinte du planning de chaque jour du 8 oct. 2026 au 28 févr. 2027 est la même qu'avant la migration (`tests/planning.golden.test.ts`).
-- **Modèle Firestore inchangé** (`days`, `settings/main`, `progress/main`), même config Firebase, mêmes règles.
-- **Architecture en couches** (voir `ARCHITECTURE.md`), registre de domaines, backend interchangeable (Firebase / démo).
-- **Corrections au passage** : tâches non mutées (calcul pur mémoïsé, recalculé si les réglages changent — avant, il restait figé sur les réglages du premier rendu) ; saisie sans perte de focus ni écriture à chaque frappe ; champ de réglage vidé ignoré au lieu de passer à 0 ; cases à cocher avec libellé (lecteurs d'écran).
-- **Qualité** : `npm run check` = types + lint + 52 tests (logique, réducteur, application complète avec faux backend). CI sur chaque branche, et le déploiement s'arrête si un test échoue.
-- **Vérifié dans un navigateur** (build de production, mode démo, 400 px et bureau) : navigation, cocher une case, saisie du poids persistée, six pages de domaine, sous-pages MIAGE/Java, réglages, aucune erreur console, aucun débordement horizontal. L'écran de connexion Firebase s'affiche (SDK chargé).
+**Fiabilité des données**
+- La collection `days` n'est plus lue en entier : fenêtre de 180 jours au démarrage, historique plus long chargé à la demande (graphique de poids « 90 jours / 1 an »).
+- Écriture refusée : la valeur d'avant est rétablie et un message le dit (avant : l'écran gardait une valeur fausse).
+- Stats des jours passés sans case cochée : rattrapées automatiquement (une fois par jour, jamais avant le 8 oct. 2026).
+- Règles de sécurité resserrées (`firestore.rules`) : quatre collections connues, identifiant de jour = date. **À publier** (voir plus bas).
 
-## Ce que je n'ai PAS pu vérifier (à faire par toi, dans cet ordre)
+**Tests de bout en bout**
+- Chromium iPhone + bureau sur le site de production : navigation, persistance après rechargement, Chabbat, PWA, aucun débordement horizontal.
+- **Accessibilité (axe)** sur 13 écrans, clair et sombre : elle a trouvé de vrais défauts de contraste en thème clair (orange du bouton principal, rouge des retards), corrigés.
+- **Émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections inconnues refusées, requête fenêtrée autorisée) et script d'envoi des rappels de bout en bout.
+- CI : trois jobs sur chaque branche (types/lint/tests, Chromium, émulateur).
 
-1. **Source GitHub Pages** : Settings → Pages → *Build and deployment* → Source = **GitHub Actions**. Sans ça, le workflow construit mais rien n'est publié (le site continuerait de servir les fichiers bruts du dépôt).
-2. **Connexion Google réelle** sur `https://raphmei.github.io/ascend/` (je ne peux pas me connecter à ta place). Si `auth/unauthorized-domain` : Firebase → Authentication → Settings → Authorized domains → ajouter `raphmei.github.io`.
-3. **Synchro iPhone ↔ Mac** : cocher une case sur l'un, vérifier qu'elle apparaît sur l'autre en quelques secondes.
-4. **Ajout à l'écran d'accueil iOS** : le manifest et les icônes ont changé de chemin (`icon-192.png` etc. à la racine du site). Si l'icône ne s'affiche pas, supprimer puis rajouter l'app à l'écran d'accueil.
-5. **Règles Firestore** : `firestore.rules` est la référence versionnée ; vérifier qu'elle correspond à ce qui est publié dans la console.
-6. **Valeurs par défaut non confirmées** : jours sur site mardi + jeudi, 2 700 kcal, 160 g de protéines, 3 L d'eau, 7 h 30 de sommeil, Java 2 h/jour, coucher 22 h 30. Les heures de Chabbat (≈ coucher du soleil − 18 / + 45 min) sont à comparer à ton calendrier.
+**Planning**
+- Édition libre : déplacer un créneau, le passer, rétablir, **ajouter un bloc** à la main (avertissement en cas de chevauchement ou de bloc pendant Chabbat).
+- Petites tâches MIAGE consécutives regroupées sous une ligne repliable.
+- Objectif de poids (pointillés sur la courbe), rappel de saisie du poids et de la nuit, graphique de poids sur 30 / 90 / 365 jours.
 
-## Dette technique connue (par priorité)
+**Nouveaux domaines** (désactivés par défaut ; minutes par jour dans Réglages › Mes domaines)
+- **Anglais** : séance du jour qui tourne sur quatre exercices, scores TOEIC avec courbe et objectif.
+- **Lecture** : livre en cours, pages par jour, courbe, régularité.
+- **Dev front** : parcours de 9 phases (HTML → React testé → portfolio), même mécanique que Java.
+- **Finances** : point mensuel (4 étapes à cocher), épargne et investissement saisis, courbes 6 mois. Aucun conseil financier.
+- **Projets perso** : projets avec prochaine action, statut, temps passé ; le bloc quotidien affiche la prochaine action.
 
-| # | Sujet | Pourquoi c'est important | Piste |
-|---|---|---|---|
-| 1 | **La collection `days` est lue en entier** à chaque démarrage | Le coût et le temps de chargement croissent chaque jour | Requête bornée (ex. 120 derniers jours) + chargement à la demande pour l'historique |
-| 2 | **Pas de retour arrière si une écriture échoue** | L'écran montre la valeur optimiste alors que Firestore a refusé (règles, réseau) ; seul le bandeau d'erreur le signale | Annuler le patch local ou réessayer ; file d'écritures |
-| 3 | **Instantané `stats` écrit seulement quand on coche** | Un jour sans case cochée n'a pas de stats (série et graphiques le voient comme « raté » ; les jours passés ne reflètent pas un changement de planning) | Écrire l'instantané en fin de journée, ou le recalculer |
-| 4 | **Pas de test de bout en bout réel** | Les tests utilisent un faux backend : Firebase, règles de sécurité et PWA ne sont pas couverts | Émulateur Firebase + tests des règles ; Playwright sur le site déployé |
-| 5 | **Firebase 10.14.1** | Les 11 alertes `npm audit` viennent de dépendances Node de Firebase (`grpc-js`, `undici`) qui ne sont pas dans le code envoyé au navigateur ; la montée de version change le poids (≈ +70 Ko gzip en v13) et le comportement de connexion | Monter de version dans une branche et tester la connexion sur iPhone |
-| 6 | **Latitude / longitude de Chabbat fixes** | Calcul pour Deuil-la-Barre uniquement ; les champs existent dans les réglages mais pas dans l'interface | Ajouter la saisie, ou la géolocalisation |
-| 7 | **Polices Google en ligne** (Syne, DM Sans, DM Mono) | Dépendance réseau et suivi tiers | Auto-héberger les polices |
-| 8 | **Pas d'audit d'accessibilité complet** | Cibles tactiles ≥ 44 px et libellés des cases ok ; contraste, focus et lecteur d'écran non audités | Passage axe / Lighthouse |
-| 9 | **Critères de validation Java (`d`) jamais affichés** | La donnée existe dans le parcours mais l'écran ne la montre pas | L'afficher sous chaque étape |
-| 10 | **Conflits multi-appareils** : dernier écrivain gagne, champ par champ | Acceptable pour un seul utilisateur | Rien à faire sauf usage simultané intensif |
-| 11 | **Styles globaux** (CSS partagé) | Fonctionne et reste identique à la v1, mais un composant peut casser un autre | Modules CSS / Tailwind si l'interface grossit |
+**Rappels** (routine, sport, bilan du soir, saisie) : service worker, abonnement, envoi toutes les 20 minutes par GitHub Actions (gratuit), jamais pendant Chabbat, jamais de doublon. Mise en route : `RAPPELS.md`.
 
-## Fonctionnalités à venir (feuille de route d'origine)
+**Contenu MIAGE** : mécanisme prêt (un fichier par matière remplace les tâches génériques ; jalons, examen). Mode d'emploi : `CONTENU-MIAGE.md`.
 
-1. **Rappels / notifications** (priorité haute) : Web Push iOS (PWA ajoutée à l'écran d'accueil, iOS 16.4+) avec un envoi serveur. Cloud Functions exige l'offre Blaze : alternatives gratuites = cron GitHub Actions qui lit Firestore (compte de service) et envoie via Web Push, ou service tiers. Doit respecter Chabbat. Demande un service worker (aujourd'hui volontairement absent).
-2. **Nouveaux domaines** : dev front, anglais (TOEIC), finances / investissement, projets perso / freelance, lecture → procédure en 5 étapes dans `ARCHITECTURE.md`.
-3. **Contenu précis des dix matières MIAGE** à la place des tâches génériques (`src/content/miage/tasks.ts`) : dès que tu m'envoies le plan de chaque matière.
-4. **Améliorations** : édition libre des blocs du planning, regroupement des petites tâches consécutives, rappel de saisie poids / sommeil, objectif de poids, historique plus long, hors-ligne (service worker, ex. `vite-plugin-pwa`).
+## À faire par toi (je ne peux pas le faire à ta place)
+
+1. **Pousser** ce lot (commandes dans le message de fin de session).
+2. **Publier les nouvelles règles Firestore** : console Firebase › Firestore › Règles › coller `firestore.rules` › Publier (ou `npx firebase deploy --only firestore:rules --project ascend-raphael` après `npx firebase login`). Tant que ce n'est pas fait, les anciennes règles (plus larges) restent actives : l'application fonctionne dans les deux cas.
+3. **Source GitHub Pages = GitHub Actions** (Settings › Pages), si pas déjà fait.
+4. **Activer les rappels** : suivre `RAPPELS.md` (clés VAPID, compte de service, 4 secrets/variables GitHub, ajout à l'écran d'accueil de l'iPhone, activation dans Réglages).
+5. **Tester sur l'iPhone et le Mac** (jamais fait en réel) : connexion Google sur `https://raphmei.github.io/ascend/`, une case cochée visible sur l'autre appareil, une notification de test.
+6. **M'envoyer le programme de chaque matière MIAGE** (liste des séances, dates de contrôle, format d'examen) : je remplis `src/content/miage/plans/`.
+7. **Activer les domaines voulus** dans Réglages › Mes domaines (minutes par jour) et renseigner livre en cours, score TOEIC visé, poids visé.
+8. Valider les **valeurs par défaut** non confirmées (jours sur site, objectifs, 22 h 30) et les **heures de Chabbat** avec ton calendrier.
+
+## Reste à faire côté code (par priorité)
+
+| # | Sujet | Détail |
+|---|---|---|
+| 1 | **Firebase 10.14.1** | Montée de version non faite volontairement : elle change le poids du site (≈ +70 Ko gzip en v13) et le comportement de la connexion, qui ne peut se tester que sur ton iPhone. Les alertes `npm audit` viennent de dépendances Node de Firebase, absentes du code envoyé au navigateur. À faire dans une branche, une fois l'étape 5 validée. |
+| 2 | **Connexion Google non automatisable** | Les tests couvrent le chargement du SDK, l'écran de connexion, les règles et l'envoi des rappels. Le flux OAuth réel ne l'est pas (il faudrait l'émulateur Auth avec une version de l'application branchée dessus). |
+| 3 | **Journée exceptionnelle** | Les blocs de travail et de trajet ne sont pas modifiables (congé, maladie, télétravail exceptionnel) : seuls les blocs « pour toi » le sont. |
+| 4 | **Rappels plus riches** | Pas encore de rappel pour les tâches MIAGE en retard, les échéances, ni pour les nouveaux domaines. Précision de ±20 minutes (planificateur GitHub). |
+| 5 | **Stats dépendantes du plan actuel** | Un instantané est figé à l'écriture ; si tu changes tes réglages (jours sur site…), les jours passés ne sont pas recalculés. |
+| 6 | **Lat / long de Chabbat fixes** | Calcul pour Deuil-la-Barre ; champs existants mais pas dans l'interface. |
+| 7 | **Polices Google en ligne** | Dépendance réseau et suivi tiers : à auto-héberger. |
+| 8 | **Hors-ligne** | Toujours volontairement absent (le service worker ne gère que les notifications). |
+| 9 | **Critères de validation Java (`d`)** | Affichés pour le parcours Java et Dev front depuis cette version ; vérifier qu'ils te conviennent. |
+| 10 | **Suppression d'un projet** utilise la boîte de confirmation du navigateur | À remplacer par une confirmation intégrée si tu veux un rendu homogène. |
+| 11 | **Conflits multi-appareils** | Dernier écrivain gagne, champ par champ : acceptable pour un seul utilisateur. |
+
+## Pas fait, et pourquoi
+- **Contenu précis des 10 matières MIAGE** : je ne l'ai pas, et je ne l'invente pas. Le mécanisme est prêt.
+- **Conseils financiers** : volontairement exclus ; l'application suit tes chiffres et tes habitudes.

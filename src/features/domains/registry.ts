@@ -7,6 +7,11 @@ import { alim } from './alim';
 import { sommeil } from './sommeil';
 import { miage } from './miage';
 import { java } from './java';
+import { front } from './front';
+import { anglais } from './anglais';
+import { lecture } from './lecture';
+import { finances } from './finances';
+import { projets } from './projets';
 
-export const DOMAIN_MODULES: DomainModule[] = [matin, sport, alim, sommeil, miage, java];
+export const DOMAIN_MODULES: DomainModule[] = [matin, sport, alim, sommeil, miage, java, front, anglais, lecture, finances, projets];
 export const findDomain = (id: string | undefined): DomainModule | undefined => DOMAIN_MODULES.find((d) => d.id === id);

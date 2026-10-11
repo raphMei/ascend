@@ -10,7 +10,8 @@ export async function createBackend(): Promise<{ backend: Backend; loadError?: s
     const inert: Backend = {
       async start(l) { l.onAuth(null); },
       signIn: async () => { window.location.reload(); },
-      signOut: async () => {}, writeDay() {}, writeSettings() {}, writeProgress() {}
+      signOut: async () => {}, loadHistory() {},
+      writeDay: async () => {}, writeSettings: async () => {}, writeProgress: async () => {}, writePush: async () => {}
     };
     return { backend: inert, loadError: 'chargement de Firebase impossible (' + (e instanceof Error ? e.message : String(e)) + ')' };
   }

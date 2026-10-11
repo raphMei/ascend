@@ -9,7 +9,7 @@ export function TrackerFields({ date }: { date: ISODate }) {
   const D = state.days[date] ?? {};
   const sl = D.sleep ?? {};
   const slDur = sl.bed && sl.wake ? sleepDuration(sl.bed, sl.wake) : null;
-  const save = (key: 'weight' | 'water' | 'kcal' | 'protein') => (v: string | number | null) => setDay(date, { [key]: v });
+  const save = (key: 'weight' | 'water' | 'kcal' | 'protein' | 'pages') => (v: string | number | null) => setDay(date, { [key]: v });
   const saveSleep = (key: 'bed' | 'wake') => (v: string | number | null) => setDay(date, { sleep: { [key]: v } });
   const addWater = (ml: number) => setDay(date, { water: (D.water ?? 0) + ml });
   return (
@@ -21,6 +21,7 @@ export function TrackerFields({ date }: { date: ISODate }) {
         <label className="f">Protéines (g)<CommitInput type="number" inputMode="numeric" step={1} min={0} value={D.protein} placeholder={String(s.protGoal)} onCommit={save('protein')} /></label>
         <label className="f">Coucher (la veille)<CommitInput type="time" value={sl.bed} onCommit={saveSleep('bed')} /></label>
         <label className="f">Lever<CommitInput type="time" value={sl.wake} onCommit={saveSleep('wake')} /></label>
+        {s.lectureMin >= 5 && <label className="f">Pages lues<CommitInput type="number" inputMode="numeric" step={1} min={0} value={D.pages} onCommit={save('pages')} /></label>}
         {slDur != null && <div className="f">Sommeil<div style={{ font: '700 22px DM Sans', color: 'var(--ink)', paddingTop: 8 }}>{hours(slDur)}</div></div>}
       </div>
       <div className="quick">

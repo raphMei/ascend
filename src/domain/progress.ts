@@ -28,3 +28,17 @@ export function jStats(prog: Progress) {
   let lvl = 0; if (done > 0) lvl = 1; if (coreDone >= 2) lvl = 2; if (coreDone >= 4) lvl = 3; if (coreDone >= core) lvl = 4; if (coreDone >= core && phasesDone >= 11) lvl = 5; if (phasesDone >= PHASES.length) lvl = 6;
   return { done, n: JT.length, pct: Math.round(100 * w / JAVA_HOURS), phasesDone, coreDone, core, level: LEVELS[lvl], next: LEVELS[lvl + 1] || null };
 }
+
+/** Avancement d'un parcours (dev front, ou tout parcours en phases) : niveau proportionnel au nombre de phases terminées. */
+export function pathStats(phases: Phase[], levels: string[], totalHours: number, prog: Progress) {
+  let done = 0, phasesDone = 0, coreDone = 0, w = 0, n = 0;
+  phases.forEach((p) => {
+    const s = phaseStats(p, prog);
+    done += s.d; n += s.n; w += (p.hours * s.d) / s.n;
+    if (s.status === 'done') { phasesDone++; if (p.core) coreDone++; }
+  });
+  const core = phases.filter((p) => p.core).length;
+  const top = levels.length - 1;
+  const lvl = done === 0 ? 0 : phasesDone >= phases.length ? top : Math.min(top - 1, 1 + Math.floor((phasesDone / phases.length) * (top - 1)));
+  return { done, n, pct: Math.round((100 * w) / totalHours), phasesDone, coreDone, core, level: levels[lvl], next: levels[lvl + 1] ?? null };
+}

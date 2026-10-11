@@ -3,6 +3,7 @@ import { CommitInput } from '@/components/CommitInput';
 import { PageHead } from '@/components/PageHead';
 import { exportData } from '@/services/exportData';
 import { useData } from '@/state/DataContext';
+import { RemindersCard } from './RemindersCard';
 
 const WEEK: [number, string][] = [[1, 'Lundi'], [2, 'Mardi'], [3, 'Mercredi'], [4, 'Jeudi'], [5, 'Vendredi']];
 const THEMES: [ThemeMode, string][] = [['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']];
@@ -49,6 +50,16 @@ export function SettingsScreen() {
           <label className="f">Protéines (g)<CommitInput type="number" value={s.protGoal} onCommit={num('protGoal')} /></label>
           <label className="f">Eau (ml)<CommitInput type="number" value={s.waterGoal} onCommit={num('waterGoal')} /></label>
           <label className="f">Sommeil (h)<CommitInput type="number" step={0.5} value={s.sleepGoal} onCommit={num('sleepGoal')} /></label>
+          <label className="f">Poids visé (kg)<CommitInput type="number" step={0.1} min={30} max={250} value={s.weightGoal} placeholder="facultatif" onCommit={(v) => setSettings({ weightGoal: v === '' ? null : v })} /></label>
+        </div>
+      </section>
+      <section className="card"><h2>Mes domaines</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Minutes par jour dans ton planning pour chaque domaine. 0 = désactivé : rien n'est ajouté à ta journée.</p>
+        <div className="fields">
+          <label className="f">Anglais (min)<CommitInput type="number" min={0} max={120} step={5} value={s.anglaisMin} onCommit={num('anglaisMin')} /></label>
+          <label className="f">Lecture (min)<CommitInput type="number" min={0} max={120} step={5} value={s.lectureMin} onCommit={num('lectureMin')} /></label>
+          <label className="f">Dev front (min)<CommitInput type="number" min={0} max={240} step={5} value={s.frontMin} onCommit={num('frontMin')} /></label>
+          <label className="f">Projets perso (min)<CommitInput type="number" min={0} max={240} step={5} value={s.projetsMin} onCommit={num('projetsMin')} /></label>
+          <label className="f">Point finances mensuel (min)<CommitInput type="number" min={0} max={120} step={5} value={s.financesMin} onCommit={num('financesMin')} /></label>
         </div>
       </section>
       <section className="card"><h2>Chabbat</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Heures calculées pour la région de Deuil-la-Barre. Ce sont des valeurs approchées : vérifie avec ton calendrier habituel et ajuste les minutes si besoin.</p>
@@ -57,6 +68,7 @@ export function SettingsScreen() {
           <label className="f">Sortie : minutes après le coucher du soleil<CommitInput type="number" value={s.havdalah} onCommit={num('havdalah')} /></label>
         </div>
       </section>
+      <RemindersCard />
       <section className="card"><h2>Apparence</h2>
         <div className="quick" style={{ marginTop: 8 }}>
           {THEMES.map(([k, n]) => <button key={k} type="button" className="btn small" aria-pressed={s.theme === k} style={s.theme === k ? { outline: '2px solid var(--accent)' } : undefined} onClick={() => setSettings({ theme: k })}>{n}</button>)}

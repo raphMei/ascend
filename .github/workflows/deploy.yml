@@ -20,6 +20,8 @@ jobs:
       - run: npm ci
       - run: npm run check          # types + lint + tests : un échec bloque la mise en ligne
       - run: npm run build
+        env:
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}   # clé publique des notifications (voir docs/RAPPELS.md)
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:

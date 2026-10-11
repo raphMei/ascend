@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { addDays, dow, fmtLong } from '@/core/dates';
-import { dur, hours } from '@/core/format';
+import { dur, hm, hours } from '@/core/format';
 import { DOM } from '@/domain/domains';
+import { groupSmallBlocks } from '@/domain/grouping';
 import type { DomainId } from '@/domain/types';
+import { AddBlock } from '@/components/BlockEditor';
 import { BlockRow } from '@/components/BlockRow';
+import { EntryReminder } from '@/components/EntryReminder';
 import { dc } from '@/components/Icon';
+import { useData } from '@/state/DataContext';
 import { PageHead } from '@/components/PageHead';
 import { TrackerFields } from '@/components/TrackerFields';
 import { useClock } from '@/hooks/useClock';
@@ -22,6 +27,10 @@ export function TodayScreen() {
   const doms: Partial<Record<DomainId, number>> = {};
   plan.blocks.filter((b) => b.checkable).forEach((b) => { doms[b.domain] = (doms[b.domain] ?? 0) + (b.end - b.start); });
   const trackable = dow(date) !== 6;
+  const { setDay } = useData();
+  const [adding, setAdding] = useState(false);
+  const items = groupSmallBlocks(plan.blocks);
+  const skipped = plan.skipped ?? [];
 
   return (
     <>
@@ -50,9 +59,36 @@ export function TodayScreen() {
       {plan.overflow.n > 0 && (
         <div className="warn"><b>Trop chargé aujourd'hui.</b> {plan.overflow.n} élément{plan.overflow.n > 1 ? 's' : ''} n'ont pas trouvé de place (≈ {hours(plan.overflow.min)}). Ils restent en retard et reviennent demain : décide ce que tu coupes ou ce que tu déplaces.</div>
       )}
+      {date === today && trackable && <EntryReminder date={date} />}
       <section className="tl" aria-label="Frise de la journée">
-        {plan.blocks.map((b) => <BlockRow key={b.id + b.start} block={b} date={date} today={today} now={now} />)}
+        {items.map((it) => it.kind === 'block'
+          ? <BlockRow key={it.block.id + it.block.start} block={it.block} date={date} today={today} now={now} />
+          : (
+            <div className="blk" key={'g' + it.start}>
+              <div className="time">{hm(it.start)}<small>{dur(it.end - it.start)}</small></div>
+              <div className="body" style={dc('miage')}>
+                <details className="group" style={{ gridColumn: '1 / -1' }}>
+                  <summary>{it.blocks.length} petites tâches MIAGE <span className="muted" style={{ fontWeight: 400 }}>· {it.blocks.filter((b) => b.done).length} faite{it.blocks.filter((b) => b.done).length > 1 ? 's' : ''} sur {it.blocks.length}</span></summary>
+                  <div className="tl">{it.blocks.map((b) => <BlockRow key={b.id} block={b} date={date} today={today} now={now} compact />)}</div>
+                </details>
+              </div>
+            </div>
+          ))}
       </section>
+      <div className="quick" style={{ marginTop: 0 }}>
+        <button type="button" className="btn" onClick={() => setAdding(true)}>+ Ajouter un bloc</button>
+      </div>
+      {skipped.length > 0 && (
+        <section className="card flat"><h2 style={{ fontSize: 18 }}>Blocs passés</h2>
+          <div className="list" style={{ marginTop: 6 }}>
+            {skipped.map((b) => (
+              <div className="row" key={b.id}><span className="muted">{b.title}</span>
+                <button type="button" className="btn small" onClick={() => setDay(date, { edits: { skip: { [b.id]: null } } })}>Rétablir</button></div>
+            ))}
+          </div>
+        </section>
+      )}
+      {adding && <AddBlock date={date} onClose={() => setAdding(false)} />}
       {trackable && <section className="card"><h2>Mes mesures du jour</h2><p className="muted" style={{ margin: '4px 0 14px' }}>Quelques chiffres suffisent. Ils alimentent tes graphiques.</p><TrackerFields date={date} /></section>}
     </>
   );

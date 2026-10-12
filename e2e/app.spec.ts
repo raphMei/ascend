@@ -13,13 +13,13 @@ const TUESDAY = new Date('2026-11-03T10:00:00');
 test.describe('application (mode démo)', () => {
   test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(TUESDAY); });
 
-  test('démarre sans erreur sur « Aujourd\'hui » (liste groupée), le bilan est dans l\'onglet Bilan', async ({ page }) => {
+  test('démarre sans erreur sur « Aujourd\'hui » (agenda), le bilan est accessible depuis la semaine', async ({ page }) => {
     const errors = consoleErrors(page);
     await page.goto('/ascend/?demo');
     await expect(page.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Semaine' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Soirée' })).toBeVisible();
-    await page.getByRole('button', { name: 'Bilan', exact: true }).click();
+    await expect(page.getByRole('list', { name: 'Agenda du jour' })).toBeVisible();
+    await page.evaluate(() => { location.hash = '#/home'; });
     await expect(page.getByRole('heading', { level: 1, name: 'Salut Raphaël' })).toBeVisible();
     await expect(page.getByText('Mode démo')).toBeVisible();
     expect(errors).toEqual([]);
@@ -57,10 +57,10 @@ test.describe('application (mode démo)', () => {
   test('navigation complète par la barre', async ({ page }) => {
     await page.goto('/ascend/?demo');
     await page.getByRole('button', { name: 'Domaines' }).click();
-    await expect(page.getByRole('heading', { name: 'Où je progresse' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeVisible();
     await page.getByRole('link', { name: /Cours MIAGE/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Cours MIAGE' })).toBeVisible();
-    await page.getByRole('button', { name: 'Réglages' }).click();
+    await page.getByRole('link', { name: 'Réglages' }).click();
     await expect(page.getByRole('heading', { name: 'Mon Ascend' })).toBeVisible();
   });
 
@@ -159,40 +159,57 @@ test.describe('ajustement automatique et Mon mois', () => {
   });
 });
 
-test.describe('liste d\'habitudes', () => {
+test.describe('agenda et bilan', () => {
   test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(TUESDAY); });
 
-  test('terminer une séance dans la liste met à jour le groupe et persiste ; replier un groupe est mémorisé', async ({ page }) => {
+  test('terminer une séance met à jour le compteur du jour et persiste ; le bilan est proposé puis rangé dans le journal', async ({ page }) => {
     await page.goto('/ascend/?demo#/today');
-    const soiree = page.getByRole('region', { name: 'Soirée' });
-    await expect(soiree.getByText('0/2')).toBeVisible();
+    await expect(page.getByText(/0 \/ 2 séances/)).toBeVisible();
     await page.locator('label.cb', { has: page.getByRole('checkbox', { name: 'Java backend' }) }).click();
-    await expect(soiree.getByText('1/2')).toBeVisible();
-    await soiree.getByRole('button', { name: /Soirée/ }).click();
+    const bilan = page.getByRole('dialog', { name: 'Bilan de séance' });
+    await expect(bilan).toBeVisible();
+    await bilan.getByLabel(/Ce que j'ai compris/).fill('Un conteneur partage le noyau');
+    await bilan.getByRole('button', { name: 'Enregistrer la séance' }).click();
+    await expect(bilan).toHaveCount(0);
+    await expect(page.getByText(/1 \/ 2 séances/)).toBeVisible();
     await page.reload();
-    await expect(page.getByRole('region', { name: 'Soirée' }).getByRole('button', { name: /Soirée/ })).toHaveAttribute('aria-expanded', 'false');
-    await page.getByRole('region', { name: 'Soirée' }).getByRole('button', { name: /Soirée/ }).click();
-    await expect(page.getByRole('region', { name: 'Soirée' }).getByRole('checkbox', { name: 'Java backend' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Java backend' })).toBeChecked();
+    await page.getByRole('button', { name: 'Journal' }).click();
+    await expect(page.getByText('Un conteneur partage le noyau')).toBeVisible();
   });
 
-  test('le temps réservé (routine, sport, repas…) est replié et sans case à cocher', async ({ page }) => {
+  test('le temps réservé (routine, sport, repas…) est dans l\'agenda, sans case à cocher', async ({ page }) => {
     await page.goto('/ascend/?demo#/today');
-    const reserved = page.locator('details.reserved');
-    await expect(reserved).toBeVisible();
-    await reserved.locator('summary').click();
-    await expect(reserved.getByText('Routine du matin')).toBeVisible();
-    await expect(reserved.getByRole('checkbox')).toHaveCount(0);
+    const agenda = page.getByRole('list', { name: 'Agenda du jour' });
+    await expect(agenda.getByText('Routine du matin')).toBeVisible();
+    await expect(agenda.getByRole('checkbox', { name: /Routine du matin/ })).toHaveCount(0);
   });
 
-  test('changer de regroupement et de vue persiste', async ({ page }) => {
+  test('la navigation flottante reste dans l\'écran, au-dessus de la zone sûre, et ne cache pas la fin de page', async ({ page }) => {
     await page.goto('/ascend/?demo#/today');
-    await page.getByRole('radio', { name: 'Thèmes' }).click();
-    await expect(page.getByRole('region', { name: 'Java' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'MIAGE' })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole('radio', { name: 'Thèmes' })).toBeChecked();
-    await page.getByRole('radio', { name: 'Frise' }).click();
-    await expect(page.getByRole('region', { name: 'Frise de la journée' })).toBeVisible();
+    const nav = page.getByRole('navigation', { name: 'Navigation principale' });
+    await expect(nav).toBeVisible();
+    const box = (await nav.boundingBox())!;
+    const vp = page.viewportSize()!;
+    if (vp.width < 900) {
+      expect(box.y + box.height).toBeLessThanOrEqual(vp.height - 4);
+      expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      const last = page.getByRole('button', { name: '+ Ajouter un bloc' });
+      const lb = (await last.boundingBox())!;
+      expect(lb.y + lb.height).toBeLessThanOrEqual(box.y);   // le dernier bouton de la page est visible au-dessus de la barre
+    }
+  });
+
+  test('le pincement et le double toucher ne zooment pas (événements de geste annulés)', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today');
+    const prevented = await page.evaluate(() => {
+      const e = new Event('gesturestart', { cancelable: true });
+      document.dispatchEvent(e);
+      return e.defaultPrevented;
+    });
+    expect(prevented).toBe(true);
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe('manipulation');
   });
 });
 
@@ -215,7 +232,7 @@ test.describe('performance et confidentialité', () => {
     await page.goto('/ascend/?demo#/today');
     await expect(page.getByRole('navigation', { name: 'Semaine' })).toBeVisible();
     expect(scripts.some((s) => /^SettingsScreen/.test(s))).toBe(false);
-    await page.getByRole('button', { name: 'Réglages' }).click();
+    await page.getByRole('link', { name: 'Réglages' }).click();
     await expect(page.getByRole('heading', { name: 'Mon Ascend' })).toBeVisible();
     expect(scripts.some((s) => /^SettingsScreen/.test(s))).toBe(true);
   });
@@ -242,19 +259,12 @@ test.describe('progression et usage', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeVisible();
   });
 
-  test('« Continuer mes cours » pointe vers le cours en français', async ({ page }) => {
-    await page.goto('/ascend/?demo#/today');
-    const open = page.getByRole('region', { name: 'Continuer mes cours' }).getByRole('link', { name: /Ouvrir le cours/ }).first();
-    await expect(open).toHaveAttribute('href', /jmdoudoux\.fr/);
-  });
-
   test('le type de journée « Congé » libère la journée', async ({ page }) => {
     await page.goto('/ascend/?demo#/today/2026-10-20');
-    const reserved = page.locator('details.reserved');
-    await reserved.locator('summary').click();
-    await expect(reserved.getByText(/Trajet/).first()).toBeVisible();
+    const agenda = page.getByRole('list', { name: 'Agenda du jour' });
+    await expect(agenda.getByText(/Trajet/).first()).toBeVisible();
     await page.getByLabel('Type de journée').selectOption('conge');
-    await expect(reserved.getByText(/Trajet/)).toHaveCount(0);
+    await expect(agenda.getByText(/Trajet/)).toHaveCount(0);
   });
 
   test('exporter puis importer : la sauvegarde exportée est reconnue', async ({ page }) => {
@@ -275,7 +285,7 @@ test.describe('minuteur de concentration', () => {
   test('démarre, décompte avec le temps qui passe, se met en pause et reprend', async ({ page }) => {
     await page.clock.install({ time: TUESDAY });          // horloge pilotée : le temps n'avance que quand on le dit
     await page.goto('/ascend/?demo#/today');
-    await page.getByRole('region', { name: 'Soirée' }).getByRole('button', { name: /Java backend/ }).first().click();
+    await page.getByRole('list', { name: 'Agenda du jour' }).getByRole('button', { name: /Java backend/ }).first().click();
     await expect(page.getByRole('timer')).toHaveText('45:00');
     await page.getByRole('button', { name: /Démarrer \(45 min\)/ }).click();
     await page.clock.runFor(65_000);

@@ -1,6 +1,6 @@
 /* Base : reset, typographie, utilitaires. */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; overscroll-behavior-y: none; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
   font: 400 16px/1.5 "DM Sans", system-ui, sans-serif; font-feature-settings: "ss01";

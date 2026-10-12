@@ -46,7 +46,7 @@ export function AdjustmentsCard() {
         <div className="autolog-body">
           {sched.unplaced.length > 0 && (
             <p className="muted" role="note">
-              {sched.unplaced.length} tâche{sched.unplaced.length > 1 ? 's' : ''} ne tien{sched.unplaced.length > 1 ? 'nent' : 't'} plus avant la dernière échéance : les plus importantes sont placées en premier. Un mois « intensif » dans <Link to="/month" style={{ color: 'var(--accent)', fontWeight: 700 }}>Mon mois</Link> en rattrape davantage.
+              {sched.unplaced.length} tâche{sched.unplaced.length > 1 ? 's' : ''} ne tien{sched.unplaced.length > 1 ? 'nent' : 't'} plus avant la dernière échéance : les plus importantes sont placées en premier. Un mois « intensif » dans <Link to="/domains" style={{ color: 'var(--accent)', fontWeight: 700 }}>Domaines</Link> en rattrape davantage.
             </p>
           )}
           {rows.map((c) => (

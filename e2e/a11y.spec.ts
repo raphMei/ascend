@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 // Audit automatique d'accessibilité (axe) : aucune violation « grave » ou « critique » sur les écrans principaux, en clair et en sombre.
-const SCREENS = ['#/home', '#/today', '#/today/2026-10-14', '#/today/2026-11-06', '#/domains', '#/dom/sport', '#/dom/miage/dl', '#/dom/java/p1', '#/dom/alim', '#/dom/projets', '#/dom/finances', '#/dom/anglais', '#/dom/lecture', '#/dom/front/f1', '#/month', '#/stats', '#/settings'];
+const SCREENS = ['#/home', '#/today', '#/today/2026-10-14', '#/today/2026-11-06', '#/domains', '#/week', '#/journal', '#/dom/cloud/c1', '#/dom/archi', '#/dom/sport', '#/dom/miage/dl', '#/dom/java/p1', '#/dom/alim', '#/dom/projets', '#/dom/finances', '#/dom/anglais', '#/dom/lecture', '#/dom/front/f1', '#/stats', '#/settings'];
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`accessibilité (axe), thème ${scheme}`, async ({ page }) => {

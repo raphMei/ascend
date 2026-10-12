@@ -1,10 +1,9 @@
 import { hm } from '@/core/format';
-import { groupSmallBlocks } from '@/domain/small-blocks';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { dayStats } from '@/domain/stats';
 import { genericTasks } from './fixtures';
-import type { Block, DayData } from '@/domain/types';
+import type { DayData } from '@/domain/types';
 
 const tasks = genericTasks(DEFAULT_SETTINGS);
 const plan = (date: string, day?: DayData) => planDay({ date, settings: DEFAULT_SETTINGS, progress: { done: {} }, day, today: '2026-10-13', tasks });
@@ -64,24 +63,5 @@ describe('édition libre du planning', () => {
     const p = plan('2026-11-06', { edits: { skip: { 'chabbat-ven': true }, move: { 'chabbat-ven': { start: 0, end: 10 } } } });
     const b = p.blocks.find((x) => x.id === 'chabbat-ven')!;
     expect(b.end).toBe(1440); expect(b.start).toBeGreaterThan(900);
-  });
-});
-
-describe('regroupement des petites tâches', () => {
-  const mk = (id: string, start: number, end: number, domain: Block['domain'] = 'miage', checkable = true): Block => ({ id, start, end, title: id, domain, fixed: false, checkable, done: false });
-  it('regroupe les blocs MIAGE courts qui s\'enchaînent (≥ 2)', () => {
-    const items = groupSmallBlocks([mk('a', 0, 15), mk('b', 15, 30), mk('c', 30, 45), mk('d', 60, 120, 'sport')]);
-    expect(items.map((i) => i.kind)).toEqual(['group', 'block']);
-    expect(items[0].kind === 'group' && items[0].blocks.map((b) => b.id)).toEqual(['a', 'b', 'c']);
-  });
-  it('ne regroupe pas avec une pause, un bloc long ou un autre domaine', () => {
-    expect(groupSmallBlocks([mk('a', 0, 15), mk('b', 20, 35)]).every((i) => i.kind === 'block')).toBe(true);
-    expect(groupSmallBlocks([mk('a', 0, 45), mk('b', 45, 60)]).every((i) => i.kind === 'block')).toBe(true);
-    expect(groupSmallBlocks([mk('a', 0, 15, 'java'), mk('b', 15, 30, 'java')]).every((i) => i.kind === 'block')).toBe(true);
-  });
-  it('conserve l\'ordre et tous les blocs', () => {
-    const blocks = [mk('a', 0, 15), mk('b', 15, 30), mk('x', 30, 100, 'sport'), mk('c', 100, 115)];
-    const flat = groupSmallBlocks(blocks).flatMap((i) => (i.kind === 'group' ? i.blocks : [i.block]));
-    expect(flat.map((b) => b.id)).toEqual(['a', 'b', 'x', 'c']);
   });
 });

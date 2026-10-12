@@ -9,20 +9,41 @@
     radial-gradient(360px 360px at 0% 100%, color-mix(in srgb, var(--h3) calc(var(--halo-o) * 100%), transparent), transparent 72%); }
 @media (min-width: 900px) { .backdrop { background-size: 100% 100%; } }
 .nav, main { position: relative; }
+/* Navigation basse : une capsule de verre qui flotte au-dessus du contenu (zone sûre de l'iPhone respectée), avec une pastille qui glisse. */
 .nav {
-  position: fixed; z-index: 20; left: 0; right: 0; bottom: 0;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-top: 1px solid var(--glass-b); box-shadow: inset 0 1px 0 var(--hi);
+  position: fixed; z-index: 20; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); margin: 0 auto; max-width: 520px;
+  display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px; border-radius: 32px;
+  background: color-mix(in srgb, var(--surface) 46%, transparent);
+  backdrop-filter: blur(30px) saturate(210%); -webkit-backdrop-filter: blur(30px) saturate(210%);
+  border: 1px solid var(--glass-b);
+  box-shadow: inset 0 1px 0 var(--hi), inset 0 -1px 0 rgba(255,255,255,.04), 0 22px 44px -18px rgba(0,0,0,.55), 0 4px 14px -6px rgba(0,0,0,.25);
 }
+.nav-ind {
+  position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 4); border-radius: 26px; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 20%, transparent), color-mix(in srgb, var(--ink) 9%, transparent));
+  box-shadow: inset 0 1px 0 var(--hi), 0 6px 16px -8px rgba(0,0,0,.5), 0 0 22px -6px color-mix(in srgb, var(--accent) 55%, transparent);
+  transform: translateX(calc(var(--i, 0) * 100%)); transition: transform .55s var(--spring), opacity var(--dur-2);
+}
+.nav[data-none] .nav-ind { opacity: 0; }
 .nav button {
-  background: none; border: 0; border-radius: 18px; padding: 8px 4px 6px; display: grid; justify-items: center; gap: 3px;
-  color: var(--muted); font-size: 12px; font-weight: 500; min-height: 52px; transition: color var(--dur-2), transform var(--dur-3) var(--spring);
+  position: relative; background: none; border: 0; border-radius: 26px; padding: 8px 2px 7px; display: grid; justify-items: center; gap: 3px;
+  color: var(--muted); font-size: 12px; font-weight: 500; min-height: 56px; transition: color var(--dur-2), transform var(--dur-3) var(--spring);
 }
-.nav button:active { transform: scale(.92); }
-.nav button svg { width: 24px; height: 24px; }
-.nav button[aria-current="page"] { color: var(--ink); }
-.nav button[aria-current="page"] svg { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
+.nav button:active { transform: scale(.88); }
+.nav button svg { width: 24px; height: 24px; transition: transform var(--dur-3) var(--spring); }
+.nav button[aria-current="page"] { color: var(--ink); font-weight: 700; }
+.nav button[aria-current="page"] svg { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); animation: navpop .55s var(--spring); }
+@keyframes navpop { 0% { transform: scale(.7) translateY(3px); } 60% { transform: scale(1.18) translateY(-2px); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .nav-ind { transition: none; } .nav button[aria-current="page"] svg { animation: none; } }
+/* Réglages : bouton rond de verre, en haut à droite de chaque écran (il défile avec la page). */
+.gear {
+  position: absolute; z-index: 19; top: calc(10px + env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; color: var(--ink); text-decoration: none;
+  background: var(--glass); border: 1px solid var(--glass-b); box-shadow: inset 0 1px 0 var(--hi), var(--shadow);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); transition: transform var(--dur-3) var(--spring);
+}
+.gear:active { transform: scale(.88) rotate(40deg); }
+.gear svg { width: 22px; height: 22px; }
 .brand { display: none; }
 main > * { min-width: 0; }
 main {
@@ -32,10 +53,11 @@ main {
 @media (min-width: 900px) {
   .shell { display: grid; grid-template-columns: 240px 1fr; }
   .nav {
-    position: sticky; top: 0; height: 100vh; grid-template-columns: 1fr; align-content: start; gap: 6px;
-    padding: 28px 16px; border-top: 0; border-right: 1px solid var(--glass-b); background: transparent; box-shadow: none; backdrop-filter: none;
+    position: sticky; top: 0; bottom: auto; left: auto; right: auto; max-width: none; margin: 0; height: 100vh; grid-template-columns: 1fr; align-content: start; gap: 6px;
+    padding: 28px 16px; border: 0; border-right: 1px solid var(--glass-b); border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
   }
-  .nav button { grid-auto-flow: column; justify-content: start; gap: 12px; font-size: 16px; padding: 12px 14px; }
+  .nav-ind { display: none; }
+  .nav button { grid-auto-flow: column; justify-content: start; gap: 12px; font-size: 16px; padding: 12px 14px; min-height: 48px; }
   .nav button[aria-current="page"] { background: var(--glass); box-shadow: inset 0 1px 0 var(--hi); }
   .brand { display: flex; align-items: center; gap: 10px; font: 800 24px "Syne"; padding: 0 14px 18px; }
   .brand img { width: 34px; height: 34px; border-radius: 9px; }

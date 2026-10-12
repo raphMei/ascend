@@ -14,10 +14,10 @@
   --f-chabbat: #d8c08a; --f-autre: #8fb3c7; --f-anglais: #ff5ea8; --f-lecture: #ff9f5a; --f-front: #4fd1de; --f-cloud: #6aa5ff; --f-archi: #ff9a62; --f-finances: #7fd67f; --f-projets: #c993ff;
   --done-ink: #0a0a10;
   /* Verre */
-  --glass: rgba(255,255,255,.62); --glass-b: rgba(255,255,255,.95); --hi: #fff; --track: rgba(20,20,26,.1); --sheet: rgba(255,255,255,.78);
+  --glass: rgba(255,255,255,.62); --glass-b: rgba(255,255,255,.95); --hi: #fff; --track: rgba(20,20,26,.1); --sheet: rgba(255,255,255,.93);
   --blur: blur(22px) saturate(180%);
   --shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 30px -18px rgba(40,30,10,.35);
-  --r: 24px; --nav-h: 68px;
+  --r: 24px; --nav-h: 92px;
   /* Mouvement */
   --spring: cubic-bezier(.2,.9,.3,1.25); --out: cubic-bezier(.2,.8,.2,1);
   --dur-1: .12s; --dur-2: .25s; --dur-3: .45s; --dur-4: .7s;
@@ -31,7 +31,7 @@
     --accent: #ff7a3d; --accent-ink: #1a0d05;
     --c-matin: #ffc83d; --c-sport: #ff6b7e; --late: #ff6b6b; --c-alim: #3ddc84; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
     --c-pro: #8b93a5; --c-trajet: #8a91a0; --c-chabbat: #d8c08a; --c-autre: #8fb3c7; --c-anglais: #ff7ab8; --c-lecture: #f0a35e; --c-front: #4fd1de; --c-cloud: #7fb0ff; --c-archi: #ffa774; --c-finances: #7fd67f; --c-projets: #c993ff;
-    --glass: rgba(255,255,255,.07); --glass-b: rgba(255,255,255,.16); --hi: rgba(255,255,255,.26); --track: rgba(255,255,255,.12); --sheet: rgba(26,26,36,.74);
+    --glass: rgba(255,255,255,.07); --glass-b: rgba(255,255,255,.16); --hi: rgba(255,255,255,.26); --track: rgba(255,255,255,.12); --sheet: rgba(24,24,34,.93);
     --blur: blur(26px) saturate(190%);
     --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 40px -22px rgba(0,0,0,.8);
     --halo-o: .36;
@@ -43,7 +43,7 @@
   --accent: #ff7a3d; --accent-ink: #1a0d05;
   --c-matin: #ffc83d; --c-sport: #ff6b7e; --late: #ff6b6b; --c-alim: #3ddc84; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
   --c-pro: #8b93a5; --c-trajet: #8a91a0; --c-chabbat: #d8c08a; --c-autre: #8fb3c7; --c-anglais: #ff7ab8; --c-lecture: #f0a35e; --c-front: #4fd1de; --c-cloud: #7fb0ff; --c-archi: #ffa774; --c-finances: #7fd67f; --c-projets: #c993ff;
-  --glass: rgba(255,255,255,.07); --glass-b: rgba(255,255,255,.16); --hi: rgba(255,255,255,.26); --track: rgba(255,255,255,.12); --sheet: rgba(26,26,36,.74);
+  --glass: rgba(255,255,255,.07); --glass-b: rgba(255,255,255,.16); --hi: rgba(255,255,255,.26); --track: rgba(255,255,255,.12); --sheet: rgba(24,24,34,.93);
   --blur: blur(26px) saturate(190%);
   --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 40px -22px rgba(0,0,0,.8);
   --halo-o: .36;

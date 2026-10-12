@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { FRIDAY_NIGHT, TUESDAY, renderApp } from './helpers';
 import * as push from '@/services/push';
+import type { DayData } from '@/domain/types';
 
 vi.mock('@/services/push', async (orig) => ({ ...(await orig<typeof import('@/services/push')>()), readEnv: vi.fn(() => ({ hasServiceWorker: true, hasPushManager: true, hasNotification: true, permission: 'default', standalone: true, ios: true })), currentSubscription: vi.fn(async () => null), enablePush: vi.fn(), disablePush: vi.fn(), showTestNotification: vi.fn(async () => {}), VAPID_PUBLIC_KEY: 'cle-test' }));
 const env = (o: Partial<ReturnType<typeof push.readEnv>> = {}) => ({ hasServiceWorker: true, hasPushManager: true, hasNotification: true, permission: 'default' as const, standalone: true, ios: true, ...o });
@@ -14,20 +15,25 @@ describe('connexion', () => {
   });
 });
 
-describe('accueil', () => {
-  it('affiche coach, anneau du jour et navigation', async () => {
+describe('accueil (Bilan) et navigation', () => {
+  it('le Bilan affiche coach et anneau du jour ; la navigation a quatre onglets et un accès aux réglages', async () => {
     renderApp();
     expect(await screen.findByRole('heading', { level: 1, name: 'Salut Raphaël' })).toBeInTheDocument();
     expect(screen.getByLabelText('Message du coach')).toBeInTheDocument();
-    ['Bilan', "Aujourd'hui", 'Domaines', 'Réglages'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Bilan' })).toHaveAttribute('aria-current', 'page');
+    ["Aujourd'hui", 'Semaine', 'Domaines', 'Journal'].forEach((n) => expect(screen.getByRole('button', { name: n })).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'Réglages' })).toBeInTheDocument();
   });
 
-  it('navigue vers les autres écrans', async () => {
-    renderApp();
+  it('navigue vers les autres écrans, l\'onglet actif est marqué', async () => {
+    renderApp({ hash: '#/today' });
     await userEvent.click(await screen.findByRole('button', { name: 'Domaines' }));
-    expect(await screen.findByRole('heading', { name: 'Où je progresse' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Réglages' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Domaines' })).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(screen.getByRole('button', { name: 'Semaine' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Cette semaine' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Journal' }));
+    expect(await screen.findByRole('heading', { level: 1, name: "Ce que j'ai appris" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('link', { name: 'Réglages' }));
     expect(await screen.findByRole('heading', { name: 'Mon Ascend' })).toBeInTheDocument();
   });
 });
@@ -79,9 +85,8 @@ describe('aujourd\'hui', () => {
 describe('domaines', () => {
   it('toutes les cartes sont présentes et mènent à leur page', async () => {
     renderApp({ hash: '#/domains' });
-    for (const name of ['Routine du matin', 'Sport', 'Alimentation', 'Sommeil', 'Cours MIAGE', 'Java backend']) {
-      expect(await screen.findByRole('heading', { level: 3, name })).toBeInTheDocument();
-    }
+    for (const name of ['Cours MIAGE', 'Java backend']) expect(await screen.findByRole('region', { name })).toBeInTheDocument();
+    for (const name of ['Routine du matin', 'Sport', 'Alimentation', 'Sommeil']) expect((await screen.findAllByRole('heading', { level: 3, name })).length).toBeGreaterThan(0);
   });
 
   it.each(['matin', 'sport', 'alim', 'sommeil', 'miage', 'java'])('la page « %s » s\'affiche', async (id) => {
@@ -107,7 +112,7 @@ describe('domaines', () => {
 
   it('un domaine inconnu renvoie vers la liste', async () => {
     renderApp({ hash: '#/dom/inconnu' });
-    expect(await screen.findByRole('heading', { name: 'Où je progresse' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
   });
 });
 
@@ -289,9 +294,10 @@ describe('poids : objectif et historique', () => {
 });
 
 describe('nouveaux domaines', () => {
-  it('onze domaines dans « Mes domaines »', async () => {
+  it('tous les domaines d\'apprentissage ont leur carte dans « Mes domaines », les suivis personnels sont en retrait', async () => {
     renderApp({ hash: '#/domains' });
-    for (const name of ['Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Finances', 'Projets perso']) expect(await screen.findByRole('heading', { level: 3, name })).toBeInTheDocument();
+    for (const name of ['Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Projets perso']) expect(await screen.findByRole('region', { name })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { level: 3, name: 'Finances' })).length).toBeGreaterThan(0);
   });
 
   it('un domaine sans créneau propose de l\'activer dans les réglages', async () => {
@@ -454,9 +460,9 @@ describe('ajustement automatique', () => {
   });
 });
 
-describe('Mon mois', () => {
+describe('Mon mois (dans « Domaines »)', () => {
   it('liste les domaines et enregistre l\'intensité choisie pour le mois', async () => {
-    const { writes } = renderApp({ hash: '#/month' });
+    const { writes } = renderApp({ hash: '#/domains' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
     for (const n of ['Cours MIAGE', 'Sport', 'Java backend', 'Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Projets perso', 'Finances']) expect(screen.getByRole('radiogroup', { name: `Intensité : ${n}` })).toBeInTheDocument();
     await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' }));
@@ -470,7 +476,7 @@ describe('Mon mois', () => {
   });
 
   it('on peut régler le mois suivant, sans toucher à celui-ci', async () => {
-    const { writes } = renderApp({ hash: '#/month' });
+    const { writes } = renderApp({ hash: '#/domains' });
     await userEvent.click(await screen.findByRole('button', { name: 'Mois suivant' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Décembre 2026' })).toBeInTheDocument();
     await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Lecture' })).getByRole('radio', { name: 'Léger' }));
@@ -478,72 +484,64 @@ describe('Mon mois', () => {
   });
 
   it('prévient quand les domaines réservent presque tout le temps libre', async () => {
-    renderApp({ hash: '#/month', seed: { settings: { months: { '2026-11': { anglais: 'intensif', lecture: 'intensif', front: 'intensif', projets: 'intensif', java: 'intensif' } } } } });
+    renderApp({ hash: '#/domains', seed: { settings: { months: { '2026-11': { anglais: 'intensif', lecture: 'intensif', front: 'intensif', projets: 'intensif', java: 'intensif' } } } } });
     expect(await screen.findByRole('alert')).toHaveTextContent('Allège un domaine');
   });
 
-  it('accessible depuis « Mes domaines »', async () => {
-    renderApp({ hash: '#/domains' });
-    await userEvent.click(await screen.findByRole('link', { name: /Mon mois/ }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
+  it('l\'ancienne adresse #/month renvoie vers Domaines', async () => {
+    renderApp({ hash: '#/month' });
+    expect(await screen.findByRole('radiogroup', { name: 'Intensité : Cours MIAGE' })).toBeInTheDocument();
   });
 });
 
-describe('liste d\'habitudes (mode Grit)', () => {
-  it('l\'application s\'ouvre sur « Aujourd\'hui », en liste groupée par moments', async () => {
+describe('agenda du jour', () => {
+  it('l\'application s\'ouvre sur « Aujourd\'hui » : coach, prochaine action, semaine, domaines, puis l\'agenda', async () => {
     window.location.hash = '';
     renderApp({ hash: '' });
     expect(await screen.findByRole('navigation', { name: 'Semaine' })).toBeInTheDocument();
-    // La liste ne montre que l'apprentissage : la routine, le travail, les trajets et le sommeil sont du temps réservé, replié dessous.
-    expect(screen.getByRole('region', { name: 'Soirée' })).toBeInTheDocument();
-    for (const g of ['Matin', 'Trajet', 'Travail et cours', 'Avant de dormir']) expect(screen.queryByRole('region', { name: g })).not.toBeInTheDocument();
-    expect(screen.getByText('Temps réservé')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Liste' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Moments' })).toBeChecked();
+    expect(screen.getByLabelText('Message du coach')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Prochaine action' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ma semaine/ })).toHaveAttribute('href', '#/week');
+    expect(screen.getByRole('region', { name: 'Mes domaines' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Agenda du jour' })).toBeInTheDocument();
+    expect(screen.getByText(/0 \/ 2 séances/)).toBeInTheDocument();
   });
 
-  it('chaque groupe affiche son avancement et une séance se coche depuis la liste', async () => {
+  it('le temps réservé (routine, sport, repas, travail, trajet) est dans l\'agenda, sans aucune case à cocher', async () => {
+    renderApp({ hash: '#/today' });
+    const agenda = await screen.findByRole('list', { name: 'Agenda du jour' });
+    expect(within(agenda).getByText('Routine du matin')).toBeInTheDocument();
+    expect(within(agenda).getAllByRole('checkbox').map((c) => c.getAttribute('aria-label') ?? c.closest('label')?.textContent)).toEqual(expect.not.arrayContaining(['Routine du matin']));
+    expect(within(agenda).queryByRole('checkbox', { name: /Routine|Sport|Coucher|Trajet|Travail/ })).not.toBeInTheDocument();
+  });
+
+  it('terminer une séance depuis l\'agenda l\'enregistre et le compteur du jour avance', async () => {
     const { writes } = renderApp({ hash: '#/today' });
-    const soiree = await screen.findByRole('region', { name: 'Soirée' });
-    expect(within(soiree).getByText('0/2')).toBeInTheDocument();
-    await userEvent.click(within(soiree).getByRole('checkbox', { name: 'Java backend' }));
-    expect(within(await screen.findByRole('region', { name: 'Soirée' })).getByText('1/2')).toBeInTheDocument();
+    const agenda = await screen.findByRole('list', { name: 'Agenda du jour' });
+    await userEvent.click(within(agenda).getByRole('checkbox', { name: 'Java backend' }));
+    expect(await screen.findByText(/1 \/ 2 séances/)).toBeInTheDocument();
     expect(writes.days.filter(([d]) => d === TUESDAY.today).at(-1)![1]).toMatchObject({ done: { java: true } });
   });
 
-  it('le temps réservé (routine, sport, repas…) n\'a aucune case à cocher', async () => {
+  it('chaque séance indique sa nature (leçon, révision…)', async () => {
     renderApp({ hash: '#/today' });
-    const reserved = (await screen.findByText('Temps réservé')).closest('details')!;
-    expect(within(reserved).queryAllByRole('checkbox')).toHaveLength(0);
-    expect(within(reserved).getByText('Routine du matin')).toBeInTheDocument();
+    const agenda = await screen.findByRole('list', { name: 'Agenda du jour' });
+    expect(within(agenda).getAllByText('Leçon').length).toBeGreaterThan(0);
+    expect(within(agenda).getByText('Mise en place')).toBeInTheDocument();
   });
 
-  it('un groupe se replie et se déplie, et l\'état est mémorisé', async () => {
-    renderApp({ hash: '#/today' });
-    const head = within(await screen.findByRole('region', { name: 'Soirée' })).getByRole('button', { name: /Soirée/ });
-    expect(head).toHaveAttribute('aria-expanded', 'true');
-    await userEvent.click(head);
-    expect(head).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('checkbox', { name: 'Java backend' })).not.toBeInTheDocument();
-    expect(localStorage.getItem('ascend-collapsed')).toContain('soiree');
-    await userEvent.click(head);
-    expect(await screen.findByRole('checkbox', { name: 'Java backend' })).toBeInTheDocument();
-    localStorage.removeItem('ascend-collapsed');
+  it('le bandeau « Mes domaines » ne montre que les domaines actifs ; un parcours activé apparaît', async () => {
+    renderApp({ hash: '#/today', seed: { settings: { cloudMin: 30 } } });
+    const strip = await screen.findByRole('region', { name: 'Mes domaines' });
+    expect(within(strip).getByRole('link', { name: /Java backend/ })).toHaveAttribute('href', '#/dom/java');
+    expect(within(strip).getByRole('link', { name: /Cloud et DevOps/ })).toHaveAttribute('href', '#/dom/cloud');
+    expect(within(strip).queryByRole('link', { name: /Architecture/ })).not.toBeInTheDocument();
   });
 
-  it('regrouper par thèmes : MIAGE, Java…, et le choix est enregistré', async () => {
-    const { writes } = renderApp({ hash: '#/today' });
-    await userEvent.click(await screen.findByRole('radio', { name: 'Thèmes' }));
-    expect(writes.settings).toEqual([{ ui: { group: 'themes' } }]);
-    for (const g of ['MIAGE', 'Java']) expect(await screen.findByRole('region', { name: g })).toBeInTheDocument();
-    for (const g of ['Santé', 'Repas', 'Sommeil', 'Productivité']) expect(screen.queryByRole('region', { name: g })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Soirée' })).not.toBeInTheDocument();
-  });
-
-  it('la frise horaire reste disponible', async () => {
-    renderApp({ hash: '#/today', seed: { settings: { ui: { today: 'frise' } } } });
-    expect(await screen.findByRole('region', { name: 'Frise de la journée' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Matin' })).not.toBeInTheDocument();
+  it('les notions à revoir apparaissent sur l\'accueil avec un accès au journal', async () => {
+    const journal: Record<string, DayData> = { '2026-10-30': { journal: { 'dl:u1': { t: 'Perceptron', k: 'miage', rev: true, next: '2026-11-02', n: 0 } } } };
+    renderApp({ hash: '#/today', seed: { days: journal } });
+    expect(await screen.findByRole('link', { name: /1 notion à revoir/ })).toHaveAttribute('href', '#/journal');
   });
 
   it('le bandeau de la semaine permet de changer de jour et marque le jour affiché', async () => {
@@ -553,14 +551,6 @@ describe('liste d\'habitudes (mode Grit)', () => {
     expect(within(week).getByRole('link', { current: 'date' })).toHaveAccessibleName(/mar\. 3/);
     await userEvent.click(within(week).getByRole('link', { name: /jeu\. 5/ }));
     expect(await screen.findByRole('heading', { level: 1, name: 'jeudi 5 novembre' })).toBeInTheDocument();
-  });
-
-  it('les objectifs sont listés en bas de la liste du jour', async () => {
-    renderApp({ hash: '#/today', seed: { settings: { weightGoal: 80 }, days: { '2026-10-20': { weight: 90 }, [TUESDAY.today]: { weight: 85 } } } });
-    const goals = await screen.findByRole('region', { name: 'Objectifs' });
-    expect(within(goals).getByText('Cours MIAGE')).toBeInTheDocument();
-    expect(within(goals).getByText('Java backend')).toBeInTheDocument();
-    expect(within(goals).queryByText('Poids')).not.toBeInTheDocument();
   });
 });
 
@@ -624,7 +614,7 @@ describe('journées exceptionnelles (interface)', () => {
   it('choisir « Congé » enregistre le choix et libère la journée', async () => {
     const { writes } = renderApp({ hash: '#/today/2026-10-20' });
     await screen.findByRole('heading', { level: 1, name: 'mardi 20 octobre' });
-    const reserved = () => screen.getByText('Temps réservé').closest('details')!;
+    const reserved = () => screen.getByRole('list', { name: 'Agenda du jour' });
     expect(within(reserved()).getAllByText(/Trajet/).length).toBeGreaterThan(0);
     await userEvent.selectOptions(screen.getByLabelText('Type de journée'), 'conge');
     expect(writes.days.filter(([d, p]) => d === '2026-10-20' && 'edits' in p).map(([, p]) => p)).toEqual([{ edits: { day: 'conge' } }]);
@@ -635,23 +625,6 @@ describe('journées exceptionnelles (interface)', () => {
     renderApp({ hash: '#/today/2026-10-18' });
     await screen.findByRole('heading', { level: 1, name: 'dimanche 18 octobre' });
     expect(screen.queryByLabelText('Type de journée')).not.toBeInTheDocument();
-  });
-});
-
-describe('continuer mes cours (interface)', () => {
-  it('affiche la prochaine étape Java avec son lien en français et la phase', async () => {
-    renderApp({ hash: '#/today' });
-    const section = await screen.findByRole('region', { name: 'Continuer mes cours' });
-    expect(within(section).getByText('Syntaxe et éléments de base')).toBeInTheDocument();
-    const open = within(section).getByRole('link', { name: /Ouvrir le cours : Syntaxe/ });
-    expect(open).toHaveAttribute('href', 'https://www.jmdoudoux.fr/java/dej/chap-syntaxe.htm');
-    expect(open).toHaveAttribute('target', '_blank');
-    expect(within(section).getByRole('link', { name: /Voir la phase 1 de Java backend/ })).toHaveAttribute('href', '#/dom/java/p1');
-  });
-  it('après avoir fait la première étape, propose la suivante', async () => {
-    renderApp({ hash: '#/today', seed: { progress: { done: { p1t1: true } } } });
-    const section = await screen.findByRole('region', { name: 'Continuer mes cours' });
-    expect(within(section).getByText('Programmation orientée objet : classes, héritage, interfaces')).toBeInTheDocument();
   });
 });
 
@@ -702,7 +675,7 @@ describe('premier lancement', () => {
   it('affiche « Pour bien démarrer » tant que rien n\'a été coché, avec les liens utiles', async () => {
     renderApp({ hash: '#/today' });
     const card = await screen.findByRole('region', { name: 'Pour bien démarrer' });
-    expect(within(card).getByRole('link', { name: /Règle ton mois/ })).toHaveAttribute('href', '#/month');
+    expect(within(card).getByRole('link', { name: /Règle l'intensité de tes domaines/ })).toHaveAttribute('href', '#/domains');
     expect(within(card).getAllByRole('link', { name: /Choisis tes jours sur site|Active les rappels/ })).toHaveLength(2);
   });
   it('« C\'est fait » l\'enregistre (synchronisé) et la carte disparaît', async () => {
@@ -716,11 +689,10 @@ describe('premier lancement', () => {
     await screen.findByRole('navigation', { name: 'Semaine' });
     expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument();
   });
-  it('absente quand c\'est déjà terminé, et le réglage d\'affichage de vue reste intact', async () => {
-    renderApp({ hash: '#/today', seed: { settings: { ui: { onboarded: true, group: 'themes' } } } });
+  it('absente quand c\'est déjà terminé', async () => {
+    renderApp({ hash: '#/today', seed: { settings: { ui: { onboarded: true } } } });
     await screen.findByRole('navigation', { name: 'Semaine' });
     expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Thèmes' })).toBeChecked();
   });
 });
 

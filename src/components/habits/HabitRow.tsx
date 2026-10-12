@@ -20,7 +20,7 @@ import { HabitMenu } from './HabitMenu';
 /** Une habitude dans la liste du jour : carte de verre, emoji, titre, horaire, série 🔥, grande case ronde.
     Case ou balayage vers la droite = fait (la couleur du domaine envahit la carte), balayage vers la gauche = passer,
     appui long (ou bouton « Options ») = menu, toucher le titre = détail. */
-export function HabitRow({ block: b, date, streak, now }: { block: Block; date: ISODate; streak: number; now: number }) {
+export function HabitRow({ block: b, date, streak, now, tag }: { block: Block; date: ISODate; streak: number; now: number; tag?: string | null }) {
   const tick = useTick();
   const { state, settings, setDay, setProgress } = useData();
   const [open, setOpen] = useState(false);
@@ -65,7 +65,7 @@ export function HabitRow({ block: b, date, streak, now }: { block: Block; date: 
         <span className="habit-ico" aria-hidden="true">{emojiFor(b)}</span>
         <button type="button" className="habit-main" aria-expanded={expandable ? open : undefined} onClick={() => expandable && setOpen(!open)} disabled={!expandable}>
           <span className="habit-title">{b.title}{b.cont && <span className="muted" style={{ fontWeight: 400 }}> (suite)</span>}</span>
-          <span className="habit-sub">{hm(b.start)} · {dur(b.end - b.start)}{b.sub ? ` · ${b.sub}` : ''}</span>
+          <span className="habit-sub">{tag && <span className="ltag">{tag}</span>}{hm(b.start)} · {dur(b.end - b.start)}{b.sub ? ` · ${b.sub}` : ''}</span>
         </button>
         {streak >= 2 && <span className="habit-streak" title={`${streak} jours d'affilée`} aria-label={`${streak} jours d'affilée`}><span className="flame" aria-hidden="true">🔥</span> {streak}</span>}
         {b.checkable ? <Checkbox big checked={b.done} onChange={markDone} domain={b.domain} label={b.title} /> : null}

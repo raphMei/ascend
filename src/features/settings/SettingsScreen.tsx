@@ -59,7 +59,9 @@ export function SettingsScreen() {
           <input type="checkbox" checked={s.autoReschedule !== false} onChange={(e) => setSettings({ autoReschedule: e.target.checked })} aria-label="Ajuster automatiquement le planning" style={{ width: 24, height: 24 }} /></label>
         <label className="row" style={{ cursor: 'pointer' }}><span>Ajuster les durées à mon rythme réel<br /><span className="muted" style={{ fontSize: 13 }}>Mesuré au minuteur. Détail dans Statistiques.</span></span>
           <input type="checkbox" checked={s.calibrate !== false} onChange={(e) => setSettings({ calibrate: e.target.checked })} aria-label="Ajuster les durées à mon rythme réel" style={{ width: 24, height: 24 }} /></label>
-        <div className="quick"><Link to="/month" className="btn" style={{ textDecoration: 'none' }}>Régler mon mois</Link></div>
+        <label className="row" style={{ cursor: 'pointer' }}><span>Bilan après chaque séance<br /><span className="muted" style={{ fontSize: 13 }}>Une courte note et la révision espacée, rangées dans le journal.</span></span>
+          <input type="checkbox" checked={s.ui?.bilan !== false} onChange={(e) => setSettings({ ui: { bilan: e.target.checked } })} aria-label="Bilan après chaque séance" style={{ width: 24, height: 24 }} /></label>
+        <div className="quick"><Link to="/domains" className="btn" style={{ textDecoration: 'none' }}>Régler mes domaines du mois</Link></div>
       </section>
       <section className="card"><h2>Mes domaines</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Minutes par jour dans ton planning pour chaque domaine. 0 = désactivé : rien n'est ajouté à ta journée.</p>
         <div className="fields">

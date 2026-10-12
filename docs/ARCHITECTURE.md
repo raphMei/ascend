@@ -61,7 +61,9 @@ Le résultat (`Schedule`) est fourni à toute l'application par `ScheduleProvide
 Sans ajustement (désactivé dans les réglages), le retard s'empile sur aujourd'hui, comme avant.
 L'affichage regroupe les petites tâches MIAGE consécutives (`domain/small-blocks.ts`).
 
-## Liste d'habitudes (écran « Aujourd'hui »)
+> **Interface d'apprentissage** : l'écran Aujourd'hui est désormais un agenda, avec les onglets Semaine, Domaines et Journal. Voir `docs/APPRENTISSAGE.md` (la section ci-dessous décrit l'ancienne liste groupée, remplacée).
+
+## Liste d'habitudes (écran « Aujourd'hui », historique)
 
 L'application s'ouvre sur **Aujourd'hui** : bandeau de la semaine (anneau d'avancement par jour), résumé du jour, puis la **liste groupée** (vue « Liste ») ou la frise horaire (vue « Frise »).
 - `domain/groups.ts` : groupes **par moments** (dans l'ordre de la journée) ou **par thèmes** (un par sujet d'apprentissage : MIAGE, Java, Front-end, Cloud et DevOps, Architecture, Anglais et lecture, Projets ; le temps réservé n'est pas dans la liste, il est replié dessous) ; l'écran n'affiche que les séances. Fonctions pures, testées : aucun bloc perdu ni dupliqué.
@@ -104,7 +106,7 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 | Commande | Contenu |
 |---|---|
-| `npm test` (410 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
+| `npm test` (≈ 415 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
 | `npm run test:e2e` (51) | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, polices locales, chargement à la demande, minuteur, import/export, **audit d'accessibilité axe** en clair et en sombre |
 | `npm run test:rules` | **émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections connues, requête fenêtrée) et script d'envoi des rappels de bout en bout (nécessite Java) |
 | `npm run test:all` | tout ce qui précède |

@@ -12,7 +12,8 @@ import { TodayScreen } from '@/features/today/TodayScreen';
 const HomeScreen = lazy(() => import('@/features/home/HomeScreen').then((m) => ({ default: m.HomeScreen })));
 const DomainsScreen = lazy(() => import('@/features/domains/DomainsScreen').then((m) => ({ default: m.DomainsScreen })));
 const DomainPage = lazy(() => import('@/features/domains/DomainPage').then((m) => ({ default: m.DomainPage })));
-const MonthScreen = lazy(() => import('@/features/month/MonthScreen').then((m) => ({ default: m.MonthScreen })));
+const WeekScreen = lazy(() => import('@/features/week/WeekScreen').then((m) => ({ default: m.WeekScreen })));
+const JournalScreen = lazy(() => import('@/features/journal/JournalScreen').then((m) => ({ default: m.JournalScreen })));
 const StatsScreen = lazy(() => import('@/features/stats/StatsScreen').then((m) => ({ default: m.StatsScreen })));
 const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen').then((m) => ({ default: m.SettingsScreen })));
 import { useBackfillStats } from '@/hooks/useBackfillStats';
@@ -51,7 +52,10 @@ export function App() {
           <Route path="today" element={<TodayScreen />} />
           <Route path="today/:date" element={<TodayScreen />} />
           <Route path="domains" element={<DomainsScreen />} />
-          <Route path="month" element={<MonthScreen />} />
+          <Route path="week" element={<WeekScreen />} />
+          <Route path="week/:date" element={<WeekScreen />} />
+          <Route path="journal" element={<JournalScreen />} />
+          <Route path="month" element={<Navigate to="/domains" replace />} />
           <Route path="stats" element={<StatsScreen />} />
           <Route path="dom/:id" element={<DomainPage />} />
           <Route path="dom/:id/:sub" element={<DomainPage />} />

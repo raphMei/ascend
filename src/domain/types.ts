@@ -31,7 +31,7 @@ export interface Settings {
   /** Ajuste la durée des tâches MIAGE à ton rythme réel, mesuré au minuteur (activé si absent). */
   calibrate?: boolean;
   /** Préférences d'affichage (synchronisées entre appareils). */
-  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes'; onboarded?: boolean; sound?: boolean };
+  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes'; onboarded?: boolean; sound?: boolean; /** Demander un bilan après chaque séance (activé si absent). */ bilan?: boolean };
 }
 
 /** Intensité d'un domaine pour un mois. */
@@ -78,6 +78,15 @@ export interface DayData {
   edits?: DayEdits;
   /** Temps réels mesurés, par bloc (« identifiant@début »). `null` = mesure effacée. */
   time?: Record<string, TimeEntry | null>;
+  /** Journal d'apprentissage : un bilan par séance terminée (clé = identifiant de la tâche ou du bloc). `null` = effacé. */
+  journal?: Record<string, JournalEntry | null>;
+}
+
+/** Bilan d'une séance : ce qui a été compris, la difficulté ressentie, et la révision espacée (à revoir à partir de `next`). */
+export interface JournalEntry {
+  t: string; k: DomainId;
+  note?: string; diff?: 1 | 2 | 3;
+  rev?: boolean; next?: string | null; n?: number;
 }
 
 export type ProjectStatus = 'actif' | 'pause' | 'fini';

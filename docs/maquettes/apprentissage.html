@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ascend – maquettes apprentissage</title>
+<style>
+:root{--bg:#0b0d14;--ink:#f3f5fb;--muted:#9aa3b8;--glass:rgba(255,255,255,.07);--glass-b:rgba(255,255,255,.14);
+--java:#ffb02e;--cloud:#6aa5ff;--archi:#ff9a62;--front:#4fd1de;--miage:#b79bff;--res:#2a2f42}
+*{box-sizing:border-box;margin:0}
+body{background:#05060a;color:var(--ink);font:16px/1.4 system-ui,-apple-system,"DM Sans",sans-serif;min-height:100vh;padding:20px 12px 40px}
+h1{font-size:20px;text-align:center}
+.lead{color:var(--muted);text-align:center;max-width:640px;margin:6px auto 14px;font-size:14px}
+.switch{display:flex;gap:8px;justify-content:center;margin-bottom:18px;flex-wrap:wrap}
+.switch button{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--glass-b);background:var(--glass);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.switch button[aria-pressed=true]{background:#fff;color:#000}
+.stage{display:flex;justify-content:center}
+.phone{width:390px;max-width:100%;height:780px;border-radius:44px;border:1px solid var(--glass-b);background:radial-gradient(120% 60% at 20% 0%,rgba(106,165,255,.28),transparent 60%),radial-gradient(90% 50% at 100% 30%,rgba(255,154,98,.18),transparent 60%),var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.screen{flex:1;overflow-y:auto;padding:54px 16px 96px;display:none}
+.screen.on{display:block}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h2{font-size:26px;margin:2px 0 12px;font-weight:800}
+h3{font-size:16px}
+.card{background:var(--glass);border:1px solid var(--glass-b);border-radius:22px;padding:14px;margin-bottom:12px;backdrop-filter:blur(14px)}
+.muted{color:var(--muted);font-size:14px}
+.btn{min-height:48px;border:0;border-radius:999px;padding:0 20px;font:inherit;font-weight:700;cursor:pointer;color:#0b0d14;background:var(--c,#fff)}
+.btn.ghost{background:var(--glass);color:var(--ink);border:1px solid var(--glass-b)}
+.bar{height:8px;border-radius:99px;background:var(--res);overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:var(--c);border-radius:99px}
+.nav{position:absolute;left:12px;right:12px;bottom:14px;display:flex;background:rgba(20,23,34,.75);backdrop-filter:blur(20px);border:1px solid var(--glass-b);border-radius:28px;padding:6px}
+.nav button{flex:1;min-height:52px;border:0;background:none;color:var(--muted);font:inherit;font-size:12px;border-radius:22px;cursor:pointer;display:grid;gap:2px;place-items:center}
+.nav button[aria-current=page]{background:rgba(255,255,255,.14);color:#fff;font-weight:700}
+.nav span{font-size:20px}
+.hero{padding:18px;border-radius:28px;background:linear-gradient(145deg,color-mix(in srgb,var(--c) 38%,transparent),rgba(255,255,255,.05));border:1px solid var(--glass-b);margin-bottom:14px}
+.hero h3{font-size:22px;margin:4px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block;margin-right:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini{padding:12px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-b);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.mini b{display:block;font-size:15px}
+/* agenda */
+.tl{position:relative;margin-left:44px;border-left:1px dashed var(--glass-b)}
+.slot{position:relative;margin:0 0 8px 12px;border-radius:16px;padding:8px 12px;font-size:14px}
+.slot small{position:absolute;left:-62px;top:8px;color:var(--muted);font-size:12px}
+.slot.res{background:repeating-linear-gradient(135deg,rgba(255,255,255,.04) 0 6px,transparent 6px 12px);color:var(--muted);border:1px dashed var(--glass-b)}
+.slot.ses{background:color-mix(in srgb,var(--c) 30%,rgba(0,0,0,.2));border:1px solid color-mix(in srgb,var(--c) 70%,transparent);cursor:pointer;min-height:64px}
+.slot.ses b{display:block}
+.slot.done{opacity:.7}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.14)}
+/* roadmap */
+.phase{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
+.node{width:28px;height:28px;border-radius:50%;border:2px solid var(--c);display:grid;place-items:center;font-size:13px;flex:none;margin-top:2px}
+.node.ok{background:var(--c);color:#000}
+.node.now{box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 30%,transparent)}
+/* focus */
+.focus{position:absolute;inset:0;background:rgba(5,6,10,.96);z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;gap:14px}
+.focus.on{display:flex}
+.timer{font-size:68px;font-weight:800;font-variant-numeric:tabular-nums}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:#12151f;border-top:1px solid var(--glass-b);border-radius:28px 28px 0 0;padding:20px 18px 26px;transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
+.sheet.on{transform:none}
+.sheet textarea{width:100%;min-height:80px;border-radius:14px;border:1px solid var(--glass-b);background:var(--glass);color:var(--ink);font:inherit;padding:10px;margin:8px 0}
+.seg{display:flex;gap:8px;margin:8px 0}
+.seg button{flex:1;min-height:44px;border-radius:14px;border:1px solid var(--glass-b);background:var(--glass);color:var(--ink);font:inherit;cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;color:#000;font-weight:700}
+.toast{position:absolute;left:16px;right:16px;top:50px;z-index:9;background:#fff;color:#000;border-radius:16px;padding:12px 14px;font-weight:600;transform:translateY(-400%);opacity:0;pointer-events:none;transition:transform .35s,opacity .2s}
+.toast.on{transform:none;opacity:1}
+.entry{border-left:3px solid var(--c);padding-left:10px;margin:10px 0}
+.week{display:flex;align-items:flex-end;gap:8px;height:120px;margin:8px 0}
+.week div{flex:1;display:flex;flex-direction:column-reverse;border-radius:8px;overflow:hidden;background:var(--res)}
+.week i{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<h1>Ascend · repenser l'interface autour de l'apprentissage</h1>
+<p class="lead">Deux façons d'ouvrir l'app. Touche une séance ou « Reprendre » : concentration, puis bilan, puis le journal se remplit. Les onglets sont tous actifs.</p>
+<div class="switch" role="group" aria-label="Variante">
+  <button data-v="A" aria-pressed="true">A · Reprendre</button>
+  <button data-v="B" aria-pressed="false">B · Mon agenda</button>
+</div>
+<div class="stage"><div class="phone" id="phone">
+  <div class="toast" id="toast" role="status"></div>
+
+  <section class="screen on" id="s-home"></section>
+
+  <section class="screen" id="s-paths">
+    <div class="eyebrow">Parcours</div><h2>Ma progression</h2>
+    <div id="paths"></div>
+  </section>
+
+  <section class="screen" id="s-journal">
+    <div class="eyebrow">Journal</div><h2>Ce que j'ai appris</h2>
+    <div class="card" id="review"></div>
+    <div id="entries"></div>
+  </section>
+
+  <section class="screen" id="s-week">
+    <div class="eyebrow">Semaine</div><h2>12 h d'apprentissage</h2>
+    <div class="card">
+      <div class="row"><b id="wh">7 h 30</b><span class="muted">objectif 12 h</span></div>
+      <div class="bar" style="--c:#fff"><i style="width:62%;--c:#fff"></i></div>
+      <div class="week" aria-label="Heures par jour">
+        <div style="height:60%"><i style="height:50%;background:var(--java)"></i><i style="height:50%;background:var(--miage)"></i></div>
+        <div style="height:80%"><i style="height:60%;background:var(--cloud)"></i><i style="height:40%;background:var(--miage)"></i></div>
+        <div style="height:40%"><i style="height:100%;background:var(--archi)"></i></div>
+        <div style="height:70%"><i style="height:70%;background:var(--java)"></i><i style="height:30%;background:var(--front)"></i></div>
+        <div style="height:20%"><i style="height:100%;background:var(--miage)"></i></div>
+        <div style="height:0"></div><div style="height:0"></div>
+      </div>
+      <div class="legend"><span><span class="dot" style="--c:var(--java)"></span>Java</span><span><span class="dot" style="--c:var(--cloud)"></span>Cloud</span><span><span class="dot" style="--c:var(--archi)"></span>Archi</span><span><span class="dot" style="--c:var(--miage)"></span>MIAGE</span><span><span class="dot" style="--c:var(--front)"></span>Front</span></div>
+    </div>
+    <div class="card"><h3>Revue de la semaine</h3><p class="muted" style="margin-top:6px">Tu as le plus avancé sur Java. L'architecture est en retard de 1 h 30 sur ton budget : veux-tu déplacer une séance de MIAGE vers jeudi ?</p>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" style="flex:1">Garder</button><button class="btn" style="flex:1;--c:#fff">Déplacer</button></div></div>
+    <div class="card"><h3>Temps réservé cette semaine</h3><p class="muted" style="margin-top:6px">Travail 36 h · Trajets 10 h · Sport 5 h · Routine 8 h. Rien à cocher.</p></div>
+  </section>
+
+  <div class="focus" id="focus" role="dialog" aria-label="Concentration">
+    <span class="tag" id="f-tag"></span>
+    <h2 id="f-title" style="margin:0"></h2>
+    <p class="muted" id="f-sub"></p>
+    <div class="timer" id="f-time" role="timer">45:00</div>
+    <p class="muted">Temps accéléré dans la maquette.</p>
+    <div class="row"><button class="btn ghost" id="f-pause">Pause</button><button class="btn" id="f-done" style="--c:#fff">Terminer</button></div>
+  </div>
+
+  <div class="sheet" id="sheet" role="dialog" aria-label="Bilan de séance">
+    <div class="eyebrow">Bilan de séance</div>
+    <h3 id="b-title" style="margin:4px 0"></h3>
+    <label class="muted" for="b-note">Qu'est-ce que j'ai compris, qu'est-ce qui coince ?</label>
+    <textarea id="b-note" placeholder="Ex. : un conteneur partage le noyau de l'hôte, contrairement à une VM."></textarea>
+    <div class="muted">Difficulté</div>
+    <div class="seg" id="b-diff"><button aria-pressed="false">Facile</button><button aria-pressed="true">Correct</button><button aria-pressed="false">Dur</button></div>
+    <label class="row" style="margin:6px 0 12px"><span>À revoir dans quelques jours</span><input id="b-rev" type="checkbox" checked style="width:26px;height:26px"></label>
+    <button class="btn" id="b-save" style="width:100%;--c:#fff">Enregistrer la séance</button>
+  </div>
+
+  <nav class="nav" aria-label="Navigation">
+    <button data-t="home" aria-current="page"><span>◉</span>Aujourd'hui</button>
+    <button data-t="paths"><span>🧭</span>Parcours</button>
+    <button data-t="journal"><span>📓</span>Journal</button>
+    <button data-t="week"><span>📊</span>Semaine</button>
+  </nav>
+</div></div>
+
+<script>
+const P={java:{n:'Java backend',c:'var(--java)',lvl:'Bases solides',pct:34,step:'Streams et Collectors',ph:'Phase 6 · Java moderne',min:45},
+cloud:{n:'Cloud et DevOps',c:'var(--cloud)',lvl:'Conteneurs maîtrisés',pct:18,step:'Écrire un Dockerfile',ph:'Phase 3 · Docker',min:45},
+archi:{n:'Architecture logicielle',c:'var(--archi)',lvl:'Bases de conception',pct:9,step:'Principes SOLID',ph:'Phase 1 · Principes',min:30},
+miage:{n:'MIAGE',c:'var(--miage)',lvl:'En retard de 2 séances',pct:41,step:'Tests de contrat d\'API',ph:'Tests et qualité',min:60},
+front:{n:'Dev front',c:'var(--front)',lvl:'Démarrage',pct:6,step:'Flexbox',ph:'Phase 2 · CSS',min:30}};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let variant='A',cur=null,left=0,paused=false,tick=null;
+const entries=[{k:'java',t:'Optional : éviter les null',d:'Optional ne sert pas de champ, seulement de retour.',when:'hier',rev:false}];
+const toRev=[{k:'cloud',t:'Différence image / conteneur'},{k:'archi',t:'Inversion de dépendance'}];
+
+const agenda=[['06:00','res','Routine du matin','1 h 15'],['07:15','res','Trajet','1 h'],['08:15','res','Travail','7 h'],['18:00','ses','java'],['19:00','res','Dîner','45 min'],['19:45','ses','cloud'],['21:00','res','Bilan et coucher','']];
+const done=new Set();
+
+function home(){
+ const h=$('#s-home');
+ if(variant==='A'){
+  const p=P.java;
+  h.innerHTML=`<div class="eyebrow">Mardi 3 novembre</div><h2>Bonsoir Raphaël</h2>
+  <div class="hero" style="--c:${p.c}"><div class="eyebrow">Reprendre là où tu en es</div><h3>${p.step}</h3><div class="muted">${p.n} · ${p.ph}</div>
+   <div class="bar" style="--c:${p.c}"><i style="width:${p.pct}%"></i></div><div class="row"><span class="tag">${p.lvl}</span><button class="btn" style="--c:${p.c}" data-go="java">Reprendre · ${p.min} min</button></div></div>
+  <div class="eyebrow" style="margin:8px 0">Mes parcours</div>
+  <div class="grid2">${['cloud','archi','miage','front'].map(k=>`<button class="mini" data-go="${k}" style="border-color:${P[k].c}"><b>${P[k].n}</b><span class="muted">${P[k].lvl}</span><div class="bar" style="--c:${P[k].c}"><i style="width:${P[k].pct}%"></i></div></button>`).join('')}</div>
+  <div class="card" style="margin-top:12px"><div class="row"><b>Cette semaine</b><span class="muted">7 h 30 / 12 h</span></div><div class="bar" style="--c:#fff"><i style="width:62%"></i></div><p class="muted">Prochaine séance à 19 h 45 · Cloud. Le reste de ta journée est réservé.</p></div>`;
+ }else{
+  h.innerHTML=`<div class="eyebrow">Mardi 3 novembre</div><h2>Ma journée</h2>
+  <p class="muted" style="margin-bottom:14px">2 séances d'apprentissage · 1 h 45. Les bandes hachurées sont du temps réservé.</p>
+  <div class="tl">${agenda.map(a=>a[1]==='res'?`<div class="slot res"><small>${a[0]}</small>${a[2]}${a[3]?' · '+a[3]:''}</div>`:`<div class="slot ses ${done.has(a[2])?'done':''}" style="--c:${P[a[2]].c}" data-go="${a[2]}" tabindex="0" role="button"><small>${a[0]}</small><b>${P[a[2]].step}</b><span class="muted">${P[a[2]].n} · ${P[a[2]].min} min ${done.has(a[2])?'· faite':''}</span></div>`).join('')}</div>`;
+ }
+}
+function paths(){
+ const ph=[['Principes et POO',1],['Collections et génériques',1],['Java moderne',2],['Concurrence',0],['Spring Boot',0]];
+ $('#paths').innerHTML=Object.entries(P).map(([k,p])=>`<div class="card" style="--c:${p.c}"><div class="row"><h3>${p.n}</h3><span class="tag">${p.pct}%</span></div><div class="muted">${p.lvl}</div><div class="bar"><i style="width:${p.pct}%"></i></div>
+  ${k==='java'?ph.map(x=>`<div class="phase"><div class="node ${x[1]===1?'ok':''} ${x[1]===2?'now':''}">${x[1]===1?'✓':''}</div><div><b>${x[0]}</b><div class="muted">${x[1]===2?'En cours · '+p.step:x[1]===1?'Terminée':'À venir'}</div></div></div>`).join(''):''}
+  <button class="btn ghost" data-go="${k}" style="width:100%;margin-top:6px">Reprendre</button></div>`).join('');
+}
+function journal(){
+ $('#review').innerHTML=`<h3>À revoir aujourd'hui</h3>${toRev.length?toRev.map((r,i)=>`<div class="row entry" style="--c:${P[r.k].c}"><span>${r.t}</span><span><button class="btn ghost" data-rv="${i}" data-ok="1" style="min-height:44px">Je sais</button> <button class="btn ghost" data-rv="${i}" style="min-height:44px">Flou</button></span></div>`).join(''):'<p class="muted">Rien à revoir. Bien joué.</p>'}`;
+ $('#entries').innerHTML=entries.map(e=>`<div class="card entry" style="--c:${P[e.k].c}"><div class="row"><b>${e.t}</b><span class="muted">${e.when}</span></div><p class="muted" style="margin-top:4px">${e.d||'Sans note.'}</p>${e.rev?'<span class="tag">À revoir</span>':''}</div>`).join('');
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function start(k){cur=k;const p=P[k];left=p.min*60;paused=false;$('#f-tag').textContent=p.n;$('#f-title').textContent=p.step;$('#f-sub').textContent=p.ph;$('#f-time').textContent=fmt(left);$('#f-pause').textContent='Pause';$('#focus').classList.add('on');
+ clearInterval(tick);tick=setInterval(()=>{if(!paused){left=Math.max(0,left-30);$('#f-time').textContent=fmt(left)}},250)}
+function tab(t){$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));$$('.nav button').forEach(b=>b.toggleAttribute('aria-current',b.dataset.t===t)||(b.dataset.t===t&&b.setAttribute('aria-current','page')));$$('.nav button').forEach(b=>{if(b.dataset.t===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')})}
+document.addEventListener('click',e=>{
+ const g=e.target.closest('[data-go]');if(g){start(g.dataset.go);return}
+ const t=e.target.closest('.nav button');if(t){tab(t.dataset.t);return}
+ const v=e.target.closest('[data-v]');if(v){variant=v.dataset.v;$$('[data-v]').forEach(b=>b.setAttribute('aria-pressed',b===v));home();tab('home');return}
+ const r=e.target.closest('[data-rv]');if(r){toRev.splice(+r.dataset.rv,1);journal();toast(r.dataset.ok?'Noté : revu dans 7 jours':'Noté : revu demain');return}
+ const d=e.target.closest('#b-diff button');if(d){$$('#b-diff button').forEach(b=>b.setAttribute('aria-pressed',b===d))}
+});
+$('#f-pause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Reprendre':'Pause'};
+$('#f-done').onclick=()=>{clearInterval(tick);$('#focus').classList.remove('on');$('#b-title').textContent=P[cur].step+' · '+P[cur].n;$('#b-note').value='';$('#sheet').classList.add('on')};
+$('#b-save').onclick=()=>{const note=$('#b-note').value.trim();entries.unshift({k:cur,t:P[cur].step,d:note,when:'à l\'instant',rev:$('#b-rev').checked});if($('#b-rev').checked)toRev.push({k:cur,t:P[cur].step});done.add(cur);P[cur].pct=Math.min(100,P[cur].pct+2);$('#sheet').classList.remove('on');home();paths();journal();toast('Séance enregistrée · +'+P[cur].min+' min de '+P[cur].n)};
+home();paths();journal();
+</script>
+</body>
+</html>

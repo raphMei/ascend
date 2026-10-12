@@ -2,9 +2,9 @@
 import { range, dow, type ISODate } from '../core/dates';
 
 export type DayType = 'ent' | 'ecole' | 'exam' | 'ferie' | 'we';
-export const SCHOOL: Record<ISODate, 1> = {};
-export const EXAM: Record<ISODate, 1> = {};
-export const FERIE: Record<ISODate, 1> = { "2026-11-11": 1, "2026-12-25": 1, "2027-01-01": 1 };
+const SCHOOL: Record<ISODate, 1> = {};
+const EXAM: Record<ISODate, 1> = {};
+const FERIE: Record<ISODate, 1> = { "2026-11-11": 1, "2026-12-25": 1, "2027-01-01": 1 };
 [["2026-11-02", "2026-11-06"], ["2026-11-09", "2026-11-10"], ["2026-11-12", "2026-11-13"], ["2026-11-16", "2026-11-20"],
  ["2026-12-03", "2026-12-04"], ["2026-12-14", "2026-12-18"], ["2027-01-04", "2027-01-08"], ["2027-01-11", "2027-01-15"],
  ["2027-02-08", "2027-02-12"]].forEach((r) => { range(r[0], r[1]).forEach((d) => { SCHOOL[d] = 1; }); });

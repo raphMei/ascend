@@ -2,12 +2,12 @@ import { parisNow } from '@/core/paris';
 import { dueReminders, remindersToSend, reminderSchedule, GRACE_MIN, type Reminder } from '@/domain/reminders';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { DayData } from '@/domain/types';
 import { pushStatus, urlBase64ToBytes, type PushEnv } from '@/services/push';
 
 const S = DEFAULT_SETTINGS;
-const tasks = adjustedTasks(S);
+const tasks = genericTasks(S);
 const WED = '2026-10-14', FRI = '2026-11-06', SAT = '2026-11-07';
 const plan = (date: string, day?: DayData) => planDay({ date, settings: S, progress: { done: {} }, day, today: date, tasks });
 const kinds = (rs: Reminder[]) => rs.map((r) => r.kind);

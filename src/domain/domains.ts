@@ -21,4 +21,3 @@ export const DOM: Record<DomainId, DomainInfo> = {
   finances: { name: 'Finances', c: '--c-finances', ico: 'coins', blurb: 'Point mensuel, épargne et versements.' },
   projets: { name: 'Projets perso', c: '--c-projets', ico: 'rocket', blurb: 'Tes projets perso et freelance, une prochaine action chacun.' }
 };
-export const TRACKED: DomainId[] = ['matin', 'sport', 'sommeil', 'miage', 'java', 'anglais', 'lecture', 'front', 'projets'];

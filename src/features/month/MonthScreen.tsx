@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MOISL } from '@/core/dates';
+import { monthLabel, shiftMonth } from '@/core/dates';
 import { hours } from '@/core/format';
 import { LEVELS, LEVEL_LABEL, MONTH_DOMAINS, monthPlanFor } from '@/domain/month';
 import { monthLoad } from '@/domain/month-load';
@@ -9,9 +9,6 @@ import { PageHead } from '@/components/PageHead';
 import { useClock } from '@/hooks/useClock';
 import { useData } from '@/state/DataContext';
 
-const nextMonth = (m: string): string => { const [y, mo] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mo, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
-const prevMonth = (m: string): string => { const [y, mo] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 2, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
-const label = (m: string) => { const n = MOISL[+m.slice(5) - 1]; return n[0].toUpperCase() + n.slice(1) + ' ' + m.slice(0, 4); };
 
 /** « Mon mois » : choisir l'intensité de chaque domaine pour le mois ; le planning de tous les jours s'adapte. */
 export function MonthScreen() {
@@ -27,11 +24,11 @@ export function MonthScreen() {
 
   return (
     <>
-      <PageHead eyebrow="Mon mois" title={label(month)} />
+      <PageHead eyebrow="Mon mois" title={monthLabel(month)} />
       <div className="daynav">
-        <button type="button" className="icon" onClick={() => setMonth(prevMonth(month))} aria-label="Mois précédent">‹</button>
+        <button type="button" className="icon" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="Mois précédent">‹</button>
         {month !== current && <button type="button" className="btn small" onClick={() => setMonth(current)}>Ce mois-ci</button>}
-        <button type="button" className="icon" onClick={() => setMonth(nextMonth(month))} aria-label="Mois suivant" style={{ marginLeft: 'auto' }}>›</button>
+        <button type="button" className="icon" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Mois suivant" style={{ marginLeft: 'auto' }}>›</button>
       </div>
       <p className="muted">Choisis l'intensité de chaque domaine pour ce mois. Le planning de tous les jours s'adapte tout de suite, et un mois sans réglage reprend celui d'avant.</p>
 

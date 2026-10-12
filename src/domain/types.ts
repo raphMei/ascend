@@ -29,7 +29,7 @@ export interface Settings {
   /** Réajuste automatiquement le planning après un retard (activé si absent). */
   autoReschedule?: boolean;
   /** Préférences d'affichage (synchronisées entre appareils). */
-  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes' };
+  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes'; onboarded?: boolean };
 }
 
 /** Intensité d'un domaine pour un mois. */
@@ -46,10 +46,13 @@ export interface DayStatsSnapshot {
 }
 
 /** Bloc ajouté à la main sur une journée. */
-export interface ExtraBlock { title: string; start: number; end: number; domain: DomainId; checkable?: boolean }
+type DayOverride = 'conge' | 'remote' | 'onsite';
+interface ExtraBlock { title: string; start: number; end: number; domain: DomainId; checkable?: boolean }
 
 /** Modifications libres du planning d'un jour. `null` = annulé (une fusion Firestore ne peut pas supprimer une clé). */
 export interface DayEdits {
+  /** Journée exceptionnelle : congé (ni travail ni trajet), télétravail ou sur site, quel que soit le calendrier. `null` = journée normale. */
+  day?: DayOverride | null;
   /** Blocs passés (non faits volontairement), par identifiant de bloc. */
   skip?: Record<string, boolean | null>;
   /** Horaire déplacé d'un bloc, par identifiant de bloc. */
@@ -73,13 +76,15 @@ export type ProjectStatus = 'actif' | 'pause' | 'fini';
 /** Projet perso / freelance (users/{uid}/progress/main → projects). */
 export interface Project { name: string; next: string; status: ProjectStatus; minutes: number; created: string }
 /** Versements du mois (finances) — chiffres saisis par toi, jamais de conseil d'investissement. */
-export interface MonthFinance { savings?: number | null; invested?: number | null }
+interface MonthFinance { savings?: number | null; invested?: number | null }
 
 /** users/{uid}/progress/main : tâches MIAGE (d:…, s:…), Java (p1t1…), dev front (f1t1…) et points finances (fin:AAAA-MM:…) cochés. */
 export interface Progress {
   done: Record<string, boolean>;
   /** Dates imposées par toi pour une tâche MIAGE (annule le réajustement automatique). */
   pins?: Record<string, string | null>;
+  /** Jour où chaque étape ou tâche a été terminée (sert à estimer le rythme). */
+  doneAt?: Record<string, string | null>;
   projects?: Record<string, Project | null>;
   finance?: Record<string, MonthFinance>;      // clé « AAAA-MM »
   toeic?: Record<string, number | null>;       // clé = date du test blanc, valeur = score /990
@@ -93,7 +98,9 @@ export type SportKind = 'push' | 'pull' | 'legs';
 export interface Block {
   id: string; start: number; end: number; title: string; domain: DomainId;
   fixed: boolean; checkable: boolean; done: boolean;
-  blocked?: boolean; sub?: string; detail?: string; link?: string;
+  blocked?: boolean; sub?: string; detail?: string;
+  /** Liens du cours ou de l'exercice (français d'abord). */
+  res?: import('@/content/types').Resource[];
   scope?: 'prog'; taskId?: string; due?: ISODate; cont?: boolean; sport?: SportKind;
 }
 
@@ -114,6 +121,8 @@ export interface Plan {
   isShabbatDay: boolean;
   /** Blocs que l'utilisateur a passés ce jour-là (absent si aucun). */
   skipped?: Block[];
+  /** Journée exceptionnelle choisie par l'utilisateur (absent = journée normale). */
+  dayEdit?: DayOverride;
   /** Minutes libres après le sport (uniquement quand le plan est demandé en mode « mesure », pour le réajustement). */
   freeMin?: number;
 }

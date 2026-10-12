@@ -1,9 +1,9 @@
 import { statsToBackfill } from '@/domain/backfill';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { DayData } from '@/domain/types';
 
-const tasks = adjustedTasks(DEFAULT_SETTINGS);
+const tasks = genericTasks(DEFAULT_SETTINGS);
 const base = { today: '2026-11-05', settings: DEFAULT_SETTINGS, progress: { done: {} }, tasks, loadedFrom: '2026-01-01' };
 const snap: DayData = { stats: { pct: 90, pl: 100, dn: 90, planned: {}, done: {} } };
 

@@ -5,11 +5,11 @@ import { groupBlocks, groupProgress, momentOf } from '@/domain/groups';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { habitStreaks } from '@/domain/streaks';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { Block, DayData } from '@/domain/types';
 
 const S = DEFAULT_SETTINGS;
-const tasks = adjustedTasks(S);
+const tasks = genericTasks(S);
 const BED = toMin(S.bed);
 const plan = (date: string, day?: DayData, settings = S) => planDay({ date, settings, progress: { done: {} }, day, today: '2026-10-01', tasks });
 const mk = (id: string, start: number, end: number, domain: Block['domain'], checkable = true): Block => ({ id, start, end, title: id, domain, fixed: !checkable, checkable, done: false });

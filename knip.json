@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "tests/**/*.{ts,tsx}",
+    "e2e/**/*.ts",
+    "rules-tests/**/*.ts",
+    "scripts/*.ts",
+    "vitest.rules.config.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "e2e/**/*.ts",
+    "scripts/*.ts",
+    "rules-tests/**/*.ts"
+  ]
+}

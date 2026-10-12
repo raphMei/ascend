@@ -4,7 +4,7 @@ import type { ISODate } from '@/core/dates';
 import type { DayData, Progress, Settings } from '@/domain/types';
 import type { AuthUser } from '@/services/types';
 
-export type SyncStatus = 'loading' | 'ok' | 'error' | 'demo';
+type SyncStatus = 'loading' | 'ok' | 'error' | 'demo';
 
 export interface DataState {
   user: AuthUser | null;

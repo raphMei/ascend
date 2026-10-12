@@ -2,16 +2,16 @@ import { addDays, dow, range } from '@/core/dates';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { buildSchedule, sportRescue, type Schedule } from '@/domain/schedule';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { DayData, Progress, Settings } from '@/domain/types';
 
 const S0: Settings = { ...DEFAULT_SETTINGS };
-const tasks = adjustedTasks(S0);
+const tasks = genericTasks(S0);
 const byId = new Map(tasks.map((t) => [t.id, t]));
 const mins = (id: string) => Math.max(15, Math.round(byId.get(id)!.h * 60));
 const run = (today: string, o: { done?: string[]; settings?: Partial<Settings>; days?: Record<string, DayData>; pins?: Record<string, string | null>; now?: number } = {}): Schedule => {
   const progress: Progress = { done: Object.fromEntries((o.done ?? []).map((id) => [id, true])), pins: o.pins };
-  return buildSchedule({ tasks: adjustedTasks({ ...S0, ...o.settings }), progress, settings: { ...S0, ...o.settings }, days: o.days ?? {}, today, now: o.now ?? 360 })!;
+  return buildSchedule({ tasks: genericTasks({ ...S0, ...o.settings }), progress, settings: { ...S0, ...o.settings }, days: o.days ?? {}, today, now: o.now ?? 360 })!;
 };
 /** Toutes les tâches dues avant `today` (retard si on n'a rien fait). */
 const lateOn = (today: string) => tasks.filter((t) => t.due < today);

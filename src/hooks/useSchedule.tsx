@@ -1,7 +1,6 @@
 /** Réajustement automatique du planning, calculé une seule fois pour toute l'application. */
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { buildSchedule, type Schedule } from '@/domain/schedule';
-import type { PlanSchedule } from '@/domain/planner';
 import { useData } from '@/state/DataContext';
 import { useClock } from './useClock';
 
@@ -24,10 +23,4 @@ export function useSchedule(): Schedule | null {
   const v = useContext(Ctx);
   if (v === undefined) throw new Error('useSchedule doit être utilisé dans <ScheduleProvider>');
   return v;
-}
-
-/** La partie lue par le planificateur (undefined si désactivé). */
-export function usePlanSchedule(): PlanSchedule | undefined {
-  const s = useSchedule();
-  return s ? { dayOf: s.dayOf, sport: s.sport } : undefined;
 }

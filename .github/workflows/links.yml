@@ -1,0 +1,17 @@
+name: Liens des cours
+# Vérifie chaque mois que les liens des cours (Java, dev front, matières MIAGE) répondent encore.
+# Un lien cassé fait échouer l'exécution : GitHub t'envoie alors un e-mail. Relance à la main avec « Run workflow ».
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run check:links

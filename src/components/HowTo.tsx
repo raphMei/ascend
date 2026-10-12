@@ -1,12 +1,15 @@
-/** « Comment faire » : détail repliable d'une tâche, avec lien de ressource optionnel. */
-export function HowTo({ text, link }: { text?: string; link?: string }) {
-  if (!text) return null;
+import type { Resource } from '@/content/types';
+import { ResourceLinks } from './ResourceLinks';
+
+/** « Comment faire » : détail repliable d'une tâche, avec les liens vers les cours et exercices. */
+export function HowTo({ text, res }: { text?: string; res?: Resource[] }) {
+  if (!text && !res?.length) return null;
   return (
     <details className="how">
-      <summary>Comment faire</summary>
+      <summary>{res?.length ? 'Cours et détails' : 'Comment faire'}</summary>
       <div className="txt">
         {text}
-        {link && <><br /><a href={link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 700 }}>Ouvrir la ressource ↗</a></>}
+        <ResourceLinks res={res} compact />
       </div>
     </details>
   );

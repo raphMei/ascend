@@ -89,6 +89,7 @@ describe('domaines', () => {
     await userEvent.click(boxes[0]);
     expect(writes.progress).toHaveLength(1);
     expect(Object.values((writes.progress[0] as { done: Record<string, boolean> }).done)).toEqual([true]);
+    expect(Object.values((writes.progress[0] as { doneAt: Record<string, string> }).doneAt)).toEqual([TUESDAY.today]);
   });
 
   it('une phase Java affiche ses étapes', async () => {
@@ -185,16 +186,17 @@ describe('écriture refusée', () => {
 });
 
 describe("rattrapage et fenêtre d'historique", () => {
-  it('enregistre les stats des jours passés une seule fois, sans toucher aux jours qui en ont', async () => {
+  it('enregistre les stats des jours passés en UNE écriture groupée, sans toucher aux jours qui en ont', async () => {
     const seeded = { stats: { pct: 50, pl: 100, dn: 50, planned: {}, done: {} } };
-    const { writes } = renderApp({ seed: { days: { '2026-11-02': seeded } } });
-    await screen.findByRole('heading', { name: 'Salut Raphaël' });
-    await waitFor(() => expect(writes.days.length).toBeGreaterThan(0));
-    const dates = writes.days.map(([d]) => d);
+    const { writes } = renderApp({ hash: '#/today', seed: { days: { '2026-11-02': seeded } } });
+    await screen.findByRole('navigation', { name: 'Semaine' });
+    await waitFor(() => expect(writes.batches).toHaveLength(1));
+    const dates = writes.batches[0].map((e) => e.date);
     expect(dates).toContain('2026-11-01');
     expect(dates).not.toContain('2026-11-02');
     expect(new Set(dates).size).toBe(dates.length);
-    writes.days.forEach(([, patch]) => expect(Object.keys(patch)).toEqual(['stats']));
+    writes.batches[0].forEach((e) => expect(Object.keys(e.patch)).toEqual(['stats']));
+    expect(writes.days.filter(([, p]) => 'stats' in p && Object.keys(p).length === 1 && !('done' in p))).toEqual([]);   // aucune écriture individuelle de stats seules
   });
 
   it('ne charge qu\'une fenêtre d\'historique au démarrage', async () => {
@@ -334,7 +336,7 @@ describe('nouveaux domaines', () => {
   it('finances : cocher une étape du mois et saisir l\'épargne', async () => {
     const { writes } = renderApp({ hash: '#/dom/finances' });
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Budget du mois revu' }));
-    expect(writes.progress[0]).toEqual({ done: { 'fin:2026-11:budget': true } });
+    expect(writes.progress[0]).toEqual({ done: { 'fin:2026-11:budget': true }, doneAt: { 'fin:2026-11:budget': TUESDAY.today } });
     const input = screen.getByLabelText('Épargné ce mois (€)');
     fireEvent.change(input, { target: { value: '300' } });
     fireEvent.blur(input);
@@ -361,7 +363,7 @@ describe('nouveaux domaines', () => {
   it('dev front : une phase se parcourt et se coche', async () => {
     const { writes } = renderApp({ hash: '#/dom/front/f1' });
     await userEvent.click((await screen.findAllByRole('checkbox'))[0]);
-    expect(writes.progress[0]).toEqual({ done: { f1t1: true } });
+    expect(writes.progress[0]).toEqual({ done: { f1t1: true }, doneAt: { f1t1: TUESDAY.today } });
   });
 });
 
@@ -412,7 +414,9 @@ describe('ajustement automatique', () => {
   it('affiche ce qui a été déplacé, avec la raison', async () => {
     renderApp({ hash: '#/today' });
     const card = await clickTodayCard();
-    expect(card).toHaveTextContent(/tâche[s]? déplacée/);
+    expect(card).toHaveTextContent(/Planning ajusté automatiquement · \d+ tâches? déplacée/);
+    expect(card).toHaveTextContent('tu n\'as rien à valider');
+    expect(within(card).getByText(/Planning ajusté automatiquement/).closest('details')).not.toHaveAttribute('open');
     expect(within(card).getAllByText(/En retard depuis/).length).toBeGreaterThan(0);
   });
 
@@ -435,21 +439,11 @@ describe('ajustement automatique', () => {
     const seed = { progress: { done: {}, pins: { 'dl:f0': '2026-11-10' } } };
     const { writes } = renderApp({ hash: '#/today', seed });
     const card = await clickTodayCard();
-    await userEvent.click(within(card).getByRole('button', { name: 'Annuler' }));
+    await userEvent.click(within(card).getByRole('button', { name: 'Annuler ma date' }));
     expect(writes.progress[0]).toEqual({ pins: { 'dl:f0': null } });
   });
 
-  it('désactiver l\'ajustement le retire, et les réglages le rétablissent', async () => {
-    const { writes } = renderApp({ hash: '#/today' });
-    await userEvent.click(within(await clickTodayCard()).getByRole('button', { name: "Désactiver l'ajustement automatique" }));
-    expect(writes.settings).toEqual([{ autoReschedule: false }]);
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'Ajustements automatiques du planning' })).not.toBeInTheDocument());
-  });
 
-  it('la page d\'accueil signale l\'ajustement', async () => {
-    renderApp();
-    expect(await screen.findByText(/Planning ajusté automatiquement/)).toBeInTheDocument();
-  });
 
   it('sans retard au départ de la saison : rien à signaler', async () => {
     renderApp({ hash: '#/today', clock: { today: '2026-10-08', now: 360 } });
@@ -562,5 +556,245 @@ describe('liste d\'habitudes (mode Grit)', () => {
     renderApp({ hash: '#/today', seed: { days: { '2026-11-01': { done }, '2026-11-02': { done } } } });
     const matin = await screen.findByRole('region', { name: 'Matin' });
     expect(within(matin).getAllByLabelText('2 jours d\'affilée').length).toBeGreaterThan(0);
+  });
+});
+
+describe('ajustement automatique : réglage', () => {
+  it('se désactive dans les réglages, et le journal disparaît', async () => {
+    const { writes } = renderApp({ hash: '#/settings' });
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Ajuster automatiquement le planning' }));
+    expect(writes.settings).toEqual([{ autoReschedule: false }]);
+  });
+  it('désactivé : plus de journal sur « Aujourd\'hui »', async () => {
+    renderApp({ hash: '#/today', seed: { settings: { autoReschedule: false } } });
+    await screen.findByRole('navigation', { name: 'Semaine' });
+    expect(screen.queryByRole('region', { name: 'Ajustements automatiques du planning' })).not.toBeInTheDocument();
+  });
+});
+
+describe('changer de jour d\'un geste ou au clavier', () => {
+  it('flèche droite : jour suivant ; flèche gauche : jour précédent ; T : aujourd\'hui', async () => {
+    renderApp({ hash: '#/today' });
+    await screen.findByRole('heading', { level: 1, name: 'mardi 3 novembre' });
+    await userEvent.keyboard('{ArrowRight}');
+    expect(await screen.findByRole('heading', { level: 1, name: 'mercredi 4 novembre' })).toBeInTheDocument();
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}');
+    expect(await screen.findByRole('heading', { level: 1, name: 'lundi 2 novembre' })).toBeInTheDocument();
+    await userEvent.keyboard('t');
+    expect(await screen.findByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeInTheDocument();
+  });
+
+  it('les flèches ne changent pas de jour quand on tape dans un champ', async () => {
+    renderApp({ hash: '#/today' });
+    const weight = await screen.findByLabelText('Poids (kg)');
+    await userEvent.click(weight);
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeInTheDocument();
+  });
+
+  it('glisser vers la gauche : jour suivant ; vers la droite : jour précédent', async () => {
+    renderApp({ hash: '#/today' });
+    const week = await screen.findByRole('navigation', { name: 'Semaine' });
+    fireEvent.touchStart(week, { touches: [{ clientX: 300, clientY: 400 }] });
+    fireEvent.touchEnd(week, { changedTouches: [{ clientX: 150, clientY: 410 }] });
+    expect(await screen.findByRole('heading', { level: 1, name: 'mercredi 4 novembre' })).toBeInTheDocument();
+    const week2 = screen.getByRole('navigation', { name: 'Semaine' });
+    fireEvent.touchStart(week2, { touches: [{ clientX: 100, clientY: 400 }] });
+    fireEvent.touchEnd(week2, { changedTouches: [{ clientX: 260, clientY: 395 }] });
+    expect(await screen.findByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeInTheDocument();
+  });
+
+  it('un défilement vertical ou un petit mouvement n\'est pas un balayage', async () => {
+    renderApp({ hash: '#/today' });
+    const week = await screen.findByRole('navigation', { name: 'Semaine' });
+    fireEvent.touchStart(week, { touches: [{ clientX: 300, clientY: 100 }] });
+    fireEvent.touchEnd(week, { changedTouches: [{ clientX: 200, clientY: 400 }] });      // surtout vertical
+    fireEvent.touchStart(week, { touches: [{ clientX: 300, clientY: 400 }] });
+    fireEvent.touchEnd(week, { changedTouches: [{ clientX: 260, clientY: 400 }] });      // trop court
+    expect(screen.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeInTheDocument();
+  });
+});
+
+describe('journées exceptionnelles (interface)', () => {
+  it('choisir « Congé » enregistre le choix et libère la journée', async () => {
+    const { writes } = renderApp({ hash: '#/today/2026-10-20' });
+    await screen.findByRole('heading', { level: 1, name: 'mardi 20 octobre' });
+    expect(screen.getAllByRole('region', { name: 'Trajet' }).length).toBe(1);
+    await userEvent.selectOptions(screen.getByLabelText('Type de journée'), 'conge');
+    expect(writes.days.filter(([d, p]) => d === '2026-10-20' && 'edits' in p).map(([, p]) => p)).toEqual([{ edits: { day: 'conge' } }]);
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Trajet' })).not.toBeInTheDocument());
+    expect(screen.getByText('Congé', { selector: '.chip' })).toBeInTheDocument();
+  });
+  it('le week-end, le choix n\'est pas proposé', async () => {
+    renderApp({ hash: '#/today/2026-10-18' });
+    await screen.findByRole('heading', { level: 1, name: 'dimanche 18 octobre' });
+    expect(screen.queryByLabelText('Type de journée')).not.toBeInTheDocument();
+  });
+});
+
+describe('continuer mes cours (interface)', () => {
+  it('affiche la prochaine étape Java avec son lien en français et la phase', async () => {
+    renderApp({ hash: '#/today' });
+    const section = await screen.findByRole('region', { name: 'Continuer mes cours' });
+    expect(within(section).getByText('Syntaxe et éléments de base')).toBeInTheDocument();
+    const open = within(section).getByRole('link', { name: /Ouvrir le cours : Syntaxe/ });
+    expect(open).toHaveAttribute('href', 'https://www.jmdoudoux.fr/java/dej/chap-syntaxe.htm');
+    expect(open).toHaveAttribute('target', '_blank');
+    expect(within(section).getByRole('link', { name: /Voir la phase 1 de Java backend/ })).toHaveAttribute('href', '#/dom/java/p1');
+  });
+  it('après avoir fait la première étape, propose la suivante', async () => {
+    renderApp({ hash: '#/today', seed: { progress: { done: { p1t1: true } } } });
+    const section = await screen.findByRole('region', { name: 'Continuer mes cours' });
+    expect(within(section).getByText('Programmation orientée objet : classes, héritage, interfaces')).toBeInTheDocument();
+  });
+});
+
+describe('importer une sauvegarde (interface)', () => {
+  const file = (obj: unknown, name = 'ascend.json') => new File([typeof obj === 'string' ? obj : JSON.stringify(obj)], name, { type: 'application/json' });
+
+  it('un fichier valide : récapitulatif, confirmation, puis écriture groupée', async () => {
+    const { writes } = renderApp({ hash: '#/settings' });
+    const input = await screen.findByLabelText('Importer une sauvegarde');
+    await waitFor(() => expect(writes.batches).toHaveLength(1));   // le rattrapage des stats au démarrage
+    await userEvent.upload(input, file({ days: { '2026-10-20': { weight: 90 }, '2026-10-21': { weight: 89 } }, settings: { kcalGoal: 2900 }, progress: { done: { p1t1: true } } }));
+    expect(await screen.findByText(/2 jours/)).toBeInTheDocument();
+    expect(writes.batches).toHaveLength(1);                       // rien n'est écrit avant confirmation
+    await userEvent.click(screen.getByRole('button', { name: 'Importer' }));
+    await waitFor(() => expect(writes.batches.some((b) => b.length === 2 && b.every((e) => 'weight' in e.patch))).toBe(true));
+    expect(writes.settings).toEqual([{ kcalGoal: 2900 }]);
+    expect(writes.progress).toEqual([{ done: { p1t1: true } }]);
+    expect(await screen.findByText(/Importé : 2 jours, 1 réglage, 1 tâche cochée/)).toBeInTheDocument();
+  });
+
+  it('un fichier invalide est refusé avec les raisons, sans rien écrire', async () => {
+    const { writes } = renderApp({ hash: '#/settings' });
+    const input = await screen.findByLabelText('Importer une sauvegarde');
+    await waitFor(() => expect(writes.batches).toHaveLength(1));
+    await userEvent.upload(input, file({ days: { demain: {} } }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Import refusé, rien n\'a été modifié');
+    expect(screen.getByRole('alert')).toHaveTextContent('pas une date');
+    expect(writes.batches).toHaveLength(1); expect(writes.settings).toEqual([]); expect(writes.progress).toEqual([]);
+  });
+
+  it('« Annuler » abandonne l\'import', async () => {
+    const { writes } = renderApp({ hash: '#/settings' });
+    await userEvent.upload(await screen.findByLabelText('Importer une sauvegarde'), file({ settings: { theme: 'dark' } }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Annuler' }));
+    expect(writes.settings).toEqual([]);
+  });
+
+  it('un lot refusé par le serveur est annulé en entier, avec un message', async () => {
+    const { failWrites } = renderApp({ hash: '#/settings', seed: { days: { '2026-10-20': { weight: 90 } } } });
+    await userEvent.upload(await screen.findByLabelText('Importer une sauvegarde'), file({ days: { '2026-10-20': { weight: 70 } } }));
+    failWrites.on = true;
+    await userEvent.click(await screen.findByRole('button', { name: 'Importer' }));
+    expect(await screen.findByText(/valeurs précédentes ont été rétablies/)).toBeInTheDocument();
+  });
+});
+
+describe('premier lancement', () => {
+  it('affiche « Pour bien démarrer » tant que rien n\'a été coché, avec les liens utiles', async () => {
+    renderApp({ hash: '#/today' });
+    const card = await screen.findByRole('region', { name: 'Pour bien démarrer' });
+    expect(within(card).getByRole('link', { name: /Règle ton mois/ })).toHaveAttribute('href', '#/month');
+    expect(within(card).getAllByRole('link', { name: /Choisis tes jours sur site|Active les rappels/ })).toHaveLength(2);
+  });
+  it('« C\'est fait » l\'enregistre (synchronisé) et la carte disparaît', async () => {
+    const { writes } = renderApp({ hash: '#/today' });
+    await userEvent.click(within(await screen.findByRole('region', { name: 'Pour bien démarrer' })).getByRole('button', { name: "C'est fait" }));
+    expect(writes.settings).toEqual([{ ui: { onboarded: true } }]);
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument());
+  });
+  it('absente quand l\'utilisateur a déjà coché quelque chose', async () => {
+    renderApp({ hash: '#/today', seed: { days: { '2026-11-02': { done: { tephila: true } } } } });
+    await screen.findByRole('navigation', { name: 'Semaine' });
+    expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument();
+  });
+  it('absente quand c\'est déjà terminé, et le réglage d\'affichage de vue reste intact', async () => {
+    renderApp({ hash: '#/today', seed: { settings: { ui: { onboarded: true, group: 'themes' } } } });
+    await screen.findByRole('navigation', { name: 'Semaine' });
+    expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Thèmes' })).toBeChecked();
+  });
+});
+
+describe('prévision d\'achèvement (interface)', () => {
+  it('sans rythme : invite à cocher les premières étapes', async () => {
+    renderApp({ hash: '#/dom/java' });
+    const card = await screen.findByRole('region', { name: "Prévision d'achèvement" });
+    expect(card).toHaveTextContent('Coche tes premières étapes');
+  });
+  it('avec un rythme : minutes par jour, temps restant et date de fin', async () => {
+    const done = { p1t1: true, p1t2: true, p1t3: true };
+    const doneAt = { p1t1: '2026-11-02', p1t2: '2026-11-02', p1t3: '2026-11-03' };
+    renderApp({ hash: '#/dom/java', seed: { progress: { done, doneAt } } });
+    const card = await screen.findByRole('region', { name: "Prévision d'achèvement" });
+    expect(card).toHaveTextContent(/Au rythme des 14 derniers jours/);
+    expect(card).toHaveTextContent(/tu termines (vers le|dans plus de deux ans)/);
+  });
+});
+
+describe('sur la bonne voie ? (interface)', () => {
+  it('chaque matière affiche son statut, avec un symbole et pas seulement une couleur', async () => {
+    renderApp({ hash: '#/dom/miage' });
+    const link = (await screen.findByRole('link', { name: /Deep Learning/ }));
+    expect(within(link).getByText(/En retard|Retard important|À jour|En avance/)).toBeInTheDocument();
+    expect(link.querySelector('[data-track]')?.textContent).toMatch(/[▲●▼]/);
+  });
+});
+
+describe('écran Statistiques', () => {
+  const morning = { tephila: true, pompes: true, stretch: true, petitdej: true };
+  const snap = (pct: number, done: Record<string, number> = {}) => ({ pct, pl: 100, dn: pct, planned: {}, done });
+  const days = {
+    '2026-11-02': { done: morning, stats: snap(80, { matin: 75 }) },
+    '2026-11-01': { done: morning, stats: snap(75, { matin: 75 }) },
+    '2026-10-30': { done: morning, stats: snap(90, { matin: 75, java: 60 }) }
+  };
+
+  it('accessible depuis le Bilan, avec le bilan de la semaine et le retour', async () => {
+    renderApp({ hash: '#/home' });
+    await userEvent.click(await screen.findByRole('link', { name: /Statistiques/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Statistiques' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Bilan de la semaine' })).toHaveTextContent('Cette semaine');
+    expect(screen.getByRole('link', { name: '← Bilan' })).toHaveAttribute('href', '#/home');
+  });
+
+  it('régularité par habitude : taux sur 7 et 30 jours, séries', async () => {
+    renderApp({ hash: '#/stats', seed: { days } });
+    const section = await screen.findByRole('region', { name: 'Régularité par habitude' });
+    expect(within(section).getByText('Téphila')).toBeInTheDocument();
+    expect(within(section).getAllByText(/Série actuelle/).length).toBeGreaterThan(3);
+    expect(within(section).getAllByText(/7 j .* · 30 j /).length).toBeGreaterThan(3);
+  });
+
+  it('calendrier de chaleur : 84 cases accessibles avec la date et l\'avancement', async () => {
+    renderApp({ hash: '#/stats', seed: { days } });
+    const grid = await screen.findByRole('group', { name: 'Calendrier des 12 dernières semaines' });
+    expect(within(grid).getAllByRole('img')).toHaveLength(84);
+    expect(within(grid).getByRole('img', { name: 'lundi 2 novembre : 80 %' })).toBeInTheDocument();
+    expect(within(grid).getByRole('img', { name: /mercredi 4 novembre : à venir/ })).toBeInTheDocument();
+  });
+
+  it('badges : aucun au départ, avec la progression vers chaque seuil', async () => {
+    renderApp({ hash: '#/stats' });
+    const section = await screen.findByRole('region', { name: 'Badges' });
+    expect(section).toHaveTextContent('0 / 9');
+    expect(within(section).getByText('Une semaine d\'affilée')).toBeInTheDocument();
+    expect(section).toHaveTextContent('0 / 7');
+  });
+
+  it('un badge obtenu est marqué comme tel', async () => {
+    const week = Object.fromEntries(['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-18', '2026-10-19'].map((d) => [d, { stats: snap(80) }]));
+    renderApp({ hash: '#/stats', seed: { days: week } });
+    const section = await screen.findByRole('region', { name: 'Badges' });
+    expect(section).toHaveTextContent('1 / 9');
+    expect(within(section).getByText('Une semaine d\'affilée').closest('.badge')).not.toHaveClass('locked');
+  });
+
+  it('bilan de la semaine : compare avec la semaine précédente', async () => {
+    renderApp({ hash: '#/stats', seed: { days } });
+    const section = await screen.findByRole('region', { name: 'Bilan de la semaine' });
+    expect(section).toHaveTextContent(/Semaine précédente : 3,5 h/);
   });
 });

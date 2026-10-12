@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ISODate } from '@/core/dates';
 import { hm, toMin } from '@/core/format';
+import { newId } from '@/core/id';
 import { DOM } from '@/domain/domains';
 import type { Block, DomainId } from '@/domain/types';
 import { useData } from '@/state/DataContext';
@@ -8,7 +9,6 @@ import { Modal } from './Modal';
 
 /** Domaines proposés pour un bloc ajouté à la main. */
 const CHOICES: DomainId[] = ['autre', 'sport', 'miage', 'java', 'alim', 'matin', 'sommeil'];
-const newId = () => Date.now().toString(36);
 
 /** Modifier un bloc : changer l'horaire, le passer, rétablir l'original ; un bloc ajouté à la main peut être supprimé. */
 export function BlockEditor({ block, date, onClose }: { block: Block; date: ISODate; onClose: () => void }) {

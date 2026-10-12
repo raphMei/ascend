@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { fmt } from '@/core/dates';
 import { hours } from '@/core/format';
+import { STEP_LABEL } from '@/content/labels';
 import { SUBJ, byId } from '@/content/miage/subjects';
 import type { MiageTask } from '@/content/types';
 import { DOM } from '@/domain/domains';
 import { mStats } from '@/domain/progress';
+import { TRACK_LABEL, subjectTracks } from '@/domain/track';
 import { BackLink, PageHead } from '@/components/PageHead';
 import { Bar } from '@/components/Bar';
 import { Checkbox } from '@/components/Checkbox';
@@ -21,7 +23,8 @@ function useMiage() {
   const { state, tasks } = useData();
   const { today } = useClock();
   const sched = useSchedule();
-  return { stats: mStats(tasks, state.progress, today, new Set(sched?.dropped ?? [])), tasks, progress: state.progress, today };
+  const dropped = new Set(sched?.dropped ?? []);
+  return { stats: mStats(tasks, state.progress, today, dropped), tracks: subjectTracks(tasks, state.progress, today, dropped), tasks, progress: state.progress, today };
 }
 
 function Card() {
@@ -39,8 +42,8 @@ function TaskRow({ t, done, late, today }: { t: MiageTask; done: boolean; late: 
       <Checkbox checked={done} onChange={(v) => tick(today, { scope: 'prog', key: t.id }, v)} domain="miage" label={t.t} />
       <div>
         <div className="t">{t.t}</div>
-        <div className="sub"><span className="chip">{fmt(t.due)}</span><span className="chip">{hours(t.h * 60)}</span>{late && !dropped && <span className="chip" style={{ color: 'var(--late)' }}>En retard</span>}{to && to !== t.due && !done && <span className="chip">Reprogrammée · {fmt(to)}</span>}{dropped && !done && <span className="chip">Abandonnée automatiquement</span>}</div>
-        <HowTo text={t.d} />
+        <div className="sub">{t.step && <span className="chip">{STEP_LABEL[t.step]}</span>}<span className="chip">{fmt(t.due)}</span><span className="chip">{hours(t.h * 60)}</span>{late && !dropped && <span className="chip" style={{ color: 'var(--late)' }}>En retard</span>}{to && to !== t.due && !done && <span className="chip">Reprogrammée · {fmt(to)}</span>}{dropped && !done && <span className="chip">Abandonnée automatiquement</span>}</div>
+        <HowTo text={t.d} res={t.res} />
       </div>
     </div>
   );
@@ -65,7 +68,7 @@ function SubjectPage({ id }: { id: string }) {
 }
 
 function Page({ sub }: { sub?: string }) {
-  const { stats: ms } = useMiage();
+  const { stats: ms, tracks } = useMiage();
   if (sub && byId[sub]) return <SubjectPage id={sub} />;
   return (
     <>
@@ -77,7 +80,7 @@ function Page({ sub }: { sub?: string }) {
           const p = ms.per[sj.id], pc = p.h ? Math.round((100 * p.hd) / p.h) : 0;
           return (
             <Link key={sj.id} className="go" style={dc('miage')} to={`/dom/miage/${sj.id}`}>
-              <div><div style={{ fontWeight: 700 }}>{sj.name}</div><div className="muted" style={{ fontSize: 14 }}>{p.d} / {p.n} tâches{p.late ? <> · <span style={{ color: 'var(--late)' }}>{p.late} en retard</span></> : null}</div></div>
+              <div><div style={{ fontWeight: 700 }}>{sj.name}</div><div className="muted" style={{ fontSize: 14 }}>{p.d} / {p.n} tâches{p.late ? <> · <span style={{ color: 'var(--late)' }}>{p.late} en retard</span></> : null}</div>{tracks[sj.id] && <div style={{ fontSize: 14, marginTop: 4 }} data-track={tracks[sj.id].status}><span aria-hidden="true">{tracks[sj.id].status === 'avance' ? '▲' : tracks[sj.id].status === 'a-jour' ? '●' : '▼'}</span> <b>{TRACK_LABEL[tracks[sj.id].status]}</b><span className="muted"> · {tracks[sj.id].done}/{tracks[sj.id].planned} prévues{tracks[sj.id].ahead ? `, ${tracks[sj.id].ahead} d'avance` : ''}</span></div>}</div>
               <span className="arrow">›</span><Bar pct={pc} domain="miage" />
             </Link>
           );

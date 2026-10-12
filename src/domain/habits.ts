@@ -24,7 +24,7 @@ export function habitItems(date: ISODate, S: Settings, prog: Progress): PlanItem
   }
   if (S.frontMin >= 5) {
     const next = FRONT_TASKS.find((t) => !prog.done[t.id]);
-    out.push({ min: S.frontMin, blk: { id: 'front', fixed: false, checkable: true, title: 'Dev front', domain: 'front', sub: next ? 'Phase ' + next.phase.n + ' : ' + next.phase.title : 'Parcours terminé', detail: next ? next.t : '', link: next?.u } });
+    out.push({ min: S.frontMin, blk: { id: 'front', fixed: false, checkable: true, title: 'Dev front', domain: 'front', sub: next ? 'Phase ' + next.phase.n + ' : ' + next.phase.title : 'Parcours terminé', detail: next ? next.t : '', res: next?.res } });
   }
   if (S.projetsMin >= 5) {
     const active = Object.values(prog.projects ?? {}).filter((p): p is NonNullable<typeof p> => !!p && p.status === 'actif');

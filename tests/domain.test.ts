@@ -9,11 +9,12 @@ import { jStats, mStats } from '@/domain/progress';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { shabbatFor, shabbatNow } from '@/domain/shabbat';
 import { dayStats, streak } from '@/domain/stats';
+import { genericTasks } from './fixtures';
 import { adjustedTasks } from '@/domain/task-schedule';
 import type { DayData } from '@/domain/types';
 
 const S = DEFAULT_SETTINGS;
-const tasks = adjustedTasks(S);
+const tasks = genericTasks(S);
 const progress = { done: {} };
 const DAYS = range('2026-10-08', '2027-02-28');
 const plan = (date: string, day?: DayData) => planDay({ date, settings: S, progress, day, today: '2026-11-03', tasks });

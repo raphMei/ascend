@@ -5,7 +5,7 @@ import { PHASES, JT, JAVA_HOURS } from '@/content/java/path';
 import type { MiageTask, Phase } from '@/content/types';
 import type { Progress } from './types';
 
-export interface Counter { n: number; d: number; h: number; hd: number; late: number }
+interface Counter { n: number; d: number; h: number; hd: number; late: number }
 
 /** Avancement MIAGE : par matière (`per`), global (`g`) et pourcentage pondéré par les heures. `tasks` = tâches aux échéances ajustées. */
 export function mStats(tasks: readonly MiageTask[], prog: Progress, today: ISODate, excluded?: ReadonlySet<string>) {

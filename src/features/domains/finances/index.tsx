@@ -1,4 +1,4 @@
-import { MOISL } from '@/core/dates';
+import { MOISL, shiftMonth } from '@/core/dates';
 import { financeKey, monthOf } from '@/domain/habits';
 import { DOM } from '@/domain/domains';
 import { Bar } from '@/components/Bar';
@@ -21,10 +21,7 @@ const ITEMS = [
 ] as const;
 
 /** Les n derniers mois (AAAA-MM), du plus ancien au plus récent. */
-function lastMonths(n: number, today: string): string[] {
-  const [y, m] = today.split('-').map(Number);
-  return Array.from({ length: n }, (_, i) => { const d = new Date(Date.UTC(y, m - 1 - (n - 1 - i), 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); });
-}
+const lastMonths = (n: number, today: string): string[] => Array.from({ length: n }, (_, i) => shiftMonth(today.slice(0, 7), -(n - 1 - i)));
 const label = (month: string) => MOISL[+month.slice(5) - 1].slice(0, 4);
 
 function useMonthDone(month: string): number {

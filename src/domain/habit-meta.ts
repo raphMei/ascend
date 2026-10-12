@@ -12,4 +12,3 @@ const BY_DOMAIN: Record<DomainId, string> = {
 };
 
 export const emojiFor = (b: Pick<Block, 'id' | 'domain'>): string => BY_ID[b.id] ?? BY_DOMAIN[b.domain];
-export const emojiForDomain = (d: DomainId): string => BY_DOMAIN[d];

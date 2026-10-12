@@ -18,8 +18,8 @@ main.tsx → App.tsx → features/ (écrans) ──→ components/ (UI réutilis
 | Dossier | Rôle | React ? |
 |---|---|---|
 | `core/` | Dates ISO, formatage, fusion profonde | non |
-| `content/` | Données : calendrier CFA, matières et tâches MIAGE, parcours Java | non |
-| `domain/` | Règles métier **pures** : planning (et ses modifications libres), Chabbat, stats, rattrapage des stats, rappels, domaines optionnels, coach, progression, types du modèle | non |
+| `content/` | Données : calendrier CFA, matières et tâches MIAGE, plans de matière, parcours Java et dev front (chapitres + liens) | non |
+| `domain/` | Règles métier **pures** : planning (modifications libres, jours exceptionnels), réajustement, intensité du mois, Chabbat, stats et rattrapage, séries, objectifs, badges, prévisions, rappels, groupes, minuteur, types du modèle | non |
 | `services/` | `Backend` (interface) + implémentations Firebase et démo ; notifications push ; export JSON | non |
 | `state/` | Réducteur (pur) + `DataProvider` (contexte React, écritures optimistes) | oui |
 | `hooks/` | `useClock`, `usePlan`, `useTick`, `useDayAmounts` | oui |
@@ -60,7 +60,7 @@ Un mois sans réglage reprend le précédent, domaine par domaine. Sans aucun r�
 5. Chaque déplacement est expliqué (`changes`) et s'annule en un toucher (`pins` : date, `'skip'`, ou `null`).
 Le résultat (`Schedule`) est fourni à toute l'application par `ScheduleProvider` ; le planificateur ne lit que `dayOf` et `sport`.
 Sans ajustement (désactivé dans les réglages), le retard s'empile sur aujourd'hui, comme avant.
-L'affichage regroupe les petites tâches MIAGE consécutives (`domain/grouping.ts`).
+L'affichage regroupe les petites tâches MIAGE consécutives (`domain/small-blocks.ts`).
 
 ## Liste d'habitudes (écran « Aujourd'hui »)
 
@@ -71,6 +71,16 @@ L'application s'ouvre sur **Aujourd'hui** : bandeau de la semaine (anneau d'avan
 - `domain/habit-meta.ts` : emoji par bloc et par domaine.
 - Préférences d'affichage (vue, regroupement) : `settings.ui`, synchronisées. Groupes repliés : `localStorage` (par appareil).
 - Pour ajouter un groupe ou changer une règle de regroupement : `domain/groups.ts` seulement.
+
+## Parcours d'apprentissage
+
+`content/dsl.ts` assemble un parcours : phase → étapes (`cours`, `exo`, `projet`, `valid`), chacune avec ses liens (`Resource` : titre, adresse, langue `fr`/`en`, source) et sa durée.
+`PathPages.tsx` les affiche en sections avec les liens ; `domain/continue.ts` donne la prochaine étape (« Continuer mes cours ») ; `domain/forecast.ts` estime la date de fin
+d'après les étapes terminées sur 14 jours (la date de chaque étape est enregistrée dans `progress.doneAt`). Liens vérifiés par `npm run check:links`.
+
+## Progression
+
+`domain/habit-stats.ts` (taux par habitude, calendrier de chaleur, bilan de la semaine), `domain/badges.ts` (seuils), `domain/track.ts` (« sur la bonne voie ? » par matière) → écran **Statistiques** (`features/stats`).
 
 ## Rappels
 
@@ -95,10 +105,13 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 | Commande | Contenu |
 |---|---|
-| `npm test` (200 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
-| `npm run test:e2e` | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, **audit d'accessibilité axe** en clair et en sombre |
+| `npm test` (316 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
+| `npm run test:e2e` (51) | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, polices locales, chargement à la demande, minuteur, import/export, **audit d'accessibilité axe** en clair et en sombre |
 | `npm run test:rules` | **émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections connues, requête fenêtrée) et script d'envoi des rappels de bout en bout (nécessite Java) |
 | `npm run test:all` | tout ce qui précède |
+| `npm run size` | budget de taille du démarrage (après `npm run build`) |
+| `npm run check:links` | liens des cours (réseau) |
+| `npm run unused` | code, exports et dépendances inutilisés (knip) |
 
 ## Déploiement
 

@@ -71,6 +71,17 @@ export async function cloudBackend(): Promise<Backend> {
     },
     async signOut() { await A.signOut(auth); },
     writeDay: (date, patch) => write(['days', date], patch),
+    async writeDays(entries) {
+      if (!uid) throw new Error('not-signed-in');
+      // Firestore limite un lot à 500 opérations.
+      try {
+        for (let i = 0; i < entries.length; i += 400) {
+          const batch = F.writeBatch(db);
+          entries.slice(i, i + 400).forEach(({ date, patch }) => batch.set(F.doc(db, 'users', uid!, 'days', date), patch, { merge: true }));
+          await batch.commit();
+        }
+      } catch (e) { fail(e); throw e; }
+    },
     writeSettings: (patch) => write(['settings', 'main'], patch),
     writeProgress: (patch) => write(['progress', 'main'], patch),
     writePush: (patch) => write(['push', 'main'], patch)

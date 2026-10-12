@@ -10,7 +10,7 @@ export function Layout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const tab = pathname.split('/')[1] || 'today';
-  const current = tab === 'dom' ? 'domains' : tab;
+  const current = tab === 'dom' || tab === 'month' ? 'domains' : tab === 'stats' ? 'home' : tab;
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return (
     <div className="shell">

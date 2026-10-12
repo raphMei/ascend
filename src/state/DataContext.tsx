@@ -7,6 +7,7 @@ import type { Settings } from '@/domain/types';
 import { adjustedTasks } from '@/domain/task-schedule';
 import type { MiageTask } from '@/content/types';
 import { isDemo } from '@/services/config';
+import type { Backup } from '@/services/importData';
 import { createBackend } from '@/services/createBackend';
 import type { Backend } from '@/services/types';
 import { HISTORY_DAYS } from './constants';
@@ -19,6 +20,8 @@ export interface DataApi {
   /** Tâches MIAGE aux échéances ajustées à la vie réelle (Chabbat). */
   tasks: readonly MiageTask[];
   setDay(date: ISODate, patch: Record<string, unknown>): void;
+  /** Plusieurs jours d'un coup : une seule écriture groupée. */
+  setDays(entries: { date: ISODate; patch: Record<string, unknown> }[]): void;
   setSettings(patch: Record<string, unknown>): void;
   setProgress(patch: Record<string, unknown>): void;
   /** Charge l'historique depuis `from` (si pas déjà chargé). */
@@ -26,6 +29,8 @@ export interface DataApi {
   /** Enregistre un abonnement aux notifications (ou le retire avec `null`). */
   savePush(patch: Record<string, unknown>): Promise<void>;
   dismissNotice(): void;
+  /** Applique une sauvegarde validée : fusionne réglages et progression, écrit tous les jours en une écriture groupée. */
+  importBackup(data: Backup): void;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
 }
@@ -69,6 +74,15 @@ export function DataProvider({ children, backend: injected }: { children: ReactN
     const undo = inverse(stateRef.current.days[date], patch);
     optimistic({ type: 'patchDay', date, patch }, () => ({ type: 'patchDay', date, patch: undo }), () => backendRef.current?.writeDay(date, patch));
   }, [optimistic]);
+  const setDays = useCallback((entries: { date: ISODate; patch: Record<string, unknown> }[]) => {
+    if (!entries.length) return;
+    const undo = entries.map(({ date, patch }) => ({ date, patch: inverse(stateRef.current.days[date], patch) }));
+    entries.forEach(({ date, patch }) => dispatch({ type: 'patchDay', date, patch }));
+    backendRef.current?.writeDays(entries)?.catch(() => {
+      undo.forEach(({ date, patch }) => dispatch({ type: 'patchDay', date, patch }));
+      dispatch({ type: 'notice', message: "Enregistrement impossible : les valeurs précédentes ont été rétablies. Vérifie ta connexion et réessaie." });
+    });
+  }, []);
   const setSettings = useCallback((patch: Record<string, unknown>) => {
     const undo = inverse(stateRef.current.settings, patch);
     optimistic({ type: 'patchSettings', patch }, () => ({ type: 'patchSettings', patch: undo }), () => backendRef.current?.writeSettings(patch));
@@ -83,6 +97,11 @@ export function DataProvider({ children, backend: injected }: { children: ReactN
     backendRef.current?.loadHistory(from);
   }, []);
   const savePush = useCallback(async (patch: Record<string, unknown>) => { await backendRef.current?.writePush(patch); }, []);
+  const importBackup = useCallback((data: Backup) => {
+    if (Object.keys(data.settings).length) setSettings(data.settings as Record<string, unknown>);
+    if (Object.keys(data.progress.done).length || Object.keys(data.progress).length > 1) setProgress(data.progress as unknown as Record<string, unknown>);
+    setDays(Object.entries(data.days).map(([date, patch]) => ({ date, patch: patch as Record<string, unknown> })));
+  }, [setSettings, setProgress, setDays]);
   const dismissNotice = useCallback(() => dispatch({ type: 'notice', message: null }), []);
   const signIn = useCallback(async () => { await backendRef.current?.signIn(); }, []);
   const signOut = useCallback(async () => { await backendRef.current?.signOut(); }, []);
@@ -90,8 +109,8 @@ export function DataProvider({ children, backend: injected }: { children: ReactN
   const settings = useMemo(() => resolveSettings(state.settings), [state.settings]);
   const tasks = useMemo(() => adjustedTasks(settings), [settings]);
   const api = useMemo<DataApi>(
-    () => ({ state, settings, tasks, setDay, setSettings, setProgress, loadHistory, savePush, dismissNotice, signIn, signOut }),
-    [state, settings, tasks, setDay, setSettings, setProgress, loadHistory, savePush, dismissNotice, signIn, signOut]
+    () => ({ state, settings, tasks, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut }),
+    [state, settings, tasks, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut]
   );
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

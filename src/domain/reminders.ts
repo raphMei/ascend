@@ -50,7 +50,7 @@ export function reminderSchedule(date: ISODate, plan: Plan, day: DayData | undef
 }
 
 /** Cette heure tombe-t-elle pendant Chabbat ? (vendredi après l'allumage, samedi avant la sortie) */
-export function inShabbat(date: ISODate, minute: number, plan: Plan): boolean {
+function inShabbat(date: ISODate, minute: number, plan: Plan): boolean {
   if (!plan.sh) return false;
   const w = dow(date);
   return (w === 5 && minute >= plan.sh.candle) || (w === 6 && minute < plan.sh.havdalah);

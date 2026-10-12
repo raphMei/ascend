@@ -3,24 +3,28 @@ import { Link, useParams } from 'react-router-dom';
 import { addDays, dow, fmtLong } from '@/core/dates';
 import { dur, hm, hours } from '@/core/format';
 import { DOM } from '@/domain/domains';
+import { continueCards } from '@/domain/continue';
 import { buildGoals } from '@/domain/goals';
 import { groupBlocks } from '@/domain/groups';
-import { groupSmallBlocks } from '@/domain/grouping';
+import { groupSmallBlocks } from '@/domain/small-blocks';
 import { toMin } from '@/core/format';
 import type { DomainId } from '@/domain/types';
 import { AdjustmentsCard } from '@/components/AdjustmentsCard';
 import { AddBlock } from '@/components/BlockEditor';
 import { BlockRow } from '@/components/BlockRow';
 import { EntryReminder } from '@/components/EntryReminder';
+import { OnboardingCard } from '@/components/OnboardingCard';
 import { dc } from '@/components/Icon';
 import { PageHead } from '@/components/PageHead';
 import { TrackerFields } from '@/components/TrackerFields';
+import { ContinueSection } from '@/components/habits/ContinueSection';
 import { GoalsSection } from '@/components/habits/GoalsSection';
 import { GroupSection } from '@/components/habits/GroupSection';
 import { SegmentedControl } from '@/components/habits/SegmentedControl';
 import { WeekStrip } from '@/components/habits/WeekStrip';
 import { Ring } from '@/components/charts/Ring';
 import { useClock } from '@/hooks/useClock';
+import { useDayNavigation } from '@/hooks/useDayNavigation';
 import { usePlan } from '@/hooks/usePlan';
 import { useSchedule } from '@/hooks/useSchedule';
 import { useStreaks } from '@/hooks/useStreaks';
@@ -41,25 +45,36 @@ export function TodayScreen() {
   const view = settings.ui?.today ?? 'liste';
   const mode = settings.ui?.group ?? 'moments';
   const trackable = dow(date) !== 6;
+  const isWeekday = dow(date) >= 1 && dow(date) <= 5;
   const skipped = plan.skipped ?? [];
   const groups = useMemo(() => groupBlocks(plan.blocks, mode, toMin(settings.bed)), [plan.blocks, mode, settings.bed]);
   const goals = useMemo(() => buildGoals({ days: state.days, settings, progress: state.progress, tasks, today, dropped: new Set(sched?.dropped ?? []) }), [state.days, settings, state.progress, tasks, today, sched]);
   const nowHere = date === today ? now : -1;
+  const cards = useMemo(() => continueCards(state.progress, settings), [state.progress, settings]);
   const checks = plan.blocks.filter((b) => b.checkable);
   const minutes = (domain: DomainId) => plan.blocks.filter((b) => b.domain === domain).reduce((a, b) => a + b.end - b.start, 0);
   const doms: Partial<Record<DomainId, number>> = {};
   checks.forEach((b) => { doms[b.domain] = (doms[b.domain] ?? 0) + (b.end - b.start); });
   const items = groupSmallBlocks(plan.blocks);
   const setUi = (patch: NonNullable<typeof settings.ui>) => setSettings({ ui: patch });
+  const swipe = useDayNavigation(date, today);
 
   return (
-    <>
+    // « contents » : le conteneur ne change pas la mise en page, il sert seulement à capter les gestes.
+    <div style={{ display: 'contents' }} {...swipe}>
       <PageHead eyebrow={date === today ? "Aujourd'hui" : 'Planning'} title={fmtLong(date)} />
       <WeekStrip date={date} />
+      {date === today && <OnboardingCard />}
       <div className="daynav">
         <Link className="icon" to={`/today/${addDays(date, -1)}`} aria-label="Jour précédent">‹</Link>
         <span className="chip">{dayTypeLabel(plan, date, 'short')}</span>
         {date !== today && <Link className="btn small" style={{ textDecoration: 'none' }} to="/today">Aujourd'hui</Link>}
+        {isWeekday && (
+          <select className="daykind" aria-label="Type de journée" value={state.days[date]?.edits?.day ?? 'normal'}
+            onChange={(e) => setDay(date, { edits: { day: e.target.value === 'normal' ? null : e.target.value } })}>
+            <option value="normal">Journée normale</option><option value="conge">Congé</option><option value="remote">Télétravail</option><option value="onsite">Sur site</option>
+          </select>
+        )}
         <Link className="icon" to={`/today/${addDays(date, 1)}`} aria-label="Jour suivant" style={{ marginLeft: 'auto' }}>›</Link>
       </div>
 
@@ -121,9 +136,10 @@ export function TodayScreen() {
           </div>
         </section>
       )}
+      {view === 'liste' && date === today && <ContinueSection cards={cards} />}
       {view === 'liste' && date === today && <GoalsSection goals={goals} />}
       {adding && <AddBlock date={date} onClose={() => setAdding(false)} />}
       {trackable && <section className="card"><h2>Mes mesures du jour</h2><p className="muted" style={{ margin: '4px 0 14px' }}>Quelques chiffres suffisent. Ils alimentent tes graphiques.</p><TrackerFields date={date} /></section>}
-    </>
+    </div>
   );
 }

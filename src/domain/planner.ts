@@ -37,7 +37,9 @@ type Item = PlanItem;
 
 export function planDay({ date, settings, progress: prog, day: DD, today, tasks: T, schedule, measure }: PlanInput): Plan {
   const S = settingsForDate(settings, date);
-  const w = dow(date), type = dayType(date), blocks: Block[] = [], warnings: string[] = [], overflow = { n: 0, min: 0 };
+  const dayEdit = DD?.edits?.day ?? undefined;
+  // Un congé ressemble à un jour férié : ni travail, ni cours, ni trajet.
+  const w = dow(date), type = dayEdit === 'conge' && dow(date) >= 1 && dow(date) <= 5 ? 'ferie' : dayType(date), blocks: Block[] = [], warnings: string[] = [], overflow = { n: 0, min: 0 };
   const wake = toMin(S.wake), bed = toMin(S.bed);
   const sh = shabbatTimesForDate(date, S);
   const add = (b: NewBlock) => { blocks.push(Object.assign({ fixed: true, checkable: false, done: false }, b)); return b; };
@@ -63,7 +65,7 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
 
   /* Journée de travail ou de cours */
   const ent = type === 'ent', school = type === 'ecole' || type === 'exam';
-  const onsite = ent && S.onsite.includes(w);
+  const onsite = ent && (dayEdit === 'onsite' ? true : dayEdit === 'remote' ? false : S.onsite.includes(w));
   let sportShort = false;
   if (w >= 1 && w <= 5) {
     if (school) {
@@ -173,7 +175,7 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
   const miLate = mi.filter((t) => t.due < date).length;
   for (const t of mi) {
     const sub = byId[t.s];
-    const it: Item = { min: Math.max(15, Math.round(t.h * 60)), blk: { id: 'm:' + t.id, taskId: t.id, scope: 'prog', fixed: false, checkable: true, title: t.t, domain: 'miage', sub: sub ? sub.short : '', due: t.due, detail: t.d } };
+    const it: Item = { min: Math.max(15, Math.round(t.h * 60)), blk: { id: 'm:' + t.id, taskId: t.id, scope: 'prog', fixed: false, checkable: true, title: t.t, domain: 'miage', sub: sub ? sub.short : '', due: t.due, detail: t.d, res: t.res } };
     const free = wins.reduce((s, x) => s + (x[1] - x[0]), 0);
     if (free < 15 || !place(it)) { overflow.n++; overflow.min += it.left == null ? it.min : Math.max(it.left, 0); }
   }
@@ -190,7 +192,7 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
     const next = JT.find((t) => !(prog.done && prog.done[t.id]));
     const free = wins.reduce((s, x) => s + (x[1] - x[0]), 0);
     if (free >= 25) {
-      const it: Item = { min: Math.min(jmin, free), blk: { id: 'java', fixed: false, checkable: true, title: 'Java backend', domain: 'java', sub: next ? 'Phase ' + next.phase.n + ' : ' + next.phase.title : 'Parcours terminé', detail: next ? next.t : '' , link: next && next.u } };
+      const it: Item = { min: Math.min(jmin, free), blk: { id: 'java', fixed: false, checkable: true, title: 'Java backend', domain: 'java', sub: next ? 'Phase ' + next.phase.n + ' : ' + next.phase.title : 'Parcours terminé', detail: next ? next.t : '' , res: next?.res } };
       place(it);
     }
   }
@@ -200,6 +202,7 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
   blocks.forEach((b) => { b.done = b.checkable ? done(b) : false; });
   const plan: Plan = { date, type, onsite, blocks, warnings, overflow, sh, late: miLate, isShabbatDay: w === 6 };
   if (skipped.length) plan.skipped = skipped;
+  if (dayEdit && w >= 1 && w <= 5) plan.dayEdit = dayEdit;
   return plan;
 }
 

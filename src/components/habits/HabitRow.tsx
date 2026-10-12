@@ -7,6 +7,7 @@ import { useTick } from '@/hooks/useTick';
 import { BlockEditor } from '../BlockEditor';
 import { Checkbox } from '../Checkbox';
 import { HowTo } from '../HowTo';
+import { FocusTimer } from './FocusTimer';
 import { dc } from '../Icon';
 
 /** Une habitude dans la liste du jour : emoji, titre, horaire, série 🔥, grande case ronde. Un toucher sur le titre déplie le détail. */
@@ -19,7 +20,7 @@ export function HabitRow({ block: b, date, streak, now }: { block: Block; date: 
     tick(date, b.scope === 'prog' ? { scope: 'prog', key: b.taskId! } : { scope: 'day', key: b.id }, v);
     if (v) try { navigator.vibrate?.(12); } catch { /* pas de vibration sur cet appareil */ }
   };
-  const expandable = !!(b.detail || b.checkable);
+  const expandable = !!(b.detail || b.res?.length || b.checkable);
   return (
     <div className={['habit', b.done && 'done', !b.checkable && 'info', isNow && 'now', b.blocked && 'blocked'].filter(Boolean).join(' ')} style={dc(b.domain)}>
       <span className="habit-ico" aria-hidden="true">{emojiFor(b)}</span>
@@ -31,7 +32,8 @@ export function HabitRow({ block: b, date, streak, now }: { block: Block; date: 
       {b.checkable ? <Checkbox big checked={b.done} onChange={onChange} domain={b.domain} label={b.title} /> : null}
       {open && (
         <div className="habit-more">
-          {b.detail && <HowTo text={b.detail} link={b.link} />}
+          {(b.detail || b.res?.length) && <HowTo text={b.detail} res={b.res} />}
+          {b.checkable && b.end - b.start >= 10 && <FocusTimer id={`${date}:${b.id}:${b.start}`} minutes={b.end - b.start} done={b.done} onComplete={() => onChange(true)} />}
           {!b.blocked && b.checkable && <button type="button" className="btn small" onClick={() => setEditing(true)} aria-label={`Modifier ${b.title}`}>✎ Modifier l'horaire</button>}
         </div>
       )}

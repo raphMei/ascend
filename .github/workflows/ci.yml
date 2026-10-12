@@ -14,6 +14,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
+      - run: npm run size
   e2e:
     name: Bout en bout (Chromium)
     runs-on: ubuntu-latest

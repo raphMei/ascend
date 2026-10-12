@@ -19,7 +19,7 @@ function parisOffset(date: ISODate): number {
   const f = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(date + 'T12:00:00Z'));
   return +f.find((p) => p.type === 'hour')!.value * 60 + +f.find((p) => p.type === 'minute')!.value - 720;
 }
-export function sunsetLocal(date: ISODate, S: Geo): number { return Math.round(sunsetUTCmin(date, S.lat, S.lon) + parisOffset(date)); }
+function sunsetLocal(date: ISODate, S: Geo): number { return Math.round(sunsetUTCmin(date, S.lat, S.lon) + parisOffset(date)); }
 /** Pour un vendredi F : entrée (allumage) et sortie (samedi soir). */
 export function shabbatFor(friday: ISODate, S: Geo): ShabbatWindow {
   return { candle: sunsetLocal(friday, S) - S.candle, havdalah: sunsetLocal(addDays(friday, 1), S) + S.havdalah };

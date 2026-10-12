@@ -70,12 +70,11 @@ export function HomeScreen() {
           <SyncBadge sync={state.sync} error={state.error} />
         </div>
       </PageHead>
+      <Link to="/stats" className="card" style={{ textDecoration: 'none', display: 'block' }}>
+        <div className="sectionhead"><h2>Statistiques</h2><span className="muted">Voir →</span></div>
+        <p className="muted" style={{ marginTop: 4 }}>Régularité par habitude, calendrier des 12 dernières semaines, bilan de la semaine et badges.</p>
+      </Link>
       <section className="card coach" aria-label="Message du coach"><div className="eyebrow">Ton coach</div><p className="big">{line}</p><p className="small">{sub}</p></section>
-      {sched && sched.changes.length > 0 && (
-        <Link to="/today" className="warn" style={{ textDecoration: 'none', display: 'block' }}>
-          <b>Planning ajusté automatiquement :</b> {sched.changes.filter((c) => c.reason !== 'abandon').length} tâche{sched.changes.filter((c) => c.reason !== 'abandon').length > 1 ? 's' : ''} déplacée{sched.changes.filter((c) => c.reason !== 'abandon').length > 1 ? 's' : ''}{sched.dropped.length ? `, ${sched.dropped.length} abandonnée${sched.dropped.length > 1 ? 's' : ''}` : ''}. Voir pourquoi →
-        </Link>
-      )}
       <section className="card hero">
         <div className="ring"><Ring pct={st.pct} color="var(--accent)" /><div className="num"><b>{st.pct}%</b><span>du jour</span></div></div>
         <div className="grid" style={{ gap: 14 }}>

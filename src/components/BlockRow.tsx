@@ -37,7 +37,7 @@ export function BlockRow({ block: b, date, today, now, compact }: { block: Block
           {b.sub && <span>{b.sub}</span>}
           {b.due && b.due < date && <span className="chip" style={{ color: 'var(--late)' }}>En retard · prévu {fmtShort(b.due)}</span>}
         </div>
-        {b.detail && <div className="how"><HowTo text={b.detail} link={b.link} /></div>}
+        {(b.detail || b.res?.length) && <div className="how"><HowTo text={b.detail} res={b.res} /></div>}
       </div>
       {editing && <BlockEditor block={b} date={date} onClose={() => setEditing(false)} />}
     </div>

@@ -36,7 +36,7 @@ export function pushStatus(env: PushEnv, subscribed: boolean, vapidKey = VAPID_P
   return subscribed && env.permission === 'granted' ? 'on' : 'off';
 }
 
-export const swUrl = (): string => `${import.meta.env.BASE_URL}sw.js`;
+const swUrl = (): string => `${import.meta.env.BASE_URL}sw.js`;
 
 /** Clé VAPID (base64url) → octets, format attendu par `pushManager.subscribe`. */
 export function urlBase64ToBytes(b64: string): Uint8Array {
@@ -46,7 +46,7 @@ export function urlBase64ToBytes(b64: string): Uint8Array {
 }
 
 /** Empreinte courte et stable de l'adresse d'un abonnement (sert d'identifiant dans Firestore). */
-export async function subscriptionId(endpoint: string): Promise<string> {
+async function subscriptionId(endpoint: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(endpoint));
   return Array.from(new Uint8Array(buf)).slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
 }

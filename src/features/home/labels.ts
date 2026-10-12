@@ -4,6 +4,7 @@ import type { Plan } from '@/domain/types';
 /** Libellé du type de journée (long : accueil ; court : écran « Aujourd'hui »). */
 export function dayTypeLabel(plan: Plan, date: ISODate, size: 'long' | 'short'): string {
   const long = size === 'long';
+  if (plan.dayEdit === 'conge') return 'Congé';
   switch (plan.type) {
     case 'ent': return plan.onsite ? (long ? 'Journée AXA sur site' : 'AXA sur site') : (long ? 'Journée AXA en télétravail' : 'AXA en télétravail');
     case 'ecole': return long ? 'Journée de cours' : 'Cours';

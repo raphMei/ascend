@@ -1,16 +1,20 @@
 import type { ISODate } from '@/core/dates';
+import type { Resource, StepKind } from '../../types';
 
-/** Une séance de travail sur la matière (chapitre, TD, notion). Remplace une tâche générique du jour. */
-export interface PlanUnit { title: string; detail: string; /** durée en heures (sinon : 20 à 45 min selon les crédits) */ hours?: number }
+/** Une séance de travail sur la matière : un chapitre à lire, un exercice, un projet. Remplace une tâche générique du jour.
+    `res` : liens vers le cours correspondant (français d'abord). */
+export interface PlanUnit { title: string; detail: string; /** durée en heures (45 min par défaut) */ hours?: number; kind?: StepKind; res?: Resource[] }
 /** Date importante : contrôle continu, rendu, soutenance. */
-export interface PlanMilestone { date: ISODate; label: string; hours?: number }
+interface PlanMilestone { date: ISODate; label: string; hours?: number }
 
 /** Plan précis d'une matière, rempli à partir du programme réel du cours. */
 export interface SubjectPlan {
   /** Identifiant de la matière (voir subjects.ts) : dl, qa, sec, llm, big, ri, gov, eth, toeic, proj. */
   subject: string;
-  /** Séances dans l'ordre : la première prend le premier créneau de la matière, etc. Quand elles sont épuisées, les tâches de révision génériques reprennent. */
+  /** Séances dans l'ordre, réparties régulièrement sur les créneaux de la matière jusqu'aux examens. */
   units: PlanUnit[];
+  /** Liens ajoutés aux projets datés de la matière, par identifiant de tâche (ex. « dl:p5 »). Les projets eux-mêmes sont décrits dans `tasks.ts`. */
+  projects?: Record<string, Resource[]>;
   /** Contrôles continus et rendus : une tâche « préparer » la veille de chaque date. */
   milestones?: PlanMilestone[];
   /** Modalités de l'examen final, affichées dans la tâche d'examen. */

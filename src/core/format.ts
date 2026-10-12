@@ -1,5 +1,5 @@
 /** Formatage des durées et heures. Les durées sont exprimées en minutes. */
-export const pad2 = (n: number): string => String(n).padStart(2, '0');
+const pad2 = (n: number): string => String(n).padStart(2, '0');
 /** « HH:MM » → minutes depuis minuit. */
 export const toMin = (s: string): number => { const [h, m] = String(s).split(':').map(Number); return h * 60 + (m || 0); };
 /** minutes depuis minuit → « HH:MM ». */

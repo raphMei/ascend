@@ -9,11 +9,11 @@ import type { AuthUser, Backend, BackendListener } from '@/services/types';
 export const USER: AuthUser = { uid: 'u1', email: 'test@ascend.dev', displayName: 'Test' };
 
 export interface Seed { user?: AuthUser | null; days?: Record<string, DayData>; settings?: Partial<Settings>; progress?: Progress }
-export type Writes = { days: [string, Record<string, unknown>][]; settings: Record<string, unknown>[]; progress: Record<string, unknown>[]; push: Record<string, unknown>[] };
+export type Writes = { days: [string, Record<string, unknown>][]; batches: { date: string; patch: Record<string, unknown> }[][]; settings: Record<string, unknown>[]; progress: Record<string, unknown>[]; push: Record<string, unknown>[] };
 
 /** Backend factice : rejoue les données de départ et enregistre toutes les écritures. */
 export function fakeBackend(seed: Seed = {}) {
-  const writes: Writes = { days: [], settings: [], progress: [], push: [] };
+  const writes: Writes = { days: [], batches: [], settings: [], progress: [], push: [] };
   const signIn = vi.fn(async () => {});
   const failWrites = { on: false };
   const history: string[] = [];
@@ -28,6 +28,7 @@ export function fakeBackend(seed: Seed = {}) {
     signIn, async signOut() {},
     loadHistory(from) { history.push(from); },
     async writeDay(date, patch) { if (failWrites.on) throw new Error('denied'); writes.days.push([date, patch]); },
+    async writeDays(entries) { if (failWrites.on) throw new Error('denied'); writes.batches.push(entries); },
     async writeSettings(patch) { if (failWrites.on) throw new Error('denied'); writes.settings.push(patch); },
     async writePush(patch) { writes.push.push(patch); },
     async writeProgress(patch) { if (failWrites.on) throw new Error('denied'); writes.progress.push(patch); }

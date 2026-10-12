@@ -2,8 +2,8 @@ import type { ThemeMode } from '@/domain/types';
 import { CommitInput } from '@/components/CommitInput';
 import { Link } from 'react-router-dom';
 import { PageHead } from '@/components/PageHead';
-import { exportData } from '@/services/exportData';
 import { useData } from '@/state/DataContext';
+import { BackupCard } from './BackupCard';
 import { RemindersCard } from './RemindersCard';
 
 const WEEK: [number, string][] = [[1, 'Lundi'], [2, 'Mardi'], [3, 'Mercredi'], [4, 'Jeudi'], [5, 'Vendredi']];
@@ -28,7 +28,7 @@ export function SettingsScreen() {
         <p className={'sync' + (state.sync === 'error' ? ' bad' : '')}>
           {state.sync === 'error' ? 'Synchronisation interrompue : ' + state.error : state.sync === 'demo' ? 'Mode démo : données gardées uniquement sur cet appareil' : '● Synchronisé entre tes appareils'}
         </p>
-        <div className="quick"><button type="button" className="btn" onClick={() => void signOut()}>Se déconnecter</button><button type="button" className="btn" onClick={() => exportData(state)}>Exporter mes données</button></div>
+        <div className="quick"><button type="button" className="btn" onClick={() => void signOut()}>Se déconnecter</button></div>
       </section>
       <section className="card"><h2>Ma semaine de travail</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Coche tes jours sur site chez AXA (le jeudi est obligatoire). Les autres jours sont en télétravail.</p>
         <div className="quick" style={{ marginTop: 0 }}>
@@ -75,6 +75,7 @@ export function SettingsScreen() {
         </div>
       </section>
       <RemindersCard />
+      <BackupCard />
       <section className="card"><h2>Apparence</h2>
         <div className="quick" style={{ marginTop: 8 }}>
           {THEMES.map(([k, n]) => <button key={k} type="button" className="btn small" aria-pressed={s.theme === k} style={s.theme === k ? { outline: '2px solid var(--accent)' } : undefined} onClick={() => setSettings({ theme: k })}>{n}</button>)}

@@ -6,10 +6,10 @@ import { planDay } from '@/domain/planner';
 import { pathStats } from '@/domain/progress';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { dayStats } from '@/domain/stats';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { Progress, Settings } from '@/domain/types';
 
-const tasks = adjustedTasks(DEFAULT_SETTINGS);
+const tasks = genericTasks(DEFAULT_SETTINGS);
 const ON: Settings = { ...DEFAULT_SETTINGS, anglaisMin: 20, lectureMin: 20, frontMin: 45, projetsMin: 30, financesMin: 30, livre: 'Dune' };
 const plan = (date: string, S: Settings, progress: Progress = { done: {} }) => planDay({ date, settings: S, progress, day: undefined, today: '2026-10-13', tasks });
 
@@ -88,6 +88,6 @@ describe('parcours dev front', () => {
     for (let n = 1; n < 9; n++) expect(lv(n)).toBeGreaterThanOrEqual(lv(n - 1));
   });
   it('les liens sont des adresses https', () => {
-    FRONT_TASKS.filter((t) => t.u).forEach((t) => expect(t.u).toMatch(/^https:\/\//));
+    FRONT_TASKS.flatMap((t) => t.res).forEach((r) => expect(r.url).toMatch(/^https:\/\//));
   });
 });

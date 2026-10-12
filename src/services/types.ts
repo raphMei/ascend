@@ -22,6 +22,8 @@ export interface Backend {
   signOut(): Promise<void>;
   /** Écritures en « merge » : on n'envoie que les champs modifiés. La promesse est rejetée si l'écriture est refusée. */
   writeDay(date: ISODate, patch: Record<string, unknown>): Promise<void>;
+  /** Plusieurs jours en une seule écriture groupée (tout ou rien) : rattrapage des statistiques, import de sauvegarde. */
+  writeDays(entries: { date: ISODate; patch: Record<string, unknown> }[]): Promise<void>;
   writeSettings(patch: Record<string, unknown>): Promise<void>;
   writeProgress(patch: Record<string, unknown>): Promise<void>;
   /** Abonnements aux notifications de cet utilisateur (users/{uid}/push/main), lus par le script d'envoi. */

@@ -1,12 +1,12 @@
 import { hm } from '@/core/format';
-import { groupSmallBlocks } from '@/domain/grouping';
+import { groupSmallBlocks } from '@/domain/small-blocks';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { dayStats } from '@/domain/stats';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { Block, DayData } from '@/domain/types';
 
-const tasks = adjustedTasks(DEFAULT_SETTINGS);
+const tasks = genericTasks(DEFAULT_SETTINGS);
 const plan = (date: string, day?: DayData) => planDay({ date, settings: DEFAULT_SETTINGS, progress: { done: {} }, day, today: '2026-10-13', tasks });
 const TUE = '2026-10-13';
 

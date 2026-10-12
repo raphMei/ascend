@@ -3,11 +3,11 @@ import { MINUTES, SPORT_PROGRAMS, monthPlanFor, settingsForDate } from '@/domain
 import { monthLoad } from '@/domain/month-load';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 import type { Progress, Settings } from '@/domain/types';
 
 const S0 = DEFAULT_SETTINGS;
-const tasks = adjustedTasks(S0);
+const tasks = genericTasks(S0);
 const prog: Progress = { done: {} };
 const plan = (date: string, S: Settings) => planDay({ date, settings: S, progress: prog, day: undefined, today: '2026-10-01', tasks });
 const sum = (p: ReturnType<typeof plan>, id: string) => p.blocks.filter((b) => b.id === id).reduce((a, b) => a + b.end - b.start, 0);

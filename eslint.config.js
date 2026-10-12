@@ -8,7 +8,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { files: ['public/sw.js'], languageOptions: { globals: { ...globals.serviceworker } } },
-  { files: ['scripts/**/*.ts', 'rules-tests/**/*.ts', '*.config.ts'], languageOptions: { globals: { ...globals.node } } },
+  { files: ['scripts/**/*.{ts,mjs}', 'rules-tests/**/*.ts', '*.config.ts'], languageOptions: { globals: { ...globals.node } } },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser } },

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { hours } from '@/core/format';
+import { newId } from '@/core/id';
 import { DOM } from '@/domain/domains';
 import type { Project, ProjectStatus } from '@/domain/types';
 import { CommitInput } from '@/components/CommitInput';
@@ -11,7 +12,6 @@ import type { DomainModule } from '../types';
 import { DisabledNotice } from '../shared/DisabledNotice';
 
 const STATUS: [ProjectStatus, string][] = [['actif', 'Actif'], ['pause', 'En pause'], ['fini', 'Terminé']];
-const newId = () => Date.now().toString(36);
 
 function useProjects(): [string, Project][] {
   const { state } = useData();

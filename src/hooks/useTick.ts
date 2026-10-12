@@ -22,6 +22,7 @@ export function useTick() {
     const day: DayData | undefined = target.scope === 'day' ? merge(state.days[date], patch) : state.days[date];
     const st = dayStats(planDay({ date, settings, progress, day, today, tasks, schedule: sched ?? undefined }));
     const stats = { pct: st.pct, pl: st.pl, dn: st.dn, planned: st.planned, done: st.done };
-    if (target.scope === 'prog') { setProgress(patch); setDay(date, { stats }); } else setDay(date, { ...patch, stats });
+    // Pour une tâche ou une étape, on note aussi le jour où elle a été terminée (rythme et prévisions).
+    if (target.scope === 'prog') { setProgress({ ...patch, doneAt: { [target.key]: value ? date : null } }); setDay(date, { stats }); } else setDay(date, { ...patch, stats });
   }, [state, settings, tasks, today, sched, setDay, setProgress]);
 }

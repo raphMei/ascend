@@ -20,6 +20,7 @@ export function demoBackend(): Backend {
     async signIn() { /* rien à faire en démo */ },
     async signOut() { try { localStorage.removeItem(DEMO_KEY); } catch { /* ignore */ } window.location.reload(); },
     async writeDay(date, patch) { const o = load(); o.days = o.days ?? {}; o.days[date] = merge(o.days[date], patch); save(o); },
+    async writeDays(entries) { const o = load(); o.days = o.days ?? {}; for (const { date, patch } of entries) o.days[date] = merge(o.days[date], patch); save(o); },
     async writeSettings(patch) { const o = load(); o.settings = merge(o.settings, patch); save(o); },
     async writePush() { /* pas de serveur en démo */ },
     async writeProgress(patch) { const o = load(); o.prog = merge(o.prog ?? { done: {} }, patch); save(o); }

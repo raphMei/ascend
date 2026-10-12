@@ -20,7 +20,7 @@ import { planDay, type PlanSchedule } from './planner';
 import { SPORT, SPORT_WEEK } from './sport';
 import type { DayData, Progress, Settings, SportKind } from './types';
 
-export type ChangeReason = 'retard' | 'charge' | 'avance' | 'epingle' | 'abandon';
+type ChangeReason = 'retard' | 'charge' | 'avance' | 'epingle' | 'abandon';
 
 export interface Change {
   taskId: string; title: string; subject: string; minutes: number;

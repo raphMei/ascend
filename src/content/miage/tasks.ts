@@ -38,11 +38,23 @@ const MICRO: [string, (n: string) => string][] = [
 ];
 let rc = 0;
 const occ: Record<string, number> = {};
+/* Nombre de créneaux « tâche du jour » de chaque matière sur la saison : les séances d'un plan sont réparties régulièrement dessus. */
+const slots: Record<string, number> = {};
+ent.forEach((_, i) => { const sid = ROT[i % ROT.length]; slots[sid] = (slots[sid] || 0) + 1; });
 ent.forEach((d) => {
   const sid = ROT[rc % ROT.length]; rc++;
-  const s = byId[sid]; occ[sid] = occ[sid] || 0; const k = occ[sid] % 4; const unit = plans[sid]?.units[occ[sid]]; occ[sid]++;
+  const s = byId[sid]; occ[sid] = occ[sid] || 0; const k = occ[sid] % 4;
+  const planUnits = plans[sid]?.units ?? [];
+  // La séance i du plan va dans le créneau floor(i × créneaux / séances) : réparties sur toute la saison, plusieurs par créneau s'il y en a plus que de créneaux.
+  const mine = planUnits.filter((_, i) => Math.floor((i * slots[sid]) / planUnits.length) === occ[sid]);
+  occ[sid]++;
   const m = s.cr >= 4.5 ? 45 : (s.cr >= 3 ? 30 : 20);
-  if (unit) push("d:" + d, sid, "daily", unit.title + " · " + s.short, unit.detail, d, unit.hours ?? m / 60);
+  if (mine.length) mine.forEach((unit, j) => {
+    const task: MiageTask = { id: j === 0 ? "d:" + d : "d:" + d + ":" + (j + 1), s: sid, k: "daily", t: unit.title + " · " + s.short, d: unit.detail, due: d, h: unit.hours ?? 0.75 };
+    if (unit.res?.length) task.res = unit.res;
+    if (unit.kind) task.step = unit.kind;
+    tasks.push(task);
+  });
   else if (sid === "toeic") push("d:" + d, sid, "daily", ENGLISH_EXERCISES[k][0] + " · " + s.short, ENGLISH_EXERCISES[k][1], d, m / 60);
   else push("d:" + d, sid, "daily", MICRO[k][0] + " · " + s.short, MICRO[k][1](s.name), d, m / 60);
 });
@@ -95,7 +107,11 @@ const PROJ: { s: string; due: ISODate; h: number; t: string; d: string; k?: Task
   { s: "toeic", due: "2027-01-24", h: 2, k: "rev", t: "Test blanc TOEIC n°2", d: "Même protocole que le premier : 2 heures, conditions réelles. Compare avec ton premier score et vérifie que tes 5 points faibles ont progressé." },
   { s: "toeic", due: "2027-02-14", h: 2, k: "rev", t: "Test blanc TOEIC n°3", d: "Dernier test complet avant l'examen. Sers-toi du résultat pour décider où passer ton temps de révision de la dernière semaine." }
 ];
-PROJ.forEach((p, i) => { push(p.s + ":p" + i, p.s, p.k || "proj", p.t, p.d, p.due, p.h); });
+PROJ.forEach((p, i) => {
+  push(p.s + ":p" + i, p.s, p.k || "proj", p.t, p.d, p.due, p.h);
+  const res = plans[p.s]?.projects?.[p.s + ":p" + i];
+  if (res?.length) tasks[tasks.length - 1].res = res;
+});
 
 /* Jalons et modalités fournis par les plans de matière. */
 Object.values(plans).forEach((pl) => {

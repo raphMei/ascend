@@ -22,6 +22,7 @@ jobs:
       - run: npm run build
         env:
           VITE_VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}   # clé publique des notifications (voir docs/RAPPELS.md)
+      - run: npm run size           # budget de taille du démarrage
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:

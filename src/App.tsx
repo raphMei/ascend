@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toast } from '@/components/Toast';
-import { DomainPage } from '@/features/domains/DomainPage';
-import { DomainsScreen } from '@/features/domains/DomainsScreen';
-import { HomeScreen } from '@/features/home/HomeScreen';
-import { MonthScreen } from '@/features/month/MonthScreen';
-import { SettingsScreen } from '@/features/settings/SettingsScreen';
 import { Layout } from '@/features/shell/Layout';
 import { ShabbatScreen } from '@/features/shell/ShabbatScreen';
 import { SignInScreen } from '@/features/shell/SignInScreen';
 import { useShabbat } from '@/features/shell/useShabbat';
 import { TodayScreen } from '@/features/today/TodayScreen';
+
+// « Aujourd'hui » est chargé tout de suite ; les autres écrans seulement quand on les ouvre.
+const HomeScreen = lazy(() => import('@/features/home/HomeScreen').then((m) => ({ default: m.HomeScreen })));
+const DomainsScreen = lazy(() => import('@/features/domains/DomainsScreen').then((m) => ({ default: m.DomainsScreen })));
+const DomainPage = lazy(() => import('@/features/domains/DomainPage').then((m) => ({ default: m.DomainPage })));
+const MonthScreen = lazy(() => import('@/features/month/MonthScreen').then((m) => ({ default: m.MonthScreen })));
+const StatsScreen = lazy(() => import('@/features/stats/StatsScreen').then((m) => ({ default: m.StatsScreen })));
+const SettingsScreen = lazy(() => import('@/features/settings/SettingsScreen').then((m) => ({ default: m.SettingsScreen })));
 import { useBackfillStats } from '@/hooks/useBackfillStats';
 import { forceShabbatInDemo, isDemo } from '@/services/config';
 import { useData } from '@/state/DataContext';
@@ -38,6 +41,7 @@ export function App() {
   return (
     <HashRouter>
       <Toast />
+      <Suspense fallback={<div className="center"><p>Chargement…</p></div>}>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/today" replace />} />
@@ -46,12 +50,14 @@ export function App() {
           <Route path="today/:date" element={<TodayScreen />} />
           <Route path="domains" element={<DomainsScreen />} />
           <Route path="month" element={<MonthScreen />} />
+          <Route path="stats" element={<StatsScreen />} />
           <Route path="dom/:id" element={<DomainPage />} />
           <Route path="dom/:id/:sub" element={<DomainPage />} />
           <Route path="settings" element={<SettingsScreen />} />
           <Route path="*" element={<Navigate to="/today" replace />} />
         </Route>
       </Routes>
+      </Suspense>
     </HashRouter>
   );
 }

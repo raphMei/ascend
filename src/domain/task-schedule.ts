@@ -1,5 +1,5 @@
 /** Échéances effectives des tâches MIAGE : rien le samedi (déplacé au dimanche), vendredi décalé au jeudi
-    quand la fenêtre avant l'allumage est trop courte. Fonction pure : les données brutes ne sont jamais modifiées. */
+    quand la fenêtre avant l'allumage est trop courte. Fonctions pures : les données brutes ne sont jamais modifiées. */
 import { dow, addDays } from '@/core/dates';
 import { toMin } from '@/core/format';
 import { RAW_TASKS } from '@/content/miage/tasks';
@@ -7,13 +7,9 @@ import type { MiageTask } from '@/content/types';
 import { shabbatFor } from './shabbat';
 import type { Settings } from './types';
 
-const key = (S: Settings) => [S.lat, S.lon, S.candle, S.havdalah, S.wake, S.workMin].join('|');
-let cache: { k: string; tasks: MiageTask[] } | null = null;
-
-export function adjustedTasks(S: Settings): MiageTask[] {
-  const k = key(S);
-  if (cache && cache.k === k) return cache.tasks;
-  const tasks = RAW_TASKS.map((t) => {
+/** Applique les décalages de Chabbat à une liste de tâches. */
+export function adjustTasks(base: readonly MiageTask[], S: Settings): MiageTask[] {
+  return base.map((t) => {
     const w = dow(t.due);
     let due = t.due;
     if (w === 6) due = addDays(t.due, 1);
@@ -24,6 +20,16 @@ export function adjustedTasks(S: Settings): MiageTask[] {
     }
     return due === t.due ? t : { ...t, due };
   }).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.id < b.id ? -1 : 1));
+}
+
+const key = (S: Settings) => [S.lat, S.lon, S.candle, S.havdalah, S.wake, S.workMin].join('|');
+let cache: { k: string; tasks: MiageTask[] } | null = null;
+
+/** Tâches de la saison aux échéances ajustées (mémoïsé tant que les réglages concernés ne changent pas). */
+export function adjustedTasks(S: Settings): MiageTask[] {
+  const k = key(S);
+  if (cache && cache.k === k) return cache.tasks;
+  const tasks = adjustTasks(RAW_TASKS, S);
   cache = { k, tasks };
   return tasks;
 }

@@ -139,6 +139,8 @@ test.describe('ajustement automatique et Mon mois', () => {
     await page.goto('/ascend/?demo#/today');
     const card = page.getByRole('region', { name: 'Ajustements automatiques du planning' });
     await expect(card).toBeVisible();
+    await expect(card.getByText(/En retard depuis/).first()).toBeHidden();       // replié par défaut : rien à valider
+    await card.getByText(/Planning ajusté automatiquement/).click();
     await expect(card.getByText(/En retard depuis/).first()).toBeVisible();
     const before = await card.getByRole('button', { name: 'Laisser tomber' }).count();
     await card.getByRole('button', { name: 'Laisser tomber' }).first().click();
@@ -181,5 +183,94 @@ test.describe('liste d\'habitudes', () => {
     await expect(page.getByRole('radio', { name: 'Thèmes' })).toBeChecked();
     await page.getByRole('radio', { name: 'Frise' }).click();
     await expect(page.getByRole('region', { name: 'Frise de la journée' })).toBeVisible();
+  });
+});
+
+test.describe('performance et confidentialité', () => {
+  test('aucune requête vers un service tiers de polices, et les polices de l\'application sont chargées', async ({ page }) => {
+    const external: string[] = [];
+    page.on('request', (r) => { if (/googleapis|gstatic/.test(r.url())) external.push(r.url()); });
+    await page.goto('/ascend/?demo');
+    await page.evaluate(() => document.fonts.ready);
+    expect(external).toEqual([]);
+    const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')));
+    expect(loaded).toEqual(expect.arrayContaining(['DM Sans', 'Syne']));
+  });
+
+  test('les écrans secondaires sont chargés à la demande (fichiers séparés)', async ({ page }) => {
+    const scripts: string[] = [];
+    page.on('request', (r) => { if (r.url().endsWith('.js')) scripts.push(r.url().split('/').pop()!); });
+    await page.goto('/ascend/?demo#/today');
+    await expect(page.getByRole('navigation', { name: 'Semaine' })).toBeVisible();
+    expect(scripts.some((s) => /^SettingsScreen/.test(s))).toBe(false);
+    await page.getByRole('button', { name: 'Réglages' }).click();
+    await expect(page.getByRole('heading', { name: 'Mon Ascend' })).toBeVisible();
+    expect(scripts.some((s) => /^SettingsScreen/.test(s))).toBe(true);
+  });
+});
+
+test.describe('progression et usage', () => {
+  test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(TUESDAY); });
+
+  test('les statistiques s\'ouvrent depuis le Bilan et affichent calendrier et badges', async ({ page }) => {
+    await page.goto('/ascend/?demo#/home');
+    await page.getByRole('link', { name: /Statistiques/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Statistiques' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Calendrier des 12 dernières semaines' }).getByRole('img')).toHaveCount(84);
+    await expect(page.getByRole('region', { name: 'Badges' })).toContainText('0 / 9');
+  });
+
+  test('changer de jour au clavier et revenir à aujourd\'hui', async ({ page, isMobile }) => {
+    test.skip(!!isMobile, 'clavier : bureau seulement');
+    await page.goto('/ascend/?demo#/today');
+    await expect(page.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeVisible();   // l'application doit être montée
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('heading', { level: 1, name: 'mercredi 4 novembre' })).toBeVisible();
+    await page.keyboard.press('t');
+    await expect(page.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeVisible();
+  });
+
+  test('« Continuer mes cours » pointe vers le cours en français', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today');
+    const open = page.getByRole('region', { name: 'Continuer mes cours' }).getByRole('link', { name: /Ouvrir le cours/ }).first();
+    await expect(open).toHaveAttribute('href', /jmdoudoux\.fr/);
+  });
+
+  test('le type de journée « Congé » libère la journée', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today/2026-10-20');
+    await expect(page.getByRole('region', { name: 'Trajet' })).toBeVisible();
+    await page.getByLabel('Type de journée').selectOption('conge');
+    await expect(page.getByRole('region', { name: 'Trajet' })).toHaveCount(0);
+  });
+
+  test('exporter puis importer : la sauvegarde exportée est reconnue', async ({ page }) => {
+    await page.goto('/ascend/?demo#/today');
+    await page.getByLabel('Poids (kg)').fill('86.5'); await page.getByLabel('Poids (kg)').blur();
+    await page.evaluate(() => { location.hash = '#/settings'; });
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Exporter mes données' }).click();
+    const file = await download;
+    const path = await file.path();
+    await page.getByLabel('Importer une sauvegarde').setInputFiles(path);
+    await expect(page.getByText(/Importer \?/)).toBeVisible();
+    await expect(page.getByText(/\d+ jour/).first()).toBeVisible();
+  });
+});
+
+test.describe('minuteur de concentration', () => {
+  test('démarre, décompte avec le temps qui passe, se met en pause et reprend', async ({ page }) => {
+    await page.clock.install({ time: TUESDAY });          // horloge pilotée : le temps n'avance que quand on le dit
+    await page.goto('/ascend/?demo#/today');
+    await page.getByRole('region', { name: 'Matin' }).getByRole('button', { name: /Téphila/ }).first().click();
+    await expect(page.getByRole('timer')).toHaveText('20:00');
+    await page.getByRole('button', { name: /Démarrer \(20 min\)/ }).click();
+    await page.clock.runFor(65_000);
+    await expect(page.getByRole('timer')).toHaveText('18:55');
+    await page.getByRole('button', { name: /Pause/ }).click();
+    await page.clock.runFor(60_000);
+    await expect(page.getByRole('timer')).toHaveText('18:55');
+    await page.getByRole('button', { name: /Reprendre/ }).click();
+    await page.clock.runFor(55_000);
+    await expect(page.getByRole('timer')).toHaveText('18:00');
   });
 });

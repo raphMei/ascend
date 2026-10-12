@@ -6,12 +6,14 @@ import { range } from '@/core/dates';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { dayStats } from '@/domain/stats';
-import { adjustedTasks } from '@/domain/task-schedule';
+import { genericTasks } from './fixtures';
 
-const canon = (v: unknown): string => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
+// Les textes des blocs (sous-titres, détails, liens) viennent des contenus pédagogiques, qui évoluent : on ne compare que les horaires, durées, domaines et identifiants.
+const CONTENT = new Set(['detail', 'sub', 'link', 'res']);
+const canon = (v: unknown): string => JSON.stringify(v, (k, x) => (CONTENT.has(k) ? undefined : x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 
 it('le planning de la saison est inchangé', () => {
-  const tasks = adjustedTasks(DEFAULT_SETTINGS);
+  const tasks = genericTasks(DEFAULT_SETTINGS);
   const progress = { done: { 'd:2026-10-08': true, p1t1: true } };
   const today = '2026-11-03';
   const lines = range('2026-10-08', '2027-02-28').map((d) => {
@@ -19,5 +21,5 @@ it('le planning de la saison est inchangé', () => {
     const plan = planDay({ date: d, settings: DEFAULT_SETTINGS, progress, day, today, tasks });
     return d + canon({ pl: plan, st: dayStats(plan) });
   });
-  expect(createHash('sha256').update(lines.join('\n')).digest('hex')).toBe('87778a2f15417a172f8901d657b2a2b3113d5ac41bb41b3712f080141781842e');
+  expect(createHash('sha256').update(lines.join('\n')).digest('hex')).toBe('2d59b48e21b29f7661163b98b7d873f9f3de72e1c765b8e84745901086194d86');
 });

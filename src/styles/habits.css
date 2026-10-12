@@ -67,3 +67,61 @@
 
 @media (min-width: 900px) { .groups { grid-template-columns: 1fr 1fr; align-items: start; } }
 @media (prefers-reduced-motion: reduce) { .cb.big input:checked + .box { animation: none; } }
+
+/* ----- Journal du réajustement automatique (discret, replié) ----- */
+.autolog > summary { cursor: pointer; list-style: none; color: var(--muted); font-size: 14px; padding: 8px 4px; min-height: 36px; }
+.autolog > summary::-webkit-details-marker { display: none; }
+.autolog > summary:hover { color: var(--ink); }
+.autolog[open] > summary { color: var(--ink); }
+.autolog-body { display: grid; gap: 10px; padding: 4px 4px 10px; }
+.autolog-row { display: grid; gap: 2px; padding-top: 10px; border-top: 1px solid var(--line); }
+.autolog-actions { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.linkbtn { all: unset; cursor: pointer; color: var(--accent); font-weight: 700; font-size: 14px; padding: 8px 0; min-height: 28px; }
+.linkbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* ----- Liens vers les cours et exercices ----- */
+.reslinks { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.reslinks a { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--surface2); text-decoration: none; min-height: 44px; }
+.reslinks a:hover { outline: 1px solid var(--line); }
+.reslinks .lang { font: 500 11px "DM Mono", monospace; padding: 2px 6px; border-radius: 6px; background: var(--surface); color: var(--ink); grid-row: span 2; align-self: center; }
+.reslinks .lang.fr { background: color-mix(in srgb, var(--c-alim) 22%, var(--surface)); }
+.reslinks .rtitle { font-weight: 500; font-size: 15px; overflow-wrap: anywhere; color: var(--ink); }
+.reslinks .rsrc { font-size: 12px; color: var(--muted); }
+.reslinks.compact a { padding: 6px 10px; min-height: 40px; }
+.stepgroup { font: 500 12px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 14px 0 4px; border-top: 1px solid var(--line); }
+.stepgroup:first-child { border-top: 0; padding-top: 0; }
+
+/* ----- Type de journée ----- */
+.daykind { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; min-height: 44px; }
+
+/* ----- Minuteur de concentration ----- */
+.focus { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 8px 0; }
+.focus-clock { font: 500 28px "DM Mono", monospace; letter-spacing: .02em; min-width: 92px; }
+.focus-clock.end { color: var(--c-alim); }
+
+/* ----- Continuer mes cours ----- */
+.habit.continue { grid-template-columns: auto 1fr; }
+.continue-actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; padding-left: 54px; }
+.continue-actions .btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+/* ----- Statistiques ----- */
+.heat { display: grid; gap: 8px; overflow-x: auto; }
+.heat-days { display: grid; grid-template-rows: repeat(7, 18px); gap: 4px; font: 500 11px "DM Mono", monospace; color: var(--muted); align-items: center; position: absolute; }
+.heat { position: relative; padding-left: 18px; }
+.heat-grid { display: flex; gap: 4px; }
+.heat-col { display: grid; grid-template-rows: repeat(7, 18px); gap: 4px; }
+.heat-cell { width: 18px; height: 18px; border-radius: 5px; background: var(--surface2); display: inline-block; }
+.heat-cell.l1 { background: color-mix(in srgb, var(--accent) 22%, var(--surface2)); }
+.heat-cell.l2 { background: color-mix(in srgb, var(--accent) 45%, var(--surface2)); }
+.heat-cell.l3 { background: color-mix(in srgb, var(--accent) 72%, var(--surface2)); }
+.heat-cell.l4 { background: var(--accent); }
+.heat-cell.future { opacity: .35; }
+.heat-legend { display: flex; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); justify-self: end; }
+.rate { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.rate:first-child { border-top: 0; }
+.rate .bar { grid-column: 1 / -1; height: 8px; }
+.badges { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.badge { display: grid; gap: 4px; justify-items: start; padding: 12px; border-radius: 16px; background: var(--surface2); }
+.badge .big { font-size: 28px; }
+.badge.locked .big { filter: grayscale(1); opacity: .45; }
+.badge small { color: var(--muted); }

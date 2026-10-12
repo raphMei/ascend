@@ -1160,6 +1160,104 @@ export const OUTLINE: Record<string, SubjectPlan> = {
       }
     ]
   },
+  "toeic": {
+    "subject": "toeic",
+    "paced": true,
+    "units": [
+      {
+        "title": "Comprendre le TOEIC : structure, scores, stratégie",
+        "detail": "",
+        "hours": 0.5,
+        "kind": "cours",
+        "provisional": true
+      },
+      {
+        "title": "Compréhension orale : photographies et questions-réponses (parties 1 et 2)",
+        "detail": "",
+        "hours": 0.75,
+        "kind": "cours",
+        "provisional": true
+      },
+      {
+        "title": "Compréhension orale : conversations et exposés (parties 3 et 4)",
+        "detail": "",
+        "hours": 0.75,
+        "kind": "cours",
+        "provisional": true
+      },
+      {
+        "title": "Grammaire du TOEIC : temps, prépositions, mots de liaison",
+        "detail": "",
+        "hours": 0.75,
+        "kind": "cours",
+        "provisional": true
+      },
+      {
+        "title": "Vocabulaire professionnel : réunions, e-mails, voyages",
+        "detail": "",
+        "hours": 0.75,
+        "kind": "cours",
+        "provisional": true
+      },
+      {
+        "title": "Test blanc TOEIC n°1",
+        "detail": "",
+        "hours": 2,
+        "kind": "valid",
+        "provisional": true
+      },
+      {
+        "title": "Compréhension écrite : compléter des phrases et des textes (parties 5 et 6)",
+        "detail": "",
+        "hours": 1,
+        "kind": "exo",
+        "provisional": true
+      },
+      {
+        "title": "Compréhension écrite : textes à lire (partie 7)",
+        "detail": "",
+        "hours": 1,
+        "kind": "exo",
+        "provisional": true
+      },
+      {
+        "title": "Préparer l'oral de 20 minutes",
+        "detail": "",
+        "hours": 1,
+        "kind": "exo",
+        "provisional": true
+      },
+      {
+        "title": "Test blanc TOEIC n°2",
+        "detail": "",
+        "hours": 2,
+        "kind": "valid",
+        "provisional": true
+      },
+      {
+        "title": "Écoute active",
+        "detail": "",
+        "hours": 0.5,
+        "kind": "exo",
+        "provisional": true
+      },
+      {
+        "title": "Test blanc TOEIC n°3",
+        "detail": "",
+        "hours": 2,
+        "kind": "valid",
+        "provisional": true
+      }
+    ],
+    "deliverables": [
+      {
+        "title": "Oral TOEIC (20 minutes)",
+        "detail": "",
+        "hours": 1,
+        "after": 9
+      }
+    ]
+  },
   "proj": {
     "subject": "proj",
     "paced": true,

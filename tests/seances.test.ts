@@ -103,24 +103,23 @@ describe('plans précis dans les tâches de la saison', () => {
     expect(rendu.due).toBe(dl.find((t) => t.id === 'dl:u2.2')!.due);
   });
 
-  it('les fiches, exercices et sujets blancs génériques ne doublent pas un plan précis (la fiche mémo et l\'examen restent)', () => {
+  it('aucune fiche, exercice ni sujet blanc générique : seuls les plans précis, la fiche mémo et l\'examen existent', () => {
     expect(dl.some((t) => /^dl:f\d$/.test(t.id) || t.id === 'dl:ex' || t.id === 'dl:blanc')).toBe(false);
     expect(dl.some((t) => t.id === 'dl:memo') && dl.some((t) => t.id === 'dl:exam')).toBe(true);
-    expect(tasks.some((t) => t.id === 'qa:f0')).toBe(true);                         // une matière sans plan précis garde les siens
+    expect(tasks.some((t) => /^[a-z]+:f\d$/.test(t.id) || /:(ex|blanc)$/.test(t.id))).toBe(false);
   });
 
-  it('les matières sans plan précis gardent la rotation des tâches du jour', () => {
-    expect(tasks.some((t) => t.s === 'qa' && t.k === 'daily')).toBe(true);
-    expect(dl.some((t) => t.k === 'daily')).toBe(false);
+  it('plus aucune tâche quotidienne qui revient chaque jour', () => {
+    expect(tasks.some((t) => (t.k as string) === 'daily')).toBe(false);
+    expect(tasks.some((t) => /^o:(r|w|x)$/.test(t.id))).toBe(false);
   });
 });
 
 describe('les neuf plans livrés (d\'après tes plans de cours)', () => {
   const real = Object.values(PLANS).filter((p) => p.paced);
 
-  it('neuf matières ont un plan précis ; seul le TOEIC garde son plan type', () => {
-    expect(real.map((p) => p.subject).sort()).toEqual(['big', 'dl', 'eth', 'gov', 'llm', 'proj', 'qa', 'ri', 'sec']);
-    expect(PLANS.toeic.paced).toBeFalsy();
+  it('dix matières ont un plan précis, TOEIC compris', () => {
+    expect(real.map((p) => p.subject).sort()).toEqual(['big', 'dl', 'eth', 'gov', 'llm', 'proj', 'qa', 'ri', 'sec', 'toeic']);
   });
 
   it('chaque séance a au moins un lien, au moins 60 % des liens sont en français, toutes en https', () => {

@@ -16,6 +16,8 @@ export const MONTH_DOMAINS: { id: MonthDomain; label: string; canBeOff: boolean;
   { id: 'sport', label: 'Sport', canBeOff: true, hint: { off: 'Aucune séance.', leger: '3 séances par semaine (tirer, jambes, pousser).', normal: '5 séances par semaine, du lundi au vendredi.', intensif: '6 séances par semaine, jambes en priorité.' } },
   { id: 'java', label: 'Java backend', canBeOff: true, hint: { off: 'Pas de séance Java.', leger: '45 minutes par jour.', normal: '2 heures par jour.', intensif: '3 heures par jour.' } },
   { id: 'front', label: 'Dev front', canBeOff: true, hint: { off: 'Pas de séance.', leger: '30 minutes par jour.', normal: '1 heure par jour.', intensif: '2 heures par jour.' } },
+  { id: 'cloud', label: 'Cloud et DevOps', canBeOff: true, hint: { off: 'Pas de séance.', leger: '30 minutes par jour.', normal: '1 heure par jour.', intensif: '2 heures par jour.' } },
+  { id: 'archi', label: 'Architecture logicielle', canBeOff: true, hint: { off: 'Pas de séance.', leger: '30 minutes par jour.', normal: '1 heure par jour.', intensif: '1 h 30 par jour.' } },
   { id: 'anglais', label: 'Anglais', canBeOff: true, hint: { off: 'Pas de séance.', leger: '10 minutes par jour.', normal: '20 minutes par jour.', intensif: '40 minutes par jour.' } },
   { id: 'lecture', label: 'Lecture', canBeOff: true, hint: { off: 'Pas de séance.', leger: '10 minutes par jour.', normal: '20 minutes par jour.', intensif: '40 minutes par jour.' } },
   { id: 'projets', label: 'Projets perso', canBeOff: true, hint: { off: 'Pas de séance.', leger: '20 minutes par jour.', normal: '45 minutes par jour.', intensif: '1 h 30 par jour.' } },
@@ -23,9 +25,11 @@ export const MONTH_DOMAINS: { id: MonthDomain; label: string; canBeOff: boolean;
 ];
 
 /** Minutes par jour (finances : minutes du point mensuel) selon l'intensité. */
-export const MINUTES: Record<'java' | 'front' | 'anglais' | 'lecture' | 'projets' | 'finances', Record<Level, number>> = {
+export const MINUTES: Record<'java' | 'front' | 'cloud' | 'archi' | 'anglais' | 'lecture' | 'projets' | 'finances', Record<Level, number>> = {
   java: { off: 0, leger: 45, normal: 120, intensif: 180 },
   front: { off: 0, leger: 30, normal: 60, intensif: 120 },
+  cloud: { off: 0, leger: 30, normal: 60, intensif: 120 },
+  archi: { off: 0, leger: 30, normal: 60, intensif: 90 },
   anglais: { off: 0, leger: 10, normal: 20, intensif: 40 },
   lecture: { off: 0, leger: 10, normal: 20, intensif: 40 },
   projets: { off: 0, leger: 20, normal: 45, intensif: 90 },
@@ -61,6 +65,8 @@ export function settingsForDate(S: Settings, date: ISODate): DaySettings {
   if (plan.anglais) out.anglaisMin = MINUTES.anglais[plan.anglais];
   if (plan.lecture) out.lectureMin = MINUTES.lecture[plan.lecture];
   if (plan.front) out.frontMin = MINUTES.front[plan.front];
+  if (plan.cloud) out.cloudMin = MINUTES.cloud[plan.cloud];
+  if (plan.archi) out.archiMin = MINUTES.archi[plan.archi];
   if (plan.projets) out.projetsMin = MINUTES.projets[plan.projets];
   if (plan.finances) out.financesMin = MINUTES.finances[plan.finances];
   if (plan.java) out.javaHours = MINUTES.java[plan.java] / 60;

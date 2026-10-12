@@ -66,6 +66,8 @@ export function SettingsScreen() {
           <label className="f">Anglais (min)<CommitInput type="number" min={0} max={120} step={5} value={s.anglaisMin} onCommit={num('anglaisMin')} /></label>
           <label className="f">Lecture (min)<CommitInput type="number" min={0} max={120} step={5} value={s.lectureMin} onCommit={num('lectureMin')} /></label>
           <label className="f">Dev front (min)<CommitInput type="number" min={0} max={240} step={5} value={s.frontMin} onCommit={num('frontMin')} /></label>
+          <label className="f">Cloud et DevOps (min)<CommitInput type="number" min={0} max={240} step={5} value={s.cloudMin} onCommit={num('cloudMin')} /></label>
+          <label className="f">Architecture logicielle (min)<CommitInput type="number" min={0} max={240} step={5} value={s.archiMin} onCommit={num('archiMin')} /></label>
           <label className="f">Projets perso (min)<CommitInput type="number" min={0} max={240} step={5} value={s.projetsMin} onCommit={num('projetsMin')} /></label>
           <label className="f">Point finances mensuel (min)<CommitInput type="number" min={0} max={120} step={5} value={s.financesMin} onCommit={num('financesMin')} /></label>
         </div>

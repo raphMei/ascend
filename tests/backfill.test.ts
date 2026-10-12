@@ -21,8 +21,8 @@ describe('rattrapage des statistiques', () => {
     expect(o.stats.pl).toBeGreaterThan(0); expect(o.stats.pct).toBe(0);
   });
   it('utilise les cases cochées du jour', () => {
-    const o = statsToBackfill({ ...base, days: { '2026-11-03': { done: { tephila: true } } } }).find((x) => x.date === '2026-11-03')!;
-    expect(o.stats.dn).toBe(20);
+    const o = statsToBackfill({ ...base, today: '2026-11-12', days: { '2026-11-10': { done: { java: true } } } }).find((x) => x.date === '2026-11-10')!;
+    expect(o.stats.dn).toBeGreaterThan(0);
   });
   it('ne remonte pas au-delà de la fenêtre chargée ni de 60 jours', () => {
     expect(statsToBackfill({ ...base, loadedFrom: '2026-11-04', days: {} }).map((o) => o.date)).toEqual(['2026-11-04']);

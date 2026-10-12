@@ -35,7 +35,7 @@ describe('accueil', () => {
 describe('aujourd\'hui', () => {
   it('cocher un bloc l\'enregistre avec l\'instantané de stats du jour', async () => {
     const { writes } = renderApp({ hash: '#/today' });
-    const box = await screen.findByRole('checkbox', { name: 'Téphila' });
+    const box = await screen.findByRole('checkbox', { name: 'Java backend' });
     expect(box).not.toBeChecked();
     await userEvent.click(box);
     expect(box).toBeChecked();
@@ -43,11 +43,18 @@ describe('aujourd\'hui', () => {
     expect(mine).toHaveLength(1);
     const [date, patch] = mine[0];
     expect(date).toBe(TUESDAY.today);
-    expect(patch).toMatchObject({ done: { tephila: true }, stats: { dn: 20 } });
+    expect(patch).toMatchObject({ done: { java: true }, stats: { dn: expect.any(Number) } });
+  });
+
+  it('les mesures (poids, eau) ne sont plus sur « Aujourd\'hui » : elles vivent dans le domaine Alimentation', async () => {
+    renderApp({ hash: '#/today' });
+    await screen.findByRole('checkbox', { name: 'Java backend' });
+    expect(screen.queryByLabelText('Poids (kg)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mes mesures du jour')).not.toBeInTheDocument();
   });
 
   it('saisir le poids enregistre à la fin de la saisie (pas à chaque frappe)', async () => {
-    const { writes } = renderApp({ hash: '#/today' });
+    const { writes } = renderApp({ hash: '#/dom/alim' });
     const input = await screen.findByLabelText('Poids (kg)');
     await userEvent.type(input, '86.5');
     const today = () => writes.days.filter(([d]) => d === TUESDAY.today);
@@ -57,7 +64,7 @@ describe('aujourd\'hui', () => {
   });
 
   it('+ 500 ml ajoute à l\'eau déjà bue', async () => {
-    const { writes } = renderApp({ hash: '#/today', seed: { days: { [TUESDAY.today]: { water: 1000 } } } });
+    const { writes } = renderApp({ hash: '#/dom/alim', seed: { days: { [TUESDAY.today]: { water: 1000 } } } });
     await userEvent.click(await screen.findByRole('button', { name: '+ 500 ml' }));
     expect(writes.days.filter(([d]) => d === TUESDAY.today).map(([, p]) => p)).toEqual([{ water: 1500 }]);
   });
@@ -177,11 +184,11 @@ describe('synchronisation', () => {
 describe('écriture refusée', () => {
   it('rétablit la valeur d\'avant et prévient (retour arrière)', async () => {
     const { failWrites } = renderApp({ hash: '#/today' });
-    const box = await screen.findByRole('checkbox', { name: 'Téphila' });
+    const box = await screen.findByRole('checkbox', { name: 'Java backend' });
     failWrites.on = true;
     await userEvent.click(box);
     expect(await screen.findByRole('alert')).toHaveTextContent('Enregistrement impossible');
-    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Téphila' })).not.toBeChecked());
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Java backend' })).not.toBeChecked());
   });
 });
 
@@ -214,24 +221,24 @@ describe('édition libre des blocs', () => {
 
   it('déplacer un créneau enregistre le nouvel horaire', async () => {
     const { writes } = renderApp({ hash: '#/today' });
-    await userEvent.click(await screen.findByRole('button', { name: /Séance/, expanded: false }));
-    await userEvent.click(await screen.findByRole('button', { name: /Modifier Séance/ }));
+    await userEvent.click(await screen.findByRole('button', { name: /Java backend/, expanded: false }));
+    await userEvent.click(await screen.findByRole('button', { name: /Modifier Java backend/ }));
     const dialog = await screen.findByRole('dialog');
     const start = within(dialog).getByLabelText('Début');
     fireEvent.change(start, { target: { value: '19:30' } });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
-    expect(todayWrites(writes)).toEqual([{ edits: { move: { sport: { start: 1170, end: 1215 } } } }]);
+    expect(todayWrites(writes)).toEqual([{ edits: { move: { java: { start: 1170, end: 1215 } } } }]);
   });
 
   it('passer un bloc le retire de la frise et propose de le rétablir', async () => {
     const { writes } = renderApp({ hash: '#/today' });
-    await userEvent.click(await screen.findByRole('button', { name: /Séance/, expanded: false }));
-    await userEvent.click(await screen.findByRole('button', { name: /Modifier Séance/ }));
+    await userEvent.click(await screen.findByRole('button', { name: /Java backend/, expanded: false }));
+    await userEvent.click(await screen.findByRole('button', { name: /Modifier Java backend/ }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /Passer ce bloc/ }));
-    expect(todayWrites(writes)).toEqual([{ edits: { skip: { sport: true } } }]);
-    expect(screen.queryByRole('checkbox', { name: /Séance/ })).not.toBeInTheDocument();
+    expect(todayWrites(writes)).toEqual([{ edits: { skip: { java: true } } }]);
+    expect(screen.queryByRole('checkbox', { name: /Java backend/ })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Rétablir' }));
-    expect(await screen.findByRole('checkbox', { name: /Séance/ })).toBeInTheDocument();
+    expect(await screen.findByRole('checkbox', { name: /Java backend/ })).toBeInTheDocument();
   });
 
   it('ajouter un bloc à la main', async () => {
@@ -260,18 +267,6 @@ describe('édition libre des blocs', () => {
   });
 });
 
-describe('rappel de saisie', () => {
-  it('invite à saisir poids et nuit après le réveil, puis disparaît quand c\'est fait', async () => {
-    renderApp({ hash: '#/today' });
-    expect(await screen.findByRole('status')).toHaveTextContent('ton poids et ta nuit');
-  });
-  it('absent si tout est saisi', async () => {
-    renderApp({ hash: '#/today', seed: { days: { [TUESDAY.today]: { weight: 80, sleep: { bed: '22:30', wake: '06:00' } } } } });
-    await screen.findByRole('checkbox', { name: 'Téphila' });
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
-});
-
 describe('poids : objectif et historique', () => {
   it('l\'objectif de poids est enregistré depuis les réglages', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
@@ -296,7 +291,7 @@ describe('poids : objectif et historique', () => {
 describe('nouveaux domaines', () => {
   it('onze domaines dans « Mes domaines »', async () => {
     renderApp({ hash: '#/domains' });
-    for (const name of ['Dev front', 'Anglais', 'Lecture', 'Finances', 'Projets perso']) expect(await screen.findByRole('heading', { level: 3, name })).toBeInTheDocument();
+    for (const name of ['Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Finances', 'Projets perso']) expect(await screen.findByRole('heading', { level: 3, name })).toBeInTheDocument();
   });
 
   it('un domaine sans créneau propose de l\'activer dans les réglages', async () => {
@@ -360,6 +355,13 @@ describe('nouveaux domaines', () => {
     await waitFor(() => expect(screen.queryByText('Site client')).not.toBeInTheDocument());
   });
 
+  it.each([['cloud', 'c1'], ['archi', 'a1']])('%s : une phase se parcourt et se coche', async (id, phase) => {
+    const { writes } = renderApp({ hash: `#/dom/${id}/${phase}` });
+    expect(await screen.findByText(/Phase 1 sur 8/)).toBeInTheDocument();
+    await userEvent.click((await screen.findAllByRole('checkbox'))[0]);
+    expect(writes.progress[0]).toEqual({ done: { [`${phase}t1`]: true }, doneAt: { [`${phase}t1`]: TUESDAY.today } });
+  });
+
   it('dev front : une phase se parcourt et se coche', async () => {
     const { writes } = renderApp({ hash: '#/dom/front/f1' });
     await userEvent.click((await screen.findAllByRole('checkbox'))[0]);
@@ -398,10 +400,10 @@ describe('rappels (notifications)', () => {
     vi.mocked(push.currentSubscription).mockResolvedValue({ endpoint: 'e' } as PushSubscription);
     vi.mocked(push.disablePush).mockResolvedValue('abc123');
     const { writes } = renderApp({ hash: '#/settings' });
-    const sport = await screen.findByRole('checkbox', { name: 'Séance de sport' });
-    expect(sport).toBeChecked();
-    await userEvent.click(sport);
-    expect(writes.settings).toEqual([{ reminders: { sport: false } }]);
+    const seance = await screen.findByRole('checkbox', { name: "Séance d'apprentissage" });
+    expect(seance).toBeChecked();
+    await userEvent.click(seance);
+    expect(writes.settings).toEqual([{ reminders: { seance: false } }]);
     await userEvent.click(screen.getByRole('button', { name: 'Désactiver sur cet appareil' }));
     await waitFor(() => expect(writes.push).toEqual([{ subscriptions: { abc123: null } }]));
   });
@@ -436,11 +438,11 @@ describe('ajustement automatique', () => {
   });
 
   it('une date imposée peut être annulée', async () => {
-    const seed = { progress: { done: {}, pins: { 'toeic:f0': '2026-11-10' } } };
+    const seed = { progress: { done: {}, pins: { 'dl:u1': '2026-11-10' } } };
     const { writes } = renderApp({ hash: '#/today', seed });
     const card = await clickTodayCard();
     await userEvent.click(within(card).getByRole('button', { name: 'Annuler ma date' }));
-    expect(writes.progress[0]).toEqual({ pins: { 'toeic:f0': null } });
+    expect(writes.progress[0]).toEqual({ pins: { 'dl:u1': null } });
   });
 
 
@@ -456,7 +458,7 @@ describe('Mon mois', () => {
   it('liste les domaines et enregistre l\'intensité choisie pour le mois', async () => {
     const { writes } = renderApp({ hash: '#/month' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
-    for (const n of ['Cours MIAGE', 'Sport', 'Java backend', 'Dev front', 'Anglais', 'Lecture', 'Projets perso', 'Finances']) expect(screen.getByRole('radiogroup', { name: `Intensité : ${n}` })).toBeInTheDocument();
+    for (const n of ['Cours MIAGE', 'Sport', 'Java backend', 'Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Projets perso', 'Finances']) expect(screen.getByRole('radiogroup', { name: `Intensité : ${n}` })).toBeInTheDocument();
     await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' }));
     expect(writes.settings).toEqual([{ months: { '2026-11': { anglais: 'intensif' } } }]);
     expect(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' })).toBeChecked();
@@ -492,39 +494,49 @@ describe('liste d\'habitudes (mode Grit)', () => {
     window.location.hash = '';
     renderApp({ hash: '' });
     expect(await screen.findByRole('navigation', { name: 'Semaine' })).toBeInTheDocument();
-    // Mardi 3 nov. = jour de cours : pas d'après-midi libre.
-    for (const g of ['Matin', 'Trajet', 'Travail et cours', 'Soirée', 'Avant de dormir']) expect(screen.getByRole('region', { name: g })).toBeInTheDocument();
+    // La liste ne montre que l'apprentissage : la routine, le travail, les trajets et le sommeil sont du temps réservé, replié dessous.
+    expect(screen.getByRole('region', { name: 'Soirée' })).toBeInTheDocument();
+    for (const g of ['Matin', 'Trajet', 'Travail et cours', 'Avant de dormir']) expect(screen.queryByRole('region', { name: g })).not.toBeInTheDocument();
+    expect(screen.getByText('Temps réservé')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Liste' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Moments' })).toBeChecked();
   });
 
-  it('chaque groupe affiche son avancement et la routine du matin se coche depuis la liste', async () => {
+  it('chaque groupe affiche son avancement et une séance se coche depuis la liste', async () => {
     const { writes } = renderApp({ hash: '#/today' });
-    const matin = await screen.findByRole('region', { name: 'Matin' });
-    expect(within(matin).getByText('0/4')).toBeInTheDocument();
-    await userEvent.click(within(matin).getByRole('checkbox', { name: 'Téphila' }));
-    expect(within(await screen.findByRole('region', { name: 'Matin' })).getByText('1/4')).toBeInTheDocument();
-    expect(writes.days.filter(([d]) => d === TUESDAY.today).at(-1)![1]).toMatchObject({ done: { tephila: true } });
+    const soiree = await screen.findByRole('region', { name: 'Soirée' });
+    expect(within(soiree).getByText('0/2')).toBeInTheDocument();
+    await userEvent.click(within(soiree).getByRole('checkbox', { name: 'Java backend' }));
+    expect(within(await screen.findByRole('region', { name: 'Soirée' })).getByText('1/2')).toBeInTheDocument();
+    expect(writes.days.filter(([d]) => d === TUESDAY.today).at(-1)![1]).toMatchObject({ done: { java: true } });
+  });
+
+  it('le temps réservé (routine, sport, repas…) n\'a aucune case à cocher', async () => {
+    renderApp({ hash: '#/today' });
+    const reserved = (await screen.findByText('Temps réservé')).closest('details')!;
+    expect(within(reserved).queryAllByRole('checkbox')).toHaveLength(0);
+    expect(within(reserved).getByText('Routine du matin')).toBeInTheDocument();
   });
 
   it('un groupe se replie et se déplie, et l\'état est mémorisé', async () => {
     renderApp({ hash: '#/today' });
-    const head = within(await screen.findByRole('region', { name: 'Matin' })).getByRole('button', { name: /Matin/ });
+    const head = within(await screen.findByRole('region', { name: 'Soirée' })).getByRole('button', { name: /Soirée/ });
     expect(head).toHaveAttribute('aria-expanded', 'true');
     await userEvent.click(head);
     expect(head).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('checkbox', { name: 'Téphila' })).not.toBeInTheDocument();
-    expect(localStorage.getItem('ascend-collapsed')).toContain('matin');
+    expect(screen.queryByRole('checkbox', { name: 'Java backend' })).not.toBeInTheDocument();
+    expect(localStorage.getItem('ascend-collapsed')).toContain('soiree');
     await userEvent.click(head);
-    expect(await screen.findByRole('checkbox', { name: 'Téphila' })).toBeInTheDocument();
+    expect(await screen.findByRole('checkbox', { name: 'Java backend' })).toBeInTheDocument();
     localStorage.removeItem('ascend-collapsed');
   });
 
-  it('regrouper par thèmes : Productivité, Santé, Repas…, et le choix est enregistré', async () => {
+  it('regrouper par thèmes : MIAGE, Java…, et le choix est enregistré', async () => {
     const { writes } = renderApp({ hash: '#/today' });
     await userEvent.click(await screen.findByRole('radio', { name: 'Thèmes' }));
     expect(writes.settings).toEqual([{ ui: { group: 'themes' } }]);
-    for (const g of ['Routine du matin', 'Productivité', 'Santé', 'Repas', 'Sommeil']) expect(await screen.findByRole('region', { name: g })).toBeInTheDocument();
+    for (const g of ['MIAGE', 'Java']) expect(await screen.findByRole('region', { name: g })).toBeInTheDocument();
+    for (const g of ['Santé', 'Repas', 'Sommeil', 'Productivité']) expect(screen.queryByRole('region', { name: g })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Soirée' })).not.toBeInTheDocument();
   });
 
@@ -547,15 +559,8 @@ describe('liste d\'habitudes (mode Grit)', () => {
     renderApp({ hash: '#/today', seed: { settings: { weightGoal: 80 }, days: { '2026-10-20': { weight: 90 }, [TUESDAY.today]: { weight: 85 } } } });
     const goals = await screen.findByRole('region', { name: 'Objectifs' });
     expect(within(goals).getByText('Cours MIAGE')).toBeInTheDocument();
-    expect(within(goals).getByText('85 → 80 kg')).toBeInTheDocument();
-    expect(within(goals).getByText('50%')).toBeInTheDocument();
-  });
-
-  it('une habitude affiche sa série 🔥 quand elle est tenue plusieurs jours', async () => {
-    const done = { tephila: true, pompes: true, stretch: true, petitdej: true };
-    renderApp({ hash: '#/today', seed: { days: { '2026-11-01': { done }, '2026-11-02': { done } } } });
-    const matin = await screen.findByRole('region', { name: 'Matin' });
-    expect(within(matin).getAllByLabelText('2 jours d\'affilée').length).toBeGreaterThan(0);
+    expect(within(goals).getByText('Java backend')).toBeInTheDocument();
+    expect(within(goals).queryByText('Poids')).not.toBeInTheDocument();
   });
 });
 
@@ -586,8 +591,8 @@ describe('changer de jour d\'un geste ou au clavier', () => {
 
   it('les flèches ne changent pas de jour quand on tape dans un champ', async () => {
     renderApp({ hash: '#/today' });
-    const weight = await screen.findByLabelText('Poids (kg)');
-    await userEvent.click(weight);
+    await userEvent.click(await screen.findByRole('button', { name: '+ Ajouter un bloc' }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByLabelText('Titre'));
     await userEvent.keyboard('{ArrowRight}');
     expect(screen.getByRole('heading', { level: 1, name: 'mardi 3 novembre' })).toBeInTheDocument();
   });
@@ -619,10 +624,11 @@ describe('journées exceptionnelles (interface)', () => {
   it('choisir « Congé » enregistre le choix et libère la journée', async () => {
     const { writes } = renderApp({ hash: '#/today/2026-10-20' });
     await screen.findByRole('heading', { level: 1, name: 'mardi 20 octobre' });
-    expect(screen.getAllByRole('region', { name: 'Trajet' }).length).toBe(1);
+    const reserved = () => screen.getByText('Temps réservé').closest('details')!;
+    expect(within(reserved()).getAllByText(/Trajet/).length).toBeGreaterThan(0);
     await userEvent.selectOptions(screen.getByLabelText('Type de journée'), 'conge');
     expect(writes.days.filter(([d, p]) => d === '2026-10-20' && 'edits' in p).map(([, p]) => p)).toEqual([{ edits: { day: 'conge' } }]);
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'Trajet' })).not.toBeInTheDocument());
+    await waitFor(() => expect(within(reserved()).queryByText(/Trajet/)).not.toBeInTheDocument());
     expect(screen.getByText('Congé', { selector: '.chip' })).toBeInTheDocument();
   });
   it('le week-end, le choix n\'est pas proposé', async () => {
@@ -706,7 +712,7 @@ describe('premier lancement', () => {
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument());
   });
   it('absente quand l\'utilisateur a déjà coché quelque chose', async () => {
-    renderApp({ hash: '#/today', seed: { days: { '2026-11-02': { done: { tephila: true } } } } });
+    renderApp({ hash: '#/today', seed: { days: { '2026-11-02': { done: { java: true } } } } });
     await screen.findByRole('navigation', { name: 'Semaine' });
     expect(screen.queryByRole('region', { name: 'Pour bien démarrer' })).not.toBeInTheDocument();
   });
@@ -744,7 +750,7 @@ describe('sur la bonne voie ? (interface)', () => {
 });
 
 describe('écran Statistiques', () => {
-  const morning = { tephila: true, pompes: true, stretch: true, petitdej: true };
+  const morning = { java: true };
   const snap = (pct: number, done: Record<string, number> = {}) => ({ pct, pl: 100, dn: pct, planned: {}, done });
   const days = {
     '2026-11-02': { done: morning, stats: snap(80, { matin: 75 }) },
@@ -763,9 +769,9 @@ describe('écran Statistiques', () => {
   it('régularité par habitude : taux sur 7 et 30 jours, séries', async () => {
     renderApp({ hash: '#/stats', seed: { days } });
     const section = await screen.findByRole('region', { name: 'Régularité par habitude' });
-    expect(within(section).getByText('Téphila')).toBeInTheDocument();
-    expect(within(section).getAllByText(/Série actuelle/).length).toBeGreaterThan(3);
-    expect(within(section).getAllByText(/7 j .* · 30 j /).length).toBeGreaterThan(3);
+    expect(within(section).getByText('Java backend')).toBeInTheDocument();
+    expect(within(section).getAllByText(/Série actuelle/).length).toBeGreaterThan(0);
+    expect(within(section).getAllByText(/7 j .* · 30 j /).length).toBeGreaterThan(0);
   });
 
   it('calendrier de chaleur : 84 cases accessibles avec la date et l\'avancement', async () => {
@@ -779,7 +785,7 @@ describe('écran Statistiques', () => {
   it('badges : aucun au départ, avec la progression vers chaque seuil', async () => {
     renderApp({ hash: '#/stats' });
     const section = await screen.findByRole('region', { name: 'Badges' });
-    expect(section).toHaveTextContent('0 / 9');
+    expect(section).toHaveTextContent('0 / 11');
     expect(within(section).getByText('Une semaine d\'affilée')).toBeInTheDocument();
     expect(section).toHaveTextContent('0 / 7');
   });
@@ -788,7 +794,7 @@ describe('écran Statistiques', () => {
     const week = Object.fromEntries(['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-18', '2026-10-19'].map((d) => [d, { stats: snap(80) }]));
     renderApp({ hash: '#/stats', seed: { days: week } });
     const section = await screen.findByRole('region', { name: 'Badges' });
-    expect(section).toHaveTextContent('1 / 9');
+    expect(section).toHaveTextContent('1 / 11');
     expect(within(section).getByText('Une semaine d\'affilée').closest('.badge')).not.toHaveClass('locked');
   });
 

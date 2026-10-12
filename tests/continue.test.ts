@@ -32,6 +32,7 @@ describe('continuer là où je me suis arrêté', () => {
     expect(continueCards({ done: {} }, DEFAULT_SETTINGS).map((c) => c.domain)).toEqual(['java']);
     expect(continueCards({ done: {} }, { ...DEFAULT_SETTINGS, frontMin: 30 }).map((c) => c.domain)).toEqual(['java', 'front']);
     expect(continueCards({ done: { [FRONT_TASKS[0].id]: true } }, DEFAULT_SETTINGS).map((c) => c.domain)).toContain('front');
+    expect(continueCards({ done: {} }, { ...DEFAULT_SETTINGS, cloudMin: 30, archiMin: 30 }).map((c) => c.domain)).toEqual(['java', 'cloud', 'archi']);
   });
   it('plus de carte pour un parcours terminé', () => {
     const all = { done: { ...doneUpTo(JT, JT.length).done } };

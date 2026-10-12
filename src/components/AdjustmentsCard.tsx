@@ -17,15 +17,14 @@ export function AdjustmentsCard() {
 
   const soon = addDays(today, 6);
   const rows = sched.changes.filter((c) => c.reason === 'retard' || c.reason === 'epingle' || c.reason === 'abandon' || (c.to !== null && c.to <= soon));
-  if (!rows.length && !sched.notes.length && !sched.unplaced.length) return null;
+  if (!rows.length && !sched.unplaced.length) return null;
 
   const pin = (id: string, value: string | null) => setProgress({ pins: { [id]: value } });
   const moved = rows.filter((c) => c.reason !== 'abandon').length;
   const abandoned = rows.filter((c) => c.reason === 'abandon').length;
   const summary = [
     moved > 0 ? `${moved} tâche${moved > 1 ? 's' : ''} déplacée${moved > 1 ? 's' : ''}` : '',
-    abandoned > 0 ? `${abandoned} abandonnée${abandoned > 1 ? 's' : ''}` : '',
-    sched.notes.length ? 'sport rattrapé' : ''
+    abandoned > 0 ? `${abandoned} abandonnée${abandoned > 1 ? 's' : ''}` : ''
   ].filter(Boolean).join(' · ');
 
   const undo = (c: Change) => {
@@ -45,7 +44,6 @@ export function AdjustmentsCard() {
       <details className="autolog">
         <summary><span aria-hidden="true">↻</span> Planning ajusté automatiquement{summary ? ` · ${summary}` : ''}</summary>
         <div className="autolog-body">
-          {sched.notes.map((n) => <p key={n} className="muted">{n}</p>)}
           {sched.unplaced.length > 0 && (
             <p className="muted" role="note">
               {sched.unplaced.length} tâche{sched.unplaced.length > 1 ? 's' : ''} ne tien{sched.unplaced.length > 1 ? 'nent' : 't'} plus avant la dernière échéance : les plus importantes sont placées en premier. Un mois « intensif » dans <Link to="/month" style={{ color: 'var(--accent)', fontWeight: 700 }}>Mon mois</Link> en rattrape davantage.

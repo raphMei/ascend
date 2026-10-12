@@ -28,12 +28,18 @@ describe('envoi des rappels', () => {
     await db().doc('users/u1/push/main').set({ subscriptions: { s1: SUB } });
   });
 
-  it('envoie la routine à 6 h 05 (heure de Paris), une seule fois', async () => {
-    const first = run('2026-10-14T04:05:00Z');   // mercredi 6 h 05 à Paris (UTC+2)
-    expect(first).toContain('Ta routine t\'attend');
+  it('envoie le rappel de séance 5 minutes avant la première séance (heure de Paris), une seule fois', async () => {
+    const first = run('2026-10-14T15:15:00Z');   // mercredi 17 h 15 à Paris (UTC+2) : la première séance du jour est à 17 h 15
+    expect(first).toContain('[dry-run]');
     const sent = (await db().doc('users/u1/push/main').get()).data()!.sent;
-    expect(Object.keys(sent)).toContain('2026-10-14:routine');
-    expect(run('2026-10-14T04:25:00Z')).not.toContain('Ta routine t\'attend');   // pas de doublon
+    expect(Object.keys(sent)).toContain('2026-10-14:seance');
+    expect(run('2026-10-14T15:25:00Z')).not.toContain('[dry-run]');   // pas de doublon
+  });
+
+  it('aucun rappel de routine, de sport ni de bilan : ce sont des temps réservés', () => {
+    const out = run('2026-10-14T04:05:00Z');   // 6 h 05 à Paris : l\'ancien rappel de routine
+    expect(out).not.toContain('Ta routine t\'attend');
+    expect(out).not.toContain('[dry-run]');
   });
 
   it('rien à envoyer tant que l\'heure n\'est pas venue', () => {
@@ -45,9 +51,9 @@ describe('envoi des rappels', () => {
     expect(out).not.toContain('[dry-run]');
   });
 
-  it('un rappel déjà satisfait n\'est pas envoyé (routine cochée)', async () => {
-    await db().doc('users/u1/days/2026-10-14').set({ done: { tephila: true, pompes: true, stretch: true, petitdej: true } });
-    expect(run('2026-10-14T04:05:00Z')).not.toContain('Ta routine t\'attend');
+  it('un rappel désactivé dans les réglages n\'est pas envoyé', async () => {
+    await db().doc('users/u1/settings/main').set({ reminders: { seance: false } });
+    expect(run('2026-10-14T15:15:00Z')).not.toContain('[dry-run]');
   });
 
   it('utilisateur sans abonnement : ignoré', async () => {

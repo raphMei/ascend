@@ -14,6 +14,7 @@
       planning ne bouge pas à chaque case cochée ;
     - les examens ne sont jamais ajustés (durée fixe). */
 import { lastDays, type ISODate } from '@/core/dates';
+import type { PathId } from '@/content/paths';
 import type { MiageTask, PathStep, TaskKind } from '@/content/types';
 import type { Block, DayData, Progress, TimeEntry } from './types';
 
@@ -156,9 +157,9 @@ const PATH_WINDOW = 28;
 const PATH_MIN_STEP_MIN = 120;
 const PATH_MIN_STEPS = 3;
 
-/** Rythme réel d'un parcours (Java, front) sur 28 jours : minutes de séances cochées (instantanés de stats du jour)
+/** Rythme réel d'un parcours (Java, front, cloud, architecture) sur 28 jours : minutes de séances cochées (instantanés de stats du jour)
     rapportées aux minutes des étapes validées. Sans assez de données : `null` (rien n'est inventé). */
-export function pathPace(steps: readonly PathStep[], days: Readonly<Record<ISODate, DayData>>, progress: Progress, domain: 'java' | 'front', today: ISODate, window = PATH_WINDOW): PathPace | null {
+export function pathPace(steps: readonly PathStep[], days: Readonly<Record<ISODate, DayData>>, progress: Progress, domain: 'java' | PathId, today: ISODate, window = PATH_WINDOW): PathPace | null {
   const recent = new Set(lastDays(window, today));
   const sessionMin = [...recent].reduce((a, d) => a + (days[d]?.stats?.done?.[domain] ?? 0), 0);
   const done = steps.filter((s) => progress.done[s.id] && progress.doneAt?.[s.id] && recent.has(progress.doneAt[s.id]!));

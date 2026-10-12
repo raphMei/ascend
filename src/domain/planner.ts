@@ -1,4 +1,5 @@
-/** Moteur de planning : construit les blocs horaires d'un jour et place sport → tâches MIAGE → Java dans les créneaux libres.
+/** Moteur de planning : construit les blocs horaires d'un jour. Routine, sport, repas, trajets et travail sont du TEMPS RÉSERVÉ (sans case à
+    cocher : ils servent à savoir combien de temps il reste) ; les séances d'apprentissage (MIAGE, Java, dev front…) sont placées dans les créneaux libres.
     Fonction pure : mêmes entrées, même plan. Aucune lecture d'état global, aucun accès au DOM. */
 import { dow, type ISODate } from '@/core/dates';
 import { dur, hm, toMin } from '@/core/format';
@@ -10,7 +11,7 @@ import { shabbatTimesForDate } from './shabbat';
 import { SPORT, SPORT_WEEK } from './sport';
 import { habitItems } from './habits';
 import { settingsForDate } from './month';
-import type { Block, DayData, DayEdits, Plan, PlanItem, Progress, Settings, ShabbatWindow, SportKind } from './types';
+import type { Block, DayData, DayEdits, Plan, PlanItem, Progress, Settings, ShabbatWindow } from './types';
 
 export interface PlanInput {
   date: ISODate;
@@ -26,10 +27,9 @@ export interface PlanInput {
   measure?: { fromMin?: number };
 }
 
-/** Ce que le planificateur lit du réajustement : jour assigné à chaque tâche, séances de sport remplacées. */
+/** Ce que le planificateur lit du réajustement : jour assigné à chaque tâche. */
 export interface PlanSchedule {
   dayOf: Readonly<Record<string, ISODate>>;
-  sport: Readonly<Record<ISODate, { kind: SportKind; reason: string }>>;
 }
 
 type NewBlock = Partial<Block> & Pick<Block, 'id' | 'start' | 'end' | 'title' | 'domain'>;
@@ -57,10 +57,7 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
 
   /* Routine du matin (sauf samedi) */
   if (w !== 6) {
-    add({ id: 'tephila', start: wake, end: wake + 20, title: 'Téphila', domain: 'matin', checkable: true, detail: 'Ta prière du matin, avant tout écran. Le téléphone reste en mode avion jusqu\'à la fin de la routine.' });
-    add({ id: 'pompes', start: wake + 20, end: wake + 30, title: 'Pompes', domain: 'matin', checkable: true, detail: 'Trois séries proches de l\'échec, dos gainé, poitrine qui touche presque le sol. Note ton total dans ta tête et bats-le la semaine suivante.' });
-    add({ id: 'stretch', start: wake + 30, end: wake + 60, title: 'Étirements', domain: 'matin', checkable: true, detail: 'Trente minutes : hanches, ischios, mollets, épaules, nuque. Respire lentement, tiens chaque position 45 secondes. Ménage le bas du dos : pas de flexion forcée.' });
-    add({ id: 'petitdej', start: wake + 60, end: wake + 75, title: 'Petit-déjeuner', domain: 'matin', checkable: true, detail: 'Vise 30 g de protéines (œufs, skyr, fromage blanc, flocons d\'avoine). Un verre d\'eau avant le café.' });
+    add({ id: 'tephila', start: wake, end: wake + 75, title: 'Routine du matin', domain: 'matin', sub: 'Temps réservé' });
   }
 
   /* Journée de travail ou de cours */
@@ -112,8 +109,8 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
     areaStart = Math.max(endOfDayWork, wake + 75); areaEnd = bed - 50;
   }
   if (w !== 5) {
-    add({ id: 'bilan', start: bed - 50, end: bed - 40, title: 'Bilan du soir', domain: 'sommeil', checkable: true, detail: 'Trois minutes : note ton poids du matin, ton eau et tes protéines dans l\'onglet Aujourd\'hui, puis relis ce que tu as fait. Prépare tes affaires de demain.' });
-    add({ id: 'coucher', start: bed, end: bed + 30, title: 'Au lit à l\'heure', domain: 'sommeil', checkable: true, detail: 'Téléphone loin du lit. Objectif : ' + S.sleepGoal.toString().replace('.', ',') + ' h de sommeil.' });
+    add({ id: 'bilan', start: bed - 50, end: bed - 40, title: 'Fin de journée', domain: 'sommeil', sub: 'Temps réservé' });
+    add({ id: 'coucher', start: bed, end: bed + 30, title: 'Coucher', domain: 'sommeil', sub: 'Temps réservé' });
   }
 
   /* Créneaux libres */
@@ -145,18 +142,12 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
     item.left = left; return left <= 0;
   };
 
-  /* Sport */
-  const override = schedule?.sport[date];
-  const sp = override ? override.kind : (S.sportWeek ?? SPORT_WEEK)[w];
-  const sat = (w === 6);
+  /* Sport : temps réservé (le suivi des séances se fait dans Grit). Il retire de la place aux séances d'apprentissage. */
+  const sp = (S.sportWeek ?? SPORT_WEEK)[w];
   if (sp) {
     const k = SPORT[sp], len = sportShort ? 45 : 75;
-    const it: Item = { min: len, blk: { id: 'sport', fixed: false, checkable: true, title: 'Séance : ' + k.name + (override ? ' (rattrapage)' : ''), domain: 'sport', sub: override ? override.reason : k.sub, sport: sp, detail: k.ex.map((e) => e[0] + ' : ' + e[1]).join('\n') + '\nFinisher : corde à sauter, 3 × 2 minutes.\nAdapte les charges à ton programme actuel.' } };
+    const it: Item = { min: len, blk: { id: 'sport', fixed: false, checkable: false, title: 'Sport : ' + k.name, domain: 'sport', sub: 'Temps réservé', sport: sp, detail: k.ex.map((e) => e[0] + ' : ' + e[1]).join('\n') } };
     if (!place(it, w === 0 ? 600 : 960)) { overflow.n++; overflow.min += it.left ?? it.min; }
-  }
-  if (sat) {
-    const it: Item = { min: 45, blk: { id: 'sport', fixed: false, checkable: true, title: 'Jambes (si pas fait vendredi)', domain: 'sport', sub: 'Rattrapage après Chabbat', sport: 'legs', detail: SPORT.legs.ex.map((e) => e[0] + ' : ' + e[1]).join('\n') } };
-    if (!(DD && DD.done && DD.done.sport)) place(it, areaStart);
   }
 
   /* Mode mesure : on s'arrête ici et on rapporte le temps libre restant (à partir de `fromMin`). */

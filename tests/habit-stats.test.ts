@@ -7,7 +7,7 @@ import { genericTasks } from './fixtures';
 
 const S = DEFAULT_SETTINGS;
 const tasks = genericTasks(S);
-const morning = { tephila: true, pompes: true, stretch: true, petitdej: true };
+const morning = { java: true };
 const snap = (pct: number, done: Record<string, number> = {}): DayStatsSnapshot => ({ pct, pl: 100, dn: pct, planned: {}, done });
 const stats = (inp: Partial<Parameters<typeof habitStats>[0]> & { days: Record<string, DayData>; today: string }) => habitStats({ settings: S, progress: { done: {} }, tasks, ...inp });
 const find = (list: ReturnType<typeof habitStats>, id: string) => list.find((h) => h.id === id)!;
@@ -15,20 +15,21 @@ const find = (list: ReturnType<typeof habitStats>, id: string) => list.find((h) 
 describe('taux de réussite par habitude', () => {
   const TODAY = '2026-11-10';     // mardi
   it('compte les jours prévus et faits sur 7 et 30 jours', () => {
-    const days = { '2026-11-09': { done: morning }, '2026-11-06': { done: morning }, '2026-11-05': { done: morning } };
-    const t = find(stats({ days, today: TODAY }), 'tephila');
-    expect(t.done7).toBe(3);
-    expect(t.planned7).toBe(5);                      // 4–9 nov. hors samedi 7, aujourd'hui non compté car pas fait
+    const days = { '2026-11-09': { done: morning }, '2026-11-06': { done: morning }, '2026-11-05': { done: morning }, '2026-11-04': { done: morning } };
+    const t = find(stats({ days, today: TODAY }), 'java');
+    expect(t.done7).toBe(3);                         // un des quatre jours cochés est un jour d'école : pas de séance Java ce jour-là
+    expect(t.planned7).toBe(5);                      // aujourd'hui non compté car pas fait
     expect(t.rate7).toBe(60);
   });
   it('aujourd\'hui compte seulement s\'il est fait', () => {
-    const before = find(stats({ days: {}, today: TODAY }), 'tephila');
-    const after = find(stats({ days: { [TODAY]: { done: morning } }, today: TODAY }), 'tephila');
+    const day = '2026-11-10';                         // sans tâche MIAGE en retard, la séance Java est planifiée aujourd'hui
+    const before = find(stats({ days: {}, today: day, tasks: [] }), 'java');
+    const after = find(stats({ days: { [day]: { done: morning } }, today: day, tasks: [] }), 'java');
     expect(after.planned7).toBe(before.planned7 + 1); expect(after.done7).toBe(before.done7 + 1);
   });
   it('série courante et meilleure série', () => {
     const days = Object.fromEntries(['2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-11-08', '2026-11-09'].map((d) => [d, { done: morning }]));
-    const t = find(stats({ days, today: TODAY }), 'tephila');
+    const t = find(stats({ days, today: TODAY }), 'java');
     expect(t.current).toBe(2);                       // 8 et 9 nov. ; le 10 (aujourd'hui) n'est pas encore fait
     expect(t.best).toBe(4);                          // 20 → 23 oct.
   });

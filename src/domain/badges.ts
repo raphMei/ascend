@@ -1,7 +1,7 @@
 /** Badges : récompenses attribuées à des seuils précis. Fonctions pures. */
 import { dow, range, type ISODate } from '@/core/dates';
 import { PHASES } from '@/content/java/path';
-import { FRONT_PHASES } from '@/content/front/path';
+import { pathById } from '@/content/paths';
 import type { DayData, Progress } from './types';
 
 export interface Badge {
@@ -34,7 +34,7 @@ export function badges(days: Record<ISODate, DayData>, progress: Progress): Badg
   const javaPhases = phaseDone(PHASES, progress);
   const corePhases = PHASES.filter((p) => p.core);
   const coreDone = corePhases.filter((p) => p.tasks.every((t) => progress.done[t.id])).length;
-  const frontPhases = phaseDone(FRONT_PHASES, progress);
+  const pathPhases = (id: string) => phaseDone(pathById(id)?.phases ?? [], progress);
   const make = (id: string, emoji: string, title: string, description: string, value: number, target: number): Badge => ({ id, emoji, title, description, earned: value >= target, value: Math.min(value, target), target });
   return [
     make('serie-7', '🔥', 'Une semaine d\'affilée', '7 jours de suite à 70 % ou plus', best, 7),
@@ -45,6 +45,8 @@ export function badges(days: Record<ISODate, DayData>, progress: Progress): Badg
     make('lecteur-500', '📖', 'Cinq cents pages', '500 pages lues', pages, 500),
     make('java-1', '☕', 'Première phase Java', 'Terminer une phase du parcours Java', javaPhases, 1),
     make('java-socle', '🎓', 'Socle Java', `Terminer les ${corePhases.length} phases du socle Java`, coreDone, corePhases.length),
-    make('front-1', '💻', 'Première phase front', 'Terminer une phase du parcours dev front', frontPhases, 1)
+    make('front-1', '💻', 'Première phase front', 'Terminer une phase du parcours dev front', pathPhases('front'), 1),
+    make('cloud-1', '☁️', 'Première phase Cloud et DevOps', 'Terminer une phase du parcours Cloud et DevOps', pathPhases('cloud'), 1),
+    make('archi-1', '🏛️', 'Première phase architecture', 'Terminer une phase du parcours Architecture logicielle', pathPhases('archi'), 1)
   ];
 }

@@ -55,12 +55,12 @@ describe('Mon mois : intensité par domaine', () => {
     expect([count('leger'), count('normal'), count('intensif')]).toEqual([3, 5, 6]);
     for (const level of ['leger', 'normal', 'intensif'] as const) expect(SPORT_PROGRAMS[level][6]).toBeUndefined();
     const week = range('2026-10-12', '2026-10-18');
-    const sessions = (level: 'leger' | 'normal' | 'intensif') => week.filter((d) => plan(d, { ...S0, months: { '2026-10': { sport: level } } }).blocks.some((b) => b.id === 'sport' && b.title.startsWith('Séance'))).length;
+    const sessions = (level: 'leger' | 'normal' | 'intensif') => week.filter((d) => plan(d, { ...S0, months: { '2026-10': { sport: level } } }).blocks.some((b) => b.id === 'sport')).length;
     expect(sessions('leger')).toBe(3); expect(sessions('normal')).toBe(5); expect(sessions('intensif')).toBe(6);
   });
 
   it('sport désactivé : aucune séance', () => {
-    const none = range('2026-10-12', '2026-10-18').filter((d) => plan(d, { ...S0, months: { '2026-10': { sport: 'off' } } }).blocks.some((b) => b.id === 'sport' && b.title.startsWith('Séance')));
+    const none = range('2026-10-12', '2026-10-18').filter((d) => plan(d, { ...S0, months: { '2026-10': { sport: 'off' } } }).blocks.some((b) => b.id === 'sport'));
     expect(none).toEqual([]);
   });
 });

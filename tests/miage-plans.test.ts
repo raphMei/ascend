@@ -16,29 +16,33 @@ const plan: SubjectPlan = {
 
 describe('plans de matière MIAGE (mécanisme)', () => {
   const plain = buildTasks({});
-  const planned = buildTasks({ dl: plan });
-  const dailyDl = (list: typeof plain) => list.filter((t) => t.s === 'dl' && t.k === 'daily');
+  const planned = buildTasks({ dl: { ...plan, paced: true, deliverables: [{ title: 'Rendu TP', detail: 'Rendre le TP noté.', hours: 2, after: 1, res: [{ src: 'PyTorch', title: 'CIFAR-10', url: 'https://pytorch.org/tutorials/', lang: 'en' }] }] } });
+  const sessions = (list: typeof plain) => list.filter((t) => t.s === 'dl' && t.k === 'seance');
 
-  it('les séances du plan sont réparties régulièrement sur les créneaux de la matière, dans l\'ordre', () => {
-    const own = dailyDl(planned).filter((t) => t.t.includes(' · Deep Learning') && (t.t.startsWith('Perceptron') || t.t.startsWith('Rétropropagation')));
-    expect(own.map((t) => t.t.split(' · ')[0])).toEqual(['Perceptron', 'Rétropropagation']);
-    const slots = dailyDl(plain).length;
-    expect(own[0].due).toBe(dailyDl(plain)[0].due);                        // la première séance prend le premier créneau
-    expect(own[1].due).toBe(dailyDl(plain)[Math.floor(slots / 2)].due);    // la deuxième est à mi-parcours
+  it('un plan sans « paced » ne crée aucune séance : plus de tâche quotidienne', () => {
+    expect(buildTasks({ dl: plan }).filter((t) => t.s === 'dl' && (t.k === 'seance' || t.k === ('daily' as string)))).toEqual([]);
+    expect(plain.some((t) => (t.k as string) === 'daily')).toBe(false);
+  });
+
+  it('les séances du plan gardent l\'ordre du plan et des échéances croissantes', () => {
+    const own = sessions(planned);
+    expect(own.map((t) => t.t.split(' · ')[0].replace(/ \(\d\/\d\)$/, ''))).toEqual(['Perceptron', 'Rétropropagation', 'Rétropropagation']);   // la 2e séance (1 h 30 par défaut) est coupée en deux parties
+    own.slice(1).forEach((t, i) => expect(own[i].due <= t.due).toBe(true));
   });
 
   it('une séance garde ses liens, son type et sa durée', () => {
     const t = planned.find((x) => x.t.startsWith('Perceptron'))!;
-    expect(t).toMatchObject({ h: 0.75, step: 'cours', d: 'Chapitre 1' });
+    expect(t).toMatchObject({ h: 0.75, step: 'cours' });
+    expect(t.d).toContain('Chapitre 1');
     expect(t.res?.[0].url).toBe('https://fr.wikipedia.org/wiki/Perceptron');
     expect(planned.find((x) => x.t.startsWith('Rétropropagation'))!.h).toBe(0.75);   // durée par défaut
   });
 
-  it('plusieurs séances dans un même créneau reçoivent des identifiants distincts', () => {
-    const many = buildTasks({ dl: { ...plan, units: Array.from({ length: 40 }, (_, i) => ({ title: 'Séance ' + (i + 1), detail: 'x' })) } });
+  it('plusieurs séances reçoivent des identifiants distincts', () => {
+    const many = buildTasks({ dl: { ...plan, paced: true, units: Array.from({ length: 40 }, (_, i) => ({ title: 'Séance ' + (i + 1), detail: 'x' })) } });
     const ids = many.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(dailyDl(many).filter((t) => t.t.startsWith('Séance ')).length).toBe(40);
+    expect(sessions(many).filter((t) => t.t.startsWith('Séance ')).length).toBe(80);   // 40 séances de 1 h 30 : deux parties chacune
   });
 
   it('les autres matières ne sont pas touchées', () => {
@@ -50,8 +54,8 @@ describe('plans de matière MIAGE (mécanisme)', () => {
     expect(planned.some((t) => t.id === 'dl:s2')).toBe(false);
   });
 
-  it('ajoute les liens aux projets datés, une tâche par jalon, et complète la tâche d\'examen', () => {
-    expect(planned.find((t) => t.id === 'dl:p5')!.res?.[0].title).toBe('CIFAR-10');
+  it('un rendu daté après une séance reçoit ses liens, chaque jalon devient une tâche, et l\'examen est complété', () => {
+    expect(planned.find((t) => t.id === 'dl:r1')!.res?.[0].title).toBe('CIFAR-10');
     expect(planned.find((t) => t.id === 'dl:m0')).toMatchObject({ t: 'Préparer : TP noté', due: '2026-12-10', h: 2, k: 'rev' });
     expect(planned.find((t) => t.id === 'dl:exam')!.d).toContain('QCM, 2 h');
   });

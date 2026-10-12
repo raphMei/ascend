@@ -18,7 +18,7 @@ main.tsx → App.tsx → features/ (écrans) ──→ components/ (UI réutilis
 | Dossier | Rôle | React ? |
 |---|---|---|
 | `core/` | Dates ISO, formatage, fusion profonde | non |
-| `content/` | Données : calendrier CFA, matières et tâches MIAGE, plans de matière, parcours Java et dev front (chapitres + liens) | non |
+| `content/` | Données : calendrier CFA, matières et tâches MIAGE, plans de matière, parcours Java, dev front, Cloud et DevOps, Architecture logicielle (chapitres + liens ; registre `content/paths.ts`) | non |
 | `domain/` | Règles métier **pures** : planning (modifications libres, jours exceptionnels), réajustement, intensité du mois, Chabbat, stats et rattrapage, séries, objectifs, badges, prévisions, rappels, groupes, minuteur, types du modèle | non |
 | `services/` | `Backend` (interface) + implémentations Firebase et démo ; notifications push ; export JSON | non |
 | `state/` | Réducteur (pur) + `DataProvider` (contexte React, écritures optimistes) | oui |
@@ -44,8 +44,8 @@ Règles tenues par la structure :
 
 ## Planning
 
-`planDay(entrées) → plan` est pur. Ordre de placement dans les créneaux libres : sport → tâches MIAGE → domaines optionnels
-(anglais, lecture, dev front, projets, point finances) → Java (prend le reste). Puis `applyEdits` applique les **modifications libres**
+`planDay(entrées) → plan` est pur. **Temps réservé** : routine du matin (un seul bloc), sport, repas, bilan, coucher, travail et trajets sont des blocs non cochables (`checkable: false`) : ils bloquent l'agenda mais n'entrent ni dans les pourcentages, ni dans les séries, ni dans les rappels. Seules les séances d'apprentissage sont cochables. Ordre de placement dans les créneaux libres : sport → tâches MIAGE → domaines optionnels
+(anglais, lecture, parcours dev front / Cloud et DevOps / Architecture, projets, point finances) → Java (prend le reste). Puis `applyEdits` applique les **modifications libres**
 du jour (`days/{date}.edits` : `skip`, `move`, `extra`).
 
 **Mon mois** (`domain/month.ts`) : `settings.months['AAAA-MM']` donne l'intensité de chaque domaine (désactivé, léger, normal, intensif).
@@ -54,20 +54,19 @@ Un mois sans réglage reprend le précédent, domaine par domaine. Sans aucun r�
 
 **Ajustement automatique** (`domain/schedule.ts`, `buildSchedule`) : calculé à partir des données, **jamais enregistré** (donc toujours à jour).
 1. Place disponible par jour = temps libre mesuré par le planificateur (`planDay(..., measure)`) − temps réservé aux domaines du mois − 10 % de marge ; aujourd'hui, seule la fin de journée compte ; samedi = 0.
-2. Les examens restent à leur date ; les dates imposées (`progress.pins`) passent d'abord ; les tâches de routine de plus de 2 jours sont abandonnées.
-3. Le reste est réparti jour après jour : important d'abord (révisions/projets, fiches, mise en place, tâches du jour), puis le plus ancien. Mois « léger » : plus de tâches du jour ; « intensif » : on avance les tâches des 7 jours suivants.
-4. Sport : jambes manquées → rattrapées une fois, à la place de la prochaine séance qui n'est pas des jambes.
-5. Chaque déplacement est expliqué (`changes`) et s'annule en un toucher (`pins` : date, `'skip'`, ou `null`).
-Le résultat (`Schedule`) est fourni à toute l'application par `ScheduleProvider` ; le planificateur ne lit que `dayOf` et `sport`.
+2. Les examens restent à leur date ; les dates imposées (`progress.pins`) passent d'abord ; les tâches de routine de plus de 2 jours sont abandonnées (il n'en reste plus : plus aucune tâche quotidienne n'est générée).
+3. Le reste est réparti jour après jour : important d'abord (examens, révisions et projets, fiches et séances, mise en place), puis le plus ancien. Mois « léger » : plus de tâches du jour ; « intensif » : on avance les tâches des 7 jours suivants.
+4. Chaque déplacement est expliqué (`changes`) et s'annule en un toucher (`pins` : date, `'skip'`, ou `null`).
+Le résultat (`Schedule`) est fourni à toute l'application par `ScheduleProvider` ; le planificateur ne lit que `dayOf`.
 Sans ajustement (désactivé dans les réglages), le retard s'empile sur aujourd'hui, comme avant.
 L'affichage regroupe les petites tâches MIAGE consécutives (`domain/small-blocks.ts`).
 
 ## Liste d'habitudes (écran « Aujourd'hui »)
 
 L'application s'ouvre sur **Aujourd'hui** : bandeau de la semaine (anneau d'avancement par jour), résumé du jour, puis la **liste groupée** (vue « Liste ») ou la frise horaire (vue « Frise »).
-- `domain/groups.ts` : groupes **par moments** (Matin, Trajet, Travail et cours, Après-midi, Soirée, Avant de dormir, Chabbat ; dans l'ordre de la journée) ou **par thèmes** (Routine du matin, Productivité, Apprentissage, Santé, Repas, Finances, Sommeil, Trajets et travail, Autre). Fonctions pures, testées : aucun bloc perdu ni dupliqué.
+- `domain/groups.ts` : groupes **par moments** (dans l'ordre de la journée) ou **par thèmes** (un par sujet d'apprentissage : MIAGE, Java, Front-end, Cloud et DevOps, Architecture, Anglais et lecture, Projets ; le temps réservé n'est pas dans la liste, il est replié dessous) ; l'écran n'affiche que les séances. Fonctions pures, testées : aucun bloc perdu ni dupliqué.
 - `domain/streaks.ts` : série 🔥 par habitude (un jour où elle n'est pas prévue ne la casse pas ; aujourd'hui non plus tant que la journée n'est pas finie).
-- `domain/goals.ts` : section **Objectifs** (poids, TOEIC, MIAGE, Java, dev front, sport, sommeil, lecture), seulement ce qui a du sens pour toi.
+- `domain/goals.ts` : section **Objectifs** d'apprentissage (TOEIC, MIAGE, Java, parcours actifs, lecture), seulement ce qui a du sens pour toi.
 - `domain/habit-meta.ts` : emoji par bloc et par domaine.
 - Préférences d'affichage (vue, regroupement) : `settings.ui`, synchronisées. Groupes repliés : `localStorage` (par appareil).
 - Pour ajouter un groupe ou changer une règle de regroupement : `domain/groups.ts` seulement.
@@ -96,8 +95,8 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 1. `src/domain/types.ts` : ajouter l'`id` dans `DomainId`. `src/domain/domains.ts` : nom, variable de couleur, icône, description.
 2. `src/styles/tokens.css` : ajouter `--c-<id>` en clair **et** en sombre. Icône manquante : `src/components/Icon.tsx`.
-3. `src/features/domains/<id>/index.tsx` : exporter `{ id, Card, Page }` (modèle : `lecture/` pour un suivi simple, `front/` pour un parcours en phases).
-4. `src/features/domains/registry.ts` : l'ajouter à `DOMAIN_MODULES`.
+3. `src/features/domains/<id>/index.tsx` : exporter `{ id, Card, Page }` (modèle : `lecture/` pour un suivi simple). **Un parcours en phases** (comme dev front, Cloud et DevOps, Architecture) n'a pas de dossier : écrire `src/content/<id>/path.ts`, l'ajouter à `PATHS` dans `src/content/paths.ts` (le module d'écran, le bloc du planning, la carte « Continuer », l'objectif et les couleurs en découlent), puis déclarer `<id>` dans `DomainId`, `MonthDomain`, `MINUTES`/`MONTH_DOMAINS` (`domain/month.ts`) et `<id>Min` dans `Settings`.
+4. `src/features/domains/registry.ts` : l'ajouter à `DOMAIN_MODULES` (les parcours de `PATHS` y sont ajoutés automatiquement).
 5. S'il place un bloc quotidien : réglage de minutes dans `Settings` (`types.ts`, `settings.ts`, écran Réglages) et un item dans `src/domain/habits.ts`.
 6. Ajouter un test dans `tests/` (voir `habits.test.ts`).
 
@@ -105,7 +104,7 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 | Commande | Contenu |
 |---|---|
-| `npm test` (398 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
+| `npm test` (410 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
 | `npm run test:e2e` (51) | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, polices locales, chargement à la demande, minuteur, import/export, **audit d'accessibilité axe** en clair et en sombre |
 | `npm run test:rules` | **émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections connues, requête fenêtrée) et script d'envoi des rappels de bout en bout (nécessite Java) |
 | `npm run test:all` | tout ce qui précède |

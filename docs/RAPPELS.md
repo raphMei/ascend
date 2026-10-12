@@ -1,7 +1,7 @@
 # Rappels (notifications) : mise en route
 
-Ascend envoie des rappels sur ton iPhone et ton Mac : routine du matin, séance de sport (10 minutes avant), bilan du soir,
-saisie du poids et de la nuit. **Jamais pendant Chabbat.** Aucun serveur payant : un script tourne toutes les 20 minutes
+Ascend envoie **un seul type de rappel** sur ton iPhone et ton Mac : ta prochaine séance d'apprentissage (5 minutes avant, si elle n'est pas faite).
+La routine du matin, le sport, les repas et le sommeil sont du temps réservé : aucun rappel (tu utilises Grit pour ça). **Jamais pendant Chabbat.** Aucun serveur payant : un script tourne toutes les 20 minutes
 dans GitHub Actions (gratuit pour un dépôt public).
 
 ## Comment ça marche
@@ -18,7 +18,7 @@ Ton appareil : service worker (public/sw.js) → affiche la notification → un 
 ```
 
 Un rappel est envoyé dans les 90 minutes qui suivent son heure (le planificateur de GitHub a parfois du retard).
-Il n'est envoyé que si la chose n'est pas déjà faite (routine cochée, poids saisi…).
+Il n'est envoyé que si la séance n'est pas déjà faite, et seulement pour la première séance du jour qui reste à faire.
 
 ## Mise en route (une seule fois, ~15 minutes)
 

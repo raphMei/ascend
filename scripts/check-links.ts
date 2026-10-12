@@ -1,15 +1,15 @@
-/* Vérifie que chaque lien des cours (Java, dev front, plans MIAGE) répond. Usage : npm run check:links
+/* Vérifie que chaque lien des cours (Java, parcours dev front / Cloud et DevOps / Architecture, plans MIAGE) répond. Usage : npm run check:links
    - 404 / erreur réseau : échec (code de sortie 1)
    - 403 / 429 : avertissement (le site bloque les robots mais existe)
    Les liens sont dédoublonnés et testés 8 par 8. Nécessite l'accès au réseau. */
-import { FRONT_TASKS } from '../src/content/front/path';
+import { PATHS } from '../src/content/paths';
 import { JT } from '../src/content/java/path';
 import { PLANS } from '../src/content/miage/plans';
 import type { Resource } from '../src/content/types';
 
 const all: { where: string; r: Resource }[] = [];
 JT.forEach((t) => t.res.forEach((r) => all.push({ where: `Java ${t.id}`, r })));
-FRONT_TASKS.forEach((t) => t.res.forEach((r) => all.push({ where: `Front ${t.id}`, r })));
+PATHS.forEach((p) => p.tasks.forEach((t) => t.res.forEach((r) => all.push({ where: `${p.name} ${t.id}`, r }))));
 for (const [sid, plan] of Object.entries(PLANS)) {
   plan.units.forEach((u, i) => (u.res ?? []).forEach((r) => all.push({ where: `MIAGE ${sid} unité ${i + 1}`, r })));
   Object.entries(plan.projects ?? {}).forEach(([id, rs]) => rs.forEach((r) => all.push({ where: `MIAGE ${id}`, r })));

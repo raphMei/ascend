@@ -11,9 +11,8 @@
       (les matières que tu as classées en tête ont des échéances plus tôt, voir `content/miage/pacing.ts`), puis ce classement ;
     - les petites tâches de routine en retard depuis plus de 2 jours sont abandonnées (la suite du programme les remplace) ; les séances
       d'un plan de matière, elles, ne sont jamais abandonnées seules : elles sont reprogrammées ;
-    - mois « léger » : pas de tâches du jour ; mois « intensif » : on avance les tâches des 7 jours suivants s'il reste de la place ;
-    - sport : une séance de jambes manquée est rattrapée une fois, à la place de la prochaine séance qui n'est pas des jambes. */
-import { addDays, dow, fmt, fmtShort, lastDays, range, type ISODate } from '@/core/dates';
+    - mois « léger » : pas de tâches du jour ; mois « intensif » : on avance les tâches des 7 jours suivants s'il reste de la place. */
+import { addDays, dow, fmt, fmtShort, range, type ISODate } from '@/core/dates';
 import { dayType } from '@/content/calendar';
 import { tierOf } from '@/content/miage/pacing';
 import { byId as subjectById } from '@/content/miage/subjects';
@@ -21,8 +20,7 @@ import type { MiageTask, TaskKind } from '@/content/types';
 import { isFirstSunday } from './habits';
 import { settingsForDate } from './month';
 import { planDay, type PlanSchedule } from './planner';
-import { SPORT, SPORT_WEEK } from './sport';
-import type { DayData, Progress, Settings, SportKind } from './types';
+import type { DayData, Progress, Settings } from './types';
 
 type ChangeReason = 'retard' | 'charge' | 'avance' | 'epingle' | 'abandon';
 
@@ -45,8 +43,6 @@ export interface Schedule extends PlanSchedule {
   lightened: number;
   /** Tâches en retard qui ne trouvent plus de place avant la dernière échéance. */
   unplaced: string[];
-  /** Explications sur le sport (séance rattrapée, etc.). */
-  notes: string[];
   /** Place disponible pour les tâches MIAGE, par jour (minutes). */
   capacity: Readonly<Record<ISODate, number>>;
 }
@@ -79,35 +75,11 @@ const isRoutine = (t: MiageTask) => t.k === 'daily' || t.id.startsWith('o:r:') |
 export const SKIP = 'skip';
 const minutesOf = (t: MiageTask) => Math.max(15, Math.round(t.h * 60));
 
-/** Séances de sport à remplacer : une séance de jambes manquée est rattrapée une fois. */
-export function sportRescue(S: Settings, days: Record<ISODate, DayData>, today: ISODate): { sport: Record<ISODate, { kind: SportKind; reason: string }>; notes: string[] } {
-  const sport: Record<ISODate, { kind: SportKind; reason: string }> = {};
-  const notes: string[] = [];
-  const base = (d: ISODate) => (settingsForDate(S, d).sportWeek ?? SPORT_WEEK)[dow(d)];
-  const past = lastDays(7, addDays(today, -1)).filter((d) => d >= '2026-10-08');
-  const missed = past.filter((d) => base(d) === 'legs' && !days[d]?.done?.sport && !days[d]?.edits?.skip?.sport);
-  const legsDone = past.filter((d) => base(d) === 'legs' && days[d]?.done?.sport).length;
-  const planned = past.filter((d) => base(d) === 'legs').length;
-  if (!missed.length || legsDone >= planned) return { sport, notes };
-  const lost = missed[missed.length - 1];
-  for (let i = 0; i < 4; i++) {
-    const d = addDays(today, i);
-    const k = base(d);
-    if (!k || k === 'legs' || dow(d) === 6) continue;
-    if (d === today && days[today]?.done?.sport) continue;
-    sport[d] = { kind: 'legs', reason: `Jambes manquées ${fmt(lost)} : rattrapées ici à la place de « ${SPORT[k].name} ».` };
-    notes.push(`Jambes manquées ${fmt(lost)} : rattrapées ${fmt(d)} à la place de « ${SPORT[k].name} ».`.replace(/\.\s*»/, ' »'));
-    break;
-  }
-  return { sport, notes };
-}
-
 /** Calcule le réajustement. Retourne `null` quand l'utilisateur l'a désactivé. */
 export function buildSchedule(inp: ScheduleInput): Schedule | null {
   const { settings: S, progress, days, today, now } = inp;
   if (S.autoReschedule === false) return null;
 
-  const { sport, notes } = sportRescue(S, days, today);
   const pins = progress.pins ?? {};
   const pending = inp.tasks.filter((t) => !progress.done[t.id]);
   const maxDue = pending.reduce((m, t) => (t.due > m ? t.due : m), today);
@@ -119,8 +91,8 @@ export function buildSchedule(inp: ScheduleInput): Schedule | null {
   for (const d of horizon) {
     if (dow(d) === 6) { capacity[d] = 0; continue; }          // Chabbat : aucune tâche
     const Sd = settingsForDate(S, d);
-    const m = planDay({ date: d, settings: S, progress, day: days[d], today, tasks: [], schedule: { dayOf: {}, sport }, measure: { fromMin: d === today ? now : 0 } });
-    const habits = [Sd.anglaisMin, Sd.lectureMin, Sd.frontMin, Sd.projetsMin].filter((x) => x >= 5).reduce((a, b) => a + b, 0)
+    const m = planDay({ date: d, settings: S, progress, day: days[d], today, tasks: [], schedule: { dayOf: {} }, measure: { fromMin: d === today ? now : 0 } });
+    const habits = [Sd.anglaisMin, Sd.lectureMin, Sd.frontMin, Sd.cloudMin, Sd.archiMin, Sd.projetsMin].filter((x) => x >= 5).reduce((a, b) => a + b, 0)
       + (Sd.financesMin >= 5 && isFirstSunday(d) ? Sd.financesMin : 0);
     const java = Sd.javaHours * 60 >= 25 && dayType(d) !== 'exam' ? Math.min(JAVA_FLOOR_MIN, Sd.javaHours * 60) : 0;
     const extras = Object.values(days[d]?.edits?.extra ?? {}).reduce((a, x) => a + (x && x.checkable !== false ? x.end - x.start : 0), 0);
@@ -196,5 +168,5 @@ export function buildSchedule(inp: ScheduleInput): Schedule | null {
 
   const order = { epingle: 0, retard: 1, charge: 2, avance: 3, abandon: 4 } as const;
   changes.sort((a, b) => order[a.reason] - order[b.reason] || ((a.to ?? 'z') < (b.to ?? 'z') ? -1 : 1) || (a.taskId < b.taskId ? -1 : 1));
-  return { dayOf, sport, changes, dropped, lightened, unplaced, notes, capacity: initialCapacity };
+  return { dayOf, changes, dropped, lightened, unplaced, capacity: initialCapacity };
 }

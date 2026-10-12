@@ -1,6 +1,6 @@
 /** « Continuer là où je me suis arrêté » : la prochaine étape non faite de chaque parcours. */
-import { FRONT_TASKS } from '@/content/front/path';
 import { JT } from '@/content/java/path';
+import { PATHS } from '@/content/paths';
 import type { PathStep } from '@/content/types';
 import type { DomainId, Progress, Settings } from './types';
 
@@ -25,10 +25,10 @@ const card = (domain: DomainId, label: string, steps: readonly PathStep[], progr
   return { domain, label, step, phaseDone: mates.filter((s) => progress.done[s.id]).length, phaseTotal: mates.length, ...(link ? { link } : {}) };
 };
 
-/** Java toujours ; dev front dès qu'il est activé ou commencé. */
+/** Java toujours ; chaque autre parcours dès qu'il est activé ou commencé. */
 export function continueCards(progress: Progress, settings: Settings): ContinueCard[] {
   const out: (ContinueCard | null)[] = [];
   if (settings.javaHours > 0 || JT.some((s) => progress.done[s.id])) out.push(card('java', 'Java backend', JT, progress));
-  if (settings.frontMin >= 5 || FRONT_TASKS.some((s) => progress.done[s.id])) out.push(card('front', 'Dev front', FRONT_TASKS, progress));
+  for (const path of PATHS) if (settings[path.min] >= 5 || path.tasks.some((s) => progress.done[s.id])) out.push(card(path.id, path.name, path.tasks, progress));
   return out.filter((c): c is ContinueCard => !!c);
 }

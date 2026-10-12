@@ -1,7 +1,7 @@
 /** Registre des domaines de vie : nom, couleur (variable CSS), icône. Pour en ajouter un, voir docs/ARCHITECTURE.md. */
 import type { DomainId } from './types';
 
-export type IconName = 'sun' | 'dumbbell' | 'leaf' | 'moon' | 'book' | 'code' | 'briefcase' | 'route' | 'star' | 'globe' | 'bookopen' | 'layout' | 'coins' | 'rocket';
+export type IconName = 'sun' | 'dumbbell' | 'leaf' | 'moon' | 'book' | 'code' | 'briefcase' | 'route' | 'star' | 'globe' | 'bookopen' | 'layout' | 'cloud' | 'blocks' | 'coins' | 'rocket';
 export interface DomainInfo { name: string; c: string; ico: IconName; blurb: string }
 
 export const DOM: Record<DomainId, DomainInfo> = {
@@ -18,6 +18,8 @@ export const DOM: Record<DomainId, DomainInfo> = {
   anglais: { name: 'Anglais', c: '--c-anglais', ico: 'globe', blurb: 'Une courte séance par jour, jusqu\'au score TOEIC visé.' },
   lecture: { name: 'Lecture', c: '--c-lecture', ico: 'bookopen', blurb: 'Un livre à la fois, quelques pages chaque jour.' },
   front: { name: 'Dev front', c: '--c-front', ico: 'layout', blurb: 'Du HTML au React testé et accessible, en neuf phases.' },
+  cloud: { name: 'Cloud et DevOps', c: '--c-cloud', ico: 'cloud', blurb: 'Linux, Docker, CI/CD, cloud, Terraform et Kubernetes, en huit phases.' },
+  archi: { name: 'Architecture logicielle', c: '--c-archi', ico: 'blocks', blurb: 'Principes, patrons, architecture hexagonale, DDD, microservices et décisions documentées.' },
   finances: { name: 'Finances', c: '--c-finances', ico: 'coins', blurb: 'Point mensuel, épargne et versements.' },
   projets: { name: 'Projets perso', c: '--c-projets', ico: 'rocket', blurb: 'Tes projets perso et freelance, une prochaine action chacun.' }
 };

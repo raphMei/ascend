@@ -24,7 +24,7 @@ Les identifiants (`p1t1`, `p1t2`…) suivent l'ordre : **insérer une étape au 
 ## Les matières MIAGE
 
 Neuf matières ont un **plan précis**, écrit d'après tes plans de cours (les PDF reçus le 12 octobre) : `dl`, `qa`, `ri`, `big`, `llm`, `sec`, `gov`, `eth`, `proj`.
-Le TOEIC garde un plan type (pas de plan fourni). Chaque séance reprend le titre, le contenu, les exercices et le critère de réussite du plan, avec des liens vers le cours (français d'abord).
+Le TOEIC a aussi un plan en séances (trois tests blancs, préparation de l'oral de 20 minutes, rendu « Oral TOEIC »), marqué provisoire jusqu'à réception du programme réel. Chaque séance reprend le titre, le contenu, les exercices et le critère de réussite du plan, avec des liens vers le cours (français d'abord).
 
 | Priorité | Matières | Rôle |
 |---|---|---|

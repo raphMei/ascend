@@ -1,8 +1,8 @@
-/** Domaines optionnels placés dans le planning : anglais, lecture, dev front, projets perso, point finances mensuel.
+/** Domaines optionnels placés dans le planning : anglais, lecture, parcours (dev front, Cloud et DevOps, Architecture), projets perso, point finances mensuel.
     Chacun est désactivé tant que ses minutes valent 0 dans les réglages. */
 import { dow, type ISODate } from '@/core/dates';
 import { englishExerciseFor } from '@/content/english';
-import { FRONT_TASKS } from '@/content/front/path';
+import { PATHS } from '@/content/paths';
 import { frNum } from '@/core/format';
 import type { PlanItem, Progress, Settings } from './types';
 
@@ -22,9 +22,10 @@ export function habitItems(date: ISODate, S: Settings, prog: Progress): PlanItem
   if (S.lectureMin >= 5) {
     out.push({ min: S.lectureMin, blk: { id: 'lecture', fixed: false, checkable: true, title: 'Lecture', domain: 'lecture', sub: S.livre ? S.livre : 'Livre en cours', detail: 'Lis sans écran autour de toi. À la fin, note le nombre de pages lues dans « Mes mesures du jour » : la courbe de lecture se remplit toute seule.' } });
   }
-  if (S.frontMin >= 5) {
-    const next = FRONT_TASKS.find((t) => !prog.done[t.id]);
-    out.push({ min: S.frontMin, blk: { id: 'front', fixed: false, checkable: true, title: 'Dev front', domain: 'front', sub: next ? 'Phase ' + next.phase.n + ' : ' + next.phase.title : 'Parcours terminé', detail: next ? next.t : '', res: next?.res } });
+  for (const path of PATHS) {
+    if (S[path.min] < 5) continue;
+    const next = path.tasks.find((t) => !prog.done[t.id]);
+    out.push({ min: S[path.min], blk: { id: path.id, fixed: false, checkable: true, title: path.name, domain: path.id, sub: next ? 'Phase ' + next.phase.n + ' : ' + next.phase.title : 'Parcours terminé', detail: next ? next.t : '', res: next?.res } });
   }
   if (S.projetsMin >= 5) {
     const active = Object.values(prog.projects ?? {}).filter((p): p is NonNullable<typeof p> => !!p && p.status === 'actif');

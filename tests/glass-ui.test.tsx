@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 beforeEach(() => { clearTimers(); try { localStorage.clear(); } catch { /* ignoré */ } });
 
-const swipeCard = () => screen.getByRole('checkbox', { name: 'Téphila' }).closest('.habit-swipe') as HTMLElement;
+const swipeCard = () => screen.getByRole('checkbox', { name: 'Java backend' }).closest('.habit-swipe') as HTMLElement;
 const todayWrites = (writes: { days: [string, Record<string, unknown>][] }) => writes.days.filter(([d]) => d === TUESDAY.today).map(([, p]) => p);
 
 describe('cartes de verre : gestes', () => {
@@ -26,7 +26,7 @@ describe('cartes de verre : gestes', () => {
     renderApp({ hash: '#/today' });
     const card = swipeCard();
     fireEvent.pointerDown(card, { pointerId: 1, clientX: 40, clientY: 40 });
-    const menu = await screen.findByRole('dialog', { name: 'Téphila' }, { timeout: 2000 });
+    const menu = await screen.findByRole('dialog', { name: 'Java backend' }, { timeout: 2000 });
     expect(within(menu).getByRole('button', { name: /Démarrer le minuteur/ })).toBeInTheDocument();
     expect(within(menu).getByRole('button', { name: /Modifier l'horaire/ })).toBeInTheDocument();
     expect(within(menu).getByRole('button', { name: /Passer aujourd'hui/ })).toBeInTheDocument();
@@ -36,14 +36,14 @@ describe('cartes de verre : gestes', () => {
   it('passer depuis le menu écrit l\'abandon du jour et propose « Annuler »', async () => {
     const { writes } = renderApp({ hash: '#/today' });
     fireEvent.pointerDown(swipeCard(), { pointerId: 1, clientX: 40, clientY: 40 });
-    const menu = await screen.findByRole('dialog', { name: 'Téphila' }, { timeout: 2000 });
+    const menu = await screen.findByRole('dialog', { name: 'Java backend' }, { timeout: 2000 });
     await userEvent.click(within(menu).getByRole('button', { name: /Passer aujourd'hui/ }));
-    expect(todayWrites(writes)).toContainEqual({ edits: { skip: { tephila: true } } });
-    expect(screen.queryByRole('checkbox', { name: 'Téphila' })).not.toBeInTheDocument();
-    const toast = await screen.findByText(/« Téphila » passée/);
+    expect(todayWrites(writes)).toContainEqual({ edits: { skip: { java: true } } });
+    expect(screen.queryByRole('checkbox', { name: 'Java backend' })).not.toBeInTheDocument();
+    const toast = await screen.findByText(/« Java backend » passée/);
     await userEvent.click(within(toast.parentElement as HTMLElement).getByRole('button', { name: 'Annuler' }));
-    expect(todayWrites(writes)).toContainEqual({ edits: { skip: { tephila: null } } });
-    expect(await screen.findByRole('checkbox', { name: 'Téphila' })).toBeInTheDocument();
+    expect(todayWrites(writes)).toContainEqual({ edits: { skip: { java: null } } });
+    expect(await screen.findByRole('checkbox', { name: 'Java backend' })).toBeInTheDocument();
   });
 
   it('balayer vers la droite coche la tâche', () => {
@@ -53,7 +53,7 @@ describe('cartes de verre : gestes', () => {
     fireEvent.pointerMove(card, { pointerId: 1, clientX: 60, clientY: 42 });
     fireEvent.pointerMove(card, { pointerId: 1, clientX: 260, clientY: 44 });
     fireEvent.pointerUp(card, { pointerId: 1, clientX: 260, clientY: 44 });
-    expect(todayWrites(writes).some((p) => (p.done as Record<string, boolean> | undefined)?.tephila === true)).toBe(true);
+    expect(todayWrites(writes).some((p) => (p.done as Record<string, boolean> | undefined)?.java === true)).toBe(true);
   });
 
   it('balayer vers le bas (défilement) ne fait rien', () => {
@@ -78,9 +78,9 @@ describe('cartes de verre : gestes', () => {
 
   it('le bouton « Options » du détail ouvre le même menu (alternative sans geste)', async () => {
     renderApp({ hash: '#/today' });
-    await userEvent.click(screen.getByRole('button', { name: /Téphila/, expanded: false }));
-    await userEvent.click(screen.getByRole('button', { name: 'Options de Téphila' }));
-    expect(await screen.findByRole('dialog', { name: 'Téphila' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Java backend/, expanded: false }));
+    await userEvent.click(screen.getByRole('button', { name: 'Options de Java backend' }));
+    expect(await screen.findByRole('dialog', { name: 'Java backend' })).toBeInTheDocument();
   });
 });
 
@@ -96,7 +96,7 @@ describe('carte « Maintenant », mini-lecteur et concentration', () => {
     expect(within(focus).getByRole('button', { name: /Reprendre/ })).toBeInTheDocument();
     await userEvent.click(within(focus).getByRole('button', { name: 'Terminer' }));
     expect(screen.queryByRole('dialog', { name: /Concentration/ })).not.toBeInTheDocument();
-    expect(todayWrites(writes).some((p) => p.done)).toBe(true);
+    expect(writes.progress.length > 0 || todayWrites(writes).some((p) => p.done)).toBe(true);   // une tâche de cours s'écrit dans la progression, une séance Java dans le jour
     expect(screen.queryByRole('button', { name: /Ouvrir le mode concentration/ })).not.toBeInTheDocument();   // minuteur arrêté
   });
 

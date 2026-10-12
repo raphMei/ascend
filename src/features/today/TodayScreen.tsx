@@ -16,11 +16,10 @@ import { AdjustmentsCard } from '@/components/AdjustmentsCard';
 import { DebtCard } from '@/components/DebtCard';
 import { AddBlock } from '@/components/BlockEditor';
 import { BlockRow } from '@/components/BlockRow';
-import { EntryReminder } from '@/components/EntryReminder';
 import { OnboardingCard } from '@/components/OnboardingCard';
 import { dc } from '@/components/Icon';
 import { PageHead } from '@/components/PageHead';
-import { TrackerFields } from '@/components/TrackerFields';
+import { ReservedTime } from '@/components/ReservedTime';
 import { ContinueSection } from '@/components/habits/ContinueSection';
 import { GoalsSection } from '@/components/habits/GoalsSection';
 import { GroupSection } from '@/components/habits/GroupSection';
@@ -50,10 +49,11 @@ export function TodayScreen() {
   const [adding, setAdding] = useState(false);
   const view = settings.ui?.today ?? 'liste';
   const mode = settings.ui?.group ?? 'moments';
-  const trackable = dow(date) !== 6;
   const isWeekday = dow(date) >= 1 && dow(date) <= 5;
   const skipped = plan.skipped ?? [];
-  const groups = useMemo(() => groupBlocks(plan.blocks, mode, toMin(settings.bed)), [plan.blocks, mode, settings.bed]);
+  const learn = useMemo(() => plan.blocks.filter((b) => b.checkable || b.domain === 'chabbat'), [plan.blocks]);
+  const reserved = useMemo(() => plan.blocks.filter((b) => !b.checkable && b.domain !== 'chabbat'), [plan.blocks]);
+  const groups = useMemo(() => groupBlocks(learn, mode, toMin(settings.bed)), [learn, mode, settings.bed]);
   const goals = useMemo(() => buildGoals({ days: state.days, settings, progress: state.progress, tasks, today, dropped: new Set(sched?.dropped ?? []) }), [state.days, settings, state.progress, tasks, today, sched]);
   const nowHere = date === today ? now : -1;
   const cards = useMemo(() => continueCards(state.progress, settings), [state.progress, settings]);
@@ -90,7 +90,7 @@ export function TodayScreen() {
       </div>
 
       <DayHero pct={st.pct} doneMin={st.dn} plannedMin={st.pl} doneCount={checks.filter((b) => b.done).length} total={checks.length}
-        workMin={minutes('pro')} tripMin={minutes('trajet')} streak={streakDays} calm={momentOf(now) === 'soir'} />
+        workMin={minutes('pro')} tripMin={minutes('trajet')} reservedMin={reserved.filter((b) => b.domain !== 'pro' && b.domain !== 'trajet').reduce((a, b) => a + b.end - b.start, 0)} streak={streakDays} calm={momentOf(now) === 'soir'} />
       {next && <NextCard next={next} date={date} />}
 
       <div className="toolbar">
@@ -104,8 +104,7 @@ export function TodayScreen() {
       )}
       {date === today && <DebtCard />}
       {date === today && <AdjustmentsCard />}
-      {date === today && trackable && <EntryReminder date={date} />}
-
+      
       {view === 'liste' ? (
         <div className="groups">
           {groups.map((g) => <GroupSection key={mode + g.id} group={g} date={date} streaks={streaks} now={nowHere} />)}
@@ -121,7 +120,7 @@ export function TodayScreen() {
                   <div className="time">{hm(it.start)}<small>{dur(it.end - it.start)}</small></div>
                   <div className="body" style={dc('miage')}>
                     <details className="smallgroup" style={{ gridColumn: '1 / -1' }}>
-                      <summary>{it.blocks.length} petites tâches MIAGE <span className="muted" style={{ fontWeight: 400 }}>· {it.blocks.filter((b) => b.done).length} faite{it.blocks.filter((b) => b.done).length > 1 ? 's' : ''} sur {it.blocks.length}</span></summary>
+                      <summary>{it.blocks.length} petites séances MIAGE <span className="muted" style={{ fontWeight: 400 }}>· {it.blocks.filter((b) => b.done).length} faite{it.blocks.filter((b) => b.done).length > 1 ? 's' : ''} sur {it.blocks.length}</span></summary>
                       <div className="tl">{it.blocks.map((b) => <BlockRow key={b.id} block={b} date={date} today={today} now={now} compact />)}</div>
                     </details>
                   </div>
@@ -144,11 +143,11 @@ export function TodayScreen() {
           </div>
         </section>
       )}
+      {view === 'liste' && <ReservedTime blocks={reserved} now={nowHere} />}
       {view === 'liste' && date === today && <ContinueSection cards={cards} />}
       {view === 'liste' && date === today && <GoalsSection goals={goals} />}
       {adding && <AddBlock date={date} onClose={() => setAdding(false)} />}
       {party && <Celebration streak={streakDays} onClose={closeParty} />}
-      {trackable && <section className="card"><h2>Mes mesures du jour</h2><p className="muted" style={{ margin: '4px 0 14px' }}>Quelques chiffres suffisent. Ils alimentent tes graphiques.</p><TrackerFields date={date} /></section>}
     </>
   );
 }

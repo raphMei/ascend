@@ -37,9 +37,9 @@ Je suis Raphaël, étudiant en M1 MIAGE en alternance chez AXA. Ascend organise 
 - Mes modifications (passer un bloc, le déplacer, en ajouter, forcer le type de jour) sont conservées comme « corrections » sur la journée.
 
 ## 5. Les domaines suivis
-- **Matin** (routine), **Sport** (programme hebdomadaire par jour, séance du jour avec exercices, rattrapage, 14 derniers jours), **Alimentation** (calories, protéines, eau), **Sommeil** (coucher/lever, objectif).
+- **Temps réservé** (rien à cocher, pas de série ni de pourcentage) : routine du matin (un seul créneau), sport, repas, sommeil, trajet, travail. Ils bloquent l'agenda pour calculer le temps libre ; la liste du jour les affiche repliés. Les habitudes quotidiennes se suivent dans Grit, pas ici. Les mesures (poids, eau, nuit, sport) restent saisissables dans « Mes suivis personnels » (écran Domaines).
 - **MIAGE** : 10 matières avec plans (unités de cours réparties sur les créneaux, projets, jalons, examen), petites tâches regroupées.
-- **Java** : parcours en 14 phases / 149 étapes. **Front-end** : 9 phases / 95 étapes. Chaque étape = chapitre avec type (cours, exercice, projet, validation), durée, et liens vers des ressources de préférence en français (337 liens vérifiés, ~78 % en français). Les heures par phase sont la somme des étapes.
+- **Java** : parcours en 14 phases / 149 étapes. **Front-end** : 9 phases / 95 étapes. **Cloud et DevOps** : 8 phases (Linux et Git, réseau, Docker, CI/CD, cloud, Terraform, Kubernetes, observabilité). **Architecture logicielle** : 8 phases (principes, patrons, hexagonal, DDD, microservices, événements, résilience, décisions documentées). Chaque étape = chapitre avec type (cours, exercice, projet, validation), durée, et liens vers des ressources de préférence en français (337 liens vérifiés, ~78 % en français). Les heures par phase sont la somme des étapes.
 - **Anglais** (préparation TOEIC avec score visé), **Lecture** (livre en cours, pages), **Projets** perso/freelance (statut actif/pause/fini, prochaine action, minutes), **Finances** (point mensuel le premier dimanche : versements, épargne ; jamais de conseil d'investissement).
 
 ## 6. Suivi, motivation et analyse
@@ -47,7 +47,7 @@ Je suis Raphaël, étudiant en M1 MIAGE en alternance chez AXA. Ascend organise 
 - Statistiques de chaque jour conservées (instantané), historique chargé par fenêtre de jours pour rester rapide.
 
 ## 7. Rappels (notifications push)
-Optionnels, par type : routine, sport, bilan du soir, saisie des mesures. Envoyés toutes les 20 minutes par GitHub Actions (script web-push), jamais pendant Chabbat. Demande clés VAPID et un compte de service (voir docs/RAPPELS.md).
+Un seul type : la prochaine séance d'apprentissage (5 minutes avant). Envoyés toutes les 20 minutes par GitHub Actions (script web-push), jamais pendant Chabbat. Demande clés VAPID et un compte de service (voir docs/RAPPELS.md).
 
 ## 8. Données et sécurité
 - Firestore : users/{uid}/days/{date} (cases faites, poids, eau, kcal, protéines, sommeil, stats, corrections, pages), settings/main, progress/main (avancement, épinglages, projets, finances, TOEIC), push/main.

@@ -50,24 +50,25 @@ describe('groupes par moments', () => {
 });
 
 describe('groupes par thèmes', () => {
-  it('ordre fixe : routine, productivité, santé, repas, sommeil…', () => {
+  it('ordre fixe : un thème par sujet d\'apprentissage, le temps réservé ensuite', () => {
     const ids = groupBlocks(plan('2026-10-14').blocks, 'themes', BED).map((g) => g.id);
-    expect(ids).toEqual(expect.arrayContaining(['routine', 'productivite', 'sante', 'repas', 'sommeil', 'trajets']));
-    expect(ids.indexOf('routine')).toBeLessThan(ids.indexOf('productivite'));
-    expect(ids.indexOf('productivite')).toBeLessThan(ids.indexOf('sante'));
+    expect(ids).toEqual(expect.arrayContaining(['miage', 'java', 'reserve']));
+    expect(ids.indexOf('miage')).toBeLessThan(ids.indexOf('java'));
+    expect(ids.indexOf('java')).toBeLessThan(ids.indexOf('reserve'));
   });
-  it('Java, MIAGE, front et projets sont ensemble dans « Productivité »', () => {
+  it('front, projets et anglais ont chacun leur thème ; routine, sport, repas, travail et trajet sont du temps réservé', () => {
     const S2 = { ...S, frontMin: 45, projetsMin: 30, anglaisMin: 20 };
     const g = groupBlocks(plan('2026-10-14', undefined, S2).blocks, 'themes', BED);
-    const prod = g.find((x) => x.id === 'productivite')!;
-    expect(new Set(prod.blocks.map((b) => b.domain))).toEqual(new Set(['miage', 'java', 'front', 'projets']));
-    expect(g.find((x) => x.id === 'apprentissage')!.blocks.map((b) => b.domain)).toContain('anglais');
+    const of = (id: string) => new Set(g.find((x) => x.id === id)!.blocks.map((b) => b.domain));
+    expect(of('miage')).toEqual(new Set(['miage'])); expect(of('front')).toEqual(new Set(['front'])); expect(of('projets')).toEqual(new Set(['projets']));
+    expect(of('langues')).toContain('anglais');
+    expect(of('reserve')).toContain('matin'); expect(of('reserve')).toContain('sport');
   });
-  it('l\'avancement d\'un groupe ne compte que les blocs à cocher', () => {
-    const g = groupBlocks(plan('2026-10-13', { done: { tephila: true } }).blocks, 'moments', BED).find((x) => x.id === 'matin')!;
-    expect(groupProgress(g)).toEqual({ done: 1, total: 4 });
-    const travail = groupBlocks(plan('2026-10-13').blocks, 'moments', BED).find((x) => x.id === 'travail')!;
-    expect(groupProgress(travail)).toEqual({ done: 0, total: 0 });
+  it('l\'avancement d\'un groupe compte les séances faites ; le temps réservé ne compte jamais', () => {
+    const g = groupBlocks(plan('2026-10-14', { done: { java: true } }).blocks, 'themes', BED);
+    const j = groupProgress(g.find((x) => x.id === 'java')!);
+    expect(j.total).toBeGreaterThan(0); expect(j.done).toBe(j.total);
+    expect(groupProgress(g.find((x) => x.id === 'reserve')!)).toEqual({ done: 0, total: 0 });
   });
 });
 
@@ -78,23 +79,23 @@ describe('emoji', () => {
 });
 
 describe('séries par habitude', () => {
-  const done = { tephila: true, pompes: true, stretch: true, petitdej: true };
-  const run = (days: Record<string, DayData>, today = '2026-11-05') => habitStreaks({ days, settings: S, progress: { done: {} }, tasks, today });
+  const done = { java: true };
+  const run = (days: Record<string, DayData>, today = '2026-11-12') => habitStreaks({ days, settings: S, progress: { done: {} }, tasks: [], today });
 
   it('compte les jours d\'affilée où l\'habitude prévue est faite', () => {
-    expect(run({ '2026-11-04': { done }, '2026-11-03': { done }, '2026-11-02': { done } }).tephila).toBe(3);
+    expect(run({ '2026-11-11': { done }, '2026-11-10': { done }, '2026-11-09': { done } }).java).toBe(3);
   });
   it('aujourd\'hui ne casse pas la série tant qu\'il n\'est pas fini, et s\'ajoute une fois fait', () => {
-    const before = { '2026-11-04': { done }, '2026-11-03': { done } };
-    expect(run(before).tephila).toBe(2);
-    expect(run({ ...before, '2026-11-05': { done } }).tephila).toBe(3);
+    const before = { '2026-11-11': { done }, '2026-11-10': { done } };
+    expect(run(before).java).toBe(2);
+    expect(run({ ...before, '2026-11-12': { done } }).java).toBe(3);
   });
   it('un jour prévu mais manqué casse la série', () => {
-    expect(run({ '2026-11-04': { done }, '2026-11-02': { done } }).tephila).toBe(1);
+    expect(run({ '2026-11-11': { done }, '2026-11-09': { done } }).java).toBe(1);
   });
   it('un jour sans l\'habitude (samedi) ne casse pas la série', () => {
-    // ven. 6 et dim. 8 faits, samedi 7 = Chabbat sans routine
-    expect(run({ '2026-11-06': { done }, '2026-11-08': { done } }, '2026-11-09').tephila).toBe(2);
+    // jeudi 12, samedi 14 (après la sortie de Chabbat) et dimanche 15 faits ; le vendredi 13 n'a pas de séance
+    expect(run({ '2026-11-12': { done }, '2026-11-14': { done }, '2026-11-15': { done } }, '2026-11-16').java).toBe(3);
   });
   it('pas de série pour les tâches MIAGE ni les blocs ajoutés à la main', () => {
     const s = run({ '2026-11-04': { done: { ...done, 'x:abc': true } } });
@@ -104,24 +105,22 @@ describe('séries par habitude', () => {
 
 describe('objectifs', () => {
   const base = { days: {} as Record<string, DayData>, settings: S, progress: { done: {} }, tasks, today: '2026-11-05' };
-  it('poids : progression du premier poids vers l\'objectif', () => {
-    const g = buildGoals({ ...base, settings: { ...S, weightGoal: 80 }, days: { '2026-10-20': { weight: 90 }, '2026-11-05': { weight: 85 } } }).find((x) => x.id === 'poids')!;
-    expect(g).toMatchObject({ value: '85 → 80 kg', pct: 50 });
-  });
-  it('poids : pas d\'objectif ou pas de mesure → pas de ligne', () => {
-    expect(buildGoals(base).some((g) => g.id === 'poids')).toBe(false);
-    expect(buildGoals({ ...base, settings: { ...S, weightGoal: 80 } }).some((g) => g.id === 'poids')).toBe(false);
+  it('seul l\'apprentissage a des objectifs : ni poids, ni sport, ni sommeil', () => {
+    const ids = buildGoals({ ...base, settings: { ...S, weightGoal: 80 }, days: { '2026-10-20': { weight: 90, sleep: { bed: '22:00', wake: '06:00' } }, '2026-11-05': { weight: 85, done: { sport: true } } } }).map((g) => g.id);
+    for (const id of ['poids', 'sport', 'sommeil']) expect(ids).not.toContain(id);
   });
   it('TOEIC : meilleur score vers le score visé, borné à 100 %', () => {
     const g = buildGoals({ ...base, settings: { ...S, toeicGoal: 800 }, progress: { done: {}, toeic: { '2026-10-01': 600, '2026-11-01': 700 } } }).find((x) => x.id === 'toeic')!;
     expect(g).toMatchObject({ value: '700 / 800', pct: 88 });
     expect(buildGoals({ ...base, settings: { ...S, toeicGoal: 800 }, progress: { done: {}, toeic: { a: 900 } } }).find((x) => x.id === 'toeic')!.pct).toBe(100);
   });
-  it('les domaines inactifs n\'apparaissent pas (front, lecture) ; MIAGE, Java et sport toujours', () => {
+  it('les domaines inactifs n\'apparaissent pas (front, lecture) ; MIAGE et Java toujours', () => {
     const ids = buildGoals(base).map((g) => g.id);
-    expect(ids).toEqual(expect.arrayContaining(['miage', 'java', 'sport']));
+    expect(ids).toEqual(expect.arrayContaining(['miage', 'java']));
     expect(ids).not.toContain('front'); expect(ids).not.toContain('lecture');
     expect(buildGoals({ ...base, settings: { ...S, frontMin: 45, lectureMin: 20 } }).map((g) => g.id)).toEqual(expect.arrayContaining(['front', 'lecture']));
+    expect(ids).not.toContain('cloud'); expect(ids).not.toContain('archi');
+    expect(buildGoals({ ...base, settings: { ...S, cloudMin: 30, archiMin: 30 } }).map((g) => g.id)).toEqual(expect.arrayContaining(['cloud', 'archi']));
   });
   it('tous les pourcentages sont entre 0 et 100', () => {
     buildGoals({ ...base, settings: { ...S, weightGoal: 80, toeicGoal: 800, frontMin: 10, lectureMin: 10 }, days: { '2026-11-05': { weight: 70, pages: 999, sleep: { bed: '22:00', wake: '07:00' } } } })

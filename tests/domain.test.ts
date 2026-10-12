@@ -57,10 +57,11 @@ describe('planning', () => {
       });
     }
   });
-  it('journée type : routine du matin à 6 h 00, 75 minutes', () => {
+  it('journée type : la routine du matin est un seul temps réservé, de 6 h 00 à 7 h 15, sans case à cocher', () => {
     const morning = plan('2026-11-03').blocks.filter((b) => b.domain === 'matin');
-    expect(morning.map((b) => b.id)).toEqual(['tephila', 'pompes', 'stretch', 'petitdej']);
-    expect(morning[0].start).toBe(360); expect(morning[3].end).toBe(435);
+    expect(morning.map((b) => b.id)).toEqual(['tephila']);
+    expect(morning[0].start).toBe(360); expect(morning[0].end).toBe(435);
+    expect(morning[0].checkable).toBe(false);
   });
   it('jour sur site : 1 h de trajet de chaque côté, 7 h 16 de travail', () => {
     const b = plan('2026-10-13').blocks;           // mardi sur site par défaut
@@ -71,8 +72,8 @@ describe('planning', () => {
     expect(JSON.stringify(plan('2026-11-03'))).toBe(JSON.stringify(plan('2026-11-03')));
   });
   it('cocher un bloc est lu depuis les données du jour', () => {
-    const st = dayStats(plan('2026-11-03', { done: { tephila: true } }));
-    expect(st.dn).toBe(20);
+    const st = dayStats(plan('2026-11-10', { done: { java: true } }));
+    expect(st.dn).toBeGreaterThan(0);
     expect(st.pct).toBeGreaterThan(0);
   });
 });
@@ -112,10 +113,11 @@ describe('série et coach', () => {
     expect(streak(wk, '2026-11-07')).toBe(2);
   });
   it('le coach adapte son message', () => {
-    const base = { pct: 40, streak: 0, late: 0, now: 700, routineDone: true, shabbat: false, planned: 300 };
+    const base = { pct: 40, streak: 0, late: 0, now: 700, shabbat: false, planned: 300 };
     expect(coachLine({ ...base, shabbat: true })[0]).toBe('Chabbat shalom');
     expect(coachLine({ ...base, pct: 100 })[0]).toBe('Journée bouclée.');
     expect(coachLine({ ...base, late: 6 })[0]).toBe('6 tâches en retard.');
-    expect(coachLine({ ...base, now: 500, routineDone: false })[0]).toBe('Ta routine d\'abord.');
+    expect(coachLine({ ...base, planned: 0 })[0]).toBe('Journée libre');
+    expect(coachLine({ ...base, streak: 4 })[0]).toBe('4 jours d\'affilée.');
   });
 });

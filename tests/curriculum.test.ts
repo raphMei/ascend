@@ -1,13 +1,13 @@
 import { JT, PHASES } from '@/content/java/path';
-import { FRONT_PHASES, FRONT_TASKS } from '@/content/front/path';
+import { PATHS } from '@/content/paths';
 import type { PathStep, Phase } from '@/content/types';
 
-const tracks: [string, Phase[], PathStep[]][] = [['Java', PHASES, JT], ['Dev front', FRONT_PHASES, FRONT_TASKS]];
+const tracks: [string, Phase[], PathStep[]][] = [['Java', PHASES, JT], ...PATHS.map((p): [string, Phase[], PathStep[]] => [p.name, p.phases, p.tasks])];
 
 describe.each(tracks)('parcours %s : structure en chapitres', (_name, phases, steps) => {
   it('identifiants uniques et stables (p1t1…), durées positives', () => {
     expect(new Set(steps.map((s) => s.id)).size).toBe(steps.length);
-    steps.forEach((s) => { expect(s.id).toMatch(/^[pf]\d+t\d+$/); expect(s.min, s.id).toBeGreaterThan(0); expect(s.t.length, s.id).toBeGreaterThan(5); });
+    steps.forEach((s) => { expect(s.id).toMatch(/^[pfca]\d+t\d+$/); expect(s.min, s.id).toBeGreaterThan(0); expect(s.t.length, s.id).toBeGreaterThan(5); });
   });
 
   it('chaque phase a un objectif, des chapitres, au moins un exercice ou un projet et une validation', () => {
@@ -50,5 +50,19 @@ describe('parcours Java', () => {
     expect(PHASES).toHaveLength(14);
     expect(PHASES.filter((p) => p.core)).toHaveLength(7);
     expect(JT.length).toBeGreaterThan(100);
+  });
+});
+
+describe('parcours Cloud et DevOps, Architecture logicielle', () => {
+  it('huit phases chacun, identifiants distincts de ceux des autres parcours, un socle et des phases optionnelles', () => {
+    const all = [...JT, ...PATHS.flatMap((p) => p.tasks)].map((s) => s.id);
+    expect(new Set(all).size).toBe(all.length);
+    for (const id of ['cloud', 'archi']) {
+      const p = PATHS.find((x) => x.id === id)!;
+      expect(p.phases).toHaveLength(8);
+      expect(p.phases.some((ph) => ph.core) && p.phases.some((ph) => !ph.core), id).toBe(true);
+      expect(p.levels.length, id).toBe(7);
+      expect(p.hours, id).toBeGreaterThan(30);
+    }
   });
 });

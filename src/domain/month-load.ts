@@ -26,7 +26,7 @@ export function monthLoad(S: Settings, month: string, progress: Progress, tasks:
     if (dow(d) === 6) continue;
     const Sd = settingsForDate(S, d);
     const m = planDay({ date: d, settings: S, progress, day: undefined, today: d, tasks, measure: {} });
-    const habits = [Sd.anglaisMin, Sd.lectureMin, Sd.frontMin, Sd.projetsMin].filter((x) => x >= 5).reduce((a, b) => a + b, 0)
+    const habits = [Sd.anglaisMin, Sd.lectureMin, Sd.frontMin, Sd.cloudMin, Sd.archiMin, Sd.projetsMin].filter((x) => x >= 5).reduce((a, b) => a + b, 0)
       + (Sd.financesMin >= 5 && isFirstSunday(d) ? Sd.financesMin : 0);
     const java = Sd.javaHours * 60 >= 25 && dayType(d) !== 'exam' ? Sd.javaHours * 60 : 0;
     free += m.freeMin ?? 0; reserved += habits + java; n++;

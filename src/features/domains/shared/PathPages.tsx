@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { dur } from '@/core/format';
 import { paceForecast } from '@/domain/forecast';
 import { pathPace } from '@/domain/calibration';
+import { pathById, type PathId } from '@/content/paths';
 import { ForecastCard } from '@/components/ForecastCard';
 import type { PathStep, Phase } from '@/content/types';
 import { STEP_LABEL } from '@/content/labels';
@@ -65,7 +66,7 @@ export function PathOverviewPage({ domain, phases, stats, notice }: { domain: Do
   const { today } = useClock();
   const steps = phases.flatMap((p) => p.tasks);
   const forecast = paceForecast(steps, state.progress, today);
-  const pace = domain === 'java' || domain === 'front' ? pathPace(steps, state.days, state.progress, domain, today) : null;
+  const pace = domain === 'java' || pathById(domain) ? pathPace(steps, state.days, state.progress, domain as 'java' | PathId, today) : null;
   const next = stats.next ? 'Prochain statut : ' + stats.next + '.' : 'Parcours terminé. Bravo.';
   return (
     <>

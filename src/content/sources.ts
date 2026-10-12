@@ -22,3 +22,11 @@ export const cnil = (p: string, title: string) => fr('CNIL', title, 'https://www
 export const hf = (chapter: number, title: string) => fr('Hugging Face', title, `https://huggingface.co/learn/llm-course/fr/chapter${chapter}/1`);
 export const spring = (p: string, title: string) => en('Spring', title, 'https://spring.io/' + p);
 export const guru = (p: string, title: string) => fr('Refactoring Guru', title, 'https://refactoring.guru/fr/' + p);
+export const git = (p: string, title: string) => fr('Pro Git', title, 'https://git-scm.com/book/fr/v2/' + p);
+export const docker = (p: string, title: string) => en('Docker', title, 'https://docs.docker.com/' + p);
+export const k8s = (p: string, title: string) => fr('Kubernetes', title, 'https://kubernetes.io/fr/docs/' + p);
+export const msl = (p: string, title: string) => fr('Microsoft Learn', title, 'https://learn.microsoft.com/fr-fr/' + p);
+/** Catalogue de patrons d'architecture cloud de Microsoft (en français). */
+export const azp = (p: string, title: string) => msl('azure/architecture/patterns/' + p, title);
+/** Articles de Martin Fowler (anglais). */
+export const fowler = (p: string, title: string) => en('Martin Fowler', title, 'https://martinfowler.com/' + p);

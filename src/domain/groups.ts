@@ -24,23 +24,23 @@ const MOMENTS: Record<string, GroupDef> = {
   chabbat: { id: 'chabbat', name: 'Chabbat', emoji: '✨', color: 'chabbat' }
 };
 
-/** Thèmes, dans l'ordre d'affichage. */
+/** Thèmes, dans l'ordre d'affichage : un par sujet d'apprentissage ; tout le reste est du temps réservé (routine, sport, repas, sommeil, trajet, travail). */
 const THEMES: GroupDef[] = [
-  { id: 'routine', name: 'Routine du matin', emoji: '🧘', color: 'matin' },
-  { id: 'productivite', name: 'Productivité', emoji: '🎯', color: 'miage' },
-  { id: 'apprentissage', name: 'Apprentissage', emoji: '📚', color: 'anglais' },
-  { id: 'sante', name: 'Santé', emoji: '💪', color: 'sport' },
-  { id: 'repas', name: 'Repas', emoji: '🥗', color: 'alim' },
-  { id: 'finances', name: 'Finances', emoji: '💰', color: 'finances' },
-  { id: 'sommeil', name: 'Sommeil', emoji: '😴', color: 'sommeil' },
-  { id: 'trajets', name: 'Trajets et travail', emoji: '🚆', color: 'trajet' },
+  { id: 'miage', name: 'MIAGE', emoji: '📚', color: 'miage' },
+  { id: 'java', name: 'Java', emoji: '☕', color: 'java' },
+  { id: 'front', name: 'Front-end', emoji: '💻', color: 'front' },
+  { id: 'cloud', name: 'Cloud et DevOps', emoji: '☁️', color: 'cloud' },
+  { id: 'archi', name: 'Architecture', emoji: '🏛️', color: 'archi' },
+  { id: 'langues', name: 'Anglais et lecture', emoji: '🇬🇧', color: 'anglais' },
+  { id: 'projets', name: 'Projets', emoji: '🛠️', color: 'projets' },
+  { id: 'reserve', name: 'Temps réservé', emoji: '🗓️', color: 'autre' },
   { id: 'autre', name: 'Autre', emoji: '📌', color: 'autre' },
   { id: 'chabbat', name: 'Chabbat', emoji: '✨', color: 'chabbat' }
 ];
 const THEME_OF: Record<DomainId, string> = {
-  matin: 'routine', miage: 'productivite', java: 'productivite', front: 'productivite', projets: 'productivite',
-  anglais: 'apprentissage', lecture: 'apprentissage', sport: 'sante', alim: 'repas', finances: 'finances',
-  sommeil: 'sommeil', trajet: 'trajets', pro: 'trajets', autre: 'autre', chabbat: 'chabbat'
+  miage: 'miage', java: 'java', front: 'front', cloud: 'cloud', archi: 'archi', anglais: 'langues', lecture: 'langues', projets: 'projets',
+  matin: 'reserve', sport: 'reserve', alim: 'reserve', finances: 'reserve', sommeil: 'reserve', trajet: 'reserve', pro: 'reserve',
+  autre: 'autre', chabbat: 'chabbat'
 };
 
 /** Moment de la journée d'un bloc. `bed` = heure du coucher (minutes) : « Avant de dormir » commence 55 minutes avant (le bilan du soir). */
@@ -68,7 +68,7 @@ export function groupBlocks(blocks: Block[], mode: GroupingMode, bed: number): B
   return groups.sort((a, b) => (a.id === 'chabbat' ? 1 : b.id === 'chabbat' ? -1 : a.start - b.start));
 }
 
-/** Avancement d'un groupe : cases faites / à faire (les blocs sans case — travail, trajet, repas — ne comptent pas). */
+/** Avancement d'un groupe : séances faites / à faire (le temps réservé — routine, sport, repas, travail, trajet — ne compte pas). */
 export function groupProgress(g: BlockGroup): { done: number; total: number } {
   const c = g.blocks.filter((b) => b.checkable);
   return { done: c.filter((b) => b.done).length, total: c.length };

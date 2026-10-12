@@ -24,6 +24,8 @@ export const ICON: Record<IconKey, string> = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
   bookopen: '<path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5z"/><path d="M12 6v13.5"/>',
   layout: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>',
+  cloud: '<path d="M7 18a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 8.5a4.5 4.5 0 0 1 .5 9.5z"/>',
+  blocks: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="8" y="13" width="8" height="8" rx="1.5"/>',
   coins: '<circle cx="9" cy="9" r="6"/><path d="M15.5 6.5A6 6 0 0 1 15 18.5M9 6.5v5M7 9h4"/>',
   rocket: '<path d="M5 16c-1.5 1.5-2 5-2 5s3.5-.5 5-2"/><path d="M9 15l-3-3"/><path d="M14 5c3.5-1 6-1 6-1s0 2.5-1 6c-1 3-3.5 5.5-6.5 7l-4-4c1.5-3 4-5.5 5.5-8z"/><circle cx="15" cy="9" r="1.5"/>'
 };

@@ -8,7 +8,7 @@ const EXPLAIN: Record<PushStatus, string> = {
   'needs-install': 'Sur iPhone, les notifications ne marchent que pour une application ajoutée à l\'écran d\'accueil (iOS 16.4 ou plus). Dans Safari : Partager › Sur l\'écran d\'accueil, puis rouvre Ascend depuis l\'icône.',
   unconfigured: 'Les rappels ne sont pas encore configurés sur le serveur (clé manquante). Voir docs/RAPPELS.md.',
   denied: 'Les notifications sont refusées pour Ascend. Autorise-les dans les réglages de ton appareil, puis reviens ici.',
-  off: 'Active les rappels sur cet appareil : routine du matin, sport, bilan du soir, saisie du poids. Aucun rappel pendant Chabbat.',
+  off: 'Active les rappels sur cet appareil : un rappel avant ta première séance d\'apprentissage du jour. Aucun rappel pendant Chabbat.',
   on: 'Les rappels sont actifs sur cet appareil. Aucun rappel n\'est envoyé pendant Chabbat.'
 };
 

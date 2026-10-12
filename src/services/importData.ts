@@ -14,7 +14,7 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
-const NUM_SETTINGS = ['lat', 'lon', 'javaHours', 'waterGoal', 'protGoal', 'kcalGoal', 'sleepGoal', 'workMin', 'candle', 'havdalah', 'weightGoal', 'anglaisMin', 'lectureMin', 'frontMin', 'projetsMin', 'financesMin', 'toeicGoal'] as const;
+const NUM_SETTINGS = ['lat', 'lon', 'javaHours', 'waterGoal', 'protGoal', 'kcalGoal', 'sleepGoal', 'workMin', 'candle', 'havdalah', 'weightGoal', 'anglaisMin', 'lectureMin', 'frontMin', 'cloudMin', 'archiMin', 'projetsMin', 'financesMin', 'toeicGoal'] as const;
 const STR_SETTINGS = ['wake', 'bed', 'livre'] as const;
 const DAY_NUMS = ['weight', 'water', 'kcal', 'protein', 'pages'] as const;
 

@@ -17,13 +17,13 @@ export interface Settings {
   /** Objectif de poids (kg), optionnel : affiché en pointillés sur la courbe. */
   weightGoal?: number | null;
   /** Minutes par jour consacrées aux nouveaux domaines (0 = désactivé : aucun bloc dans le planning). */
-  anglaisMin: number; lectureMin: number; frontMin: number; projetsMin: number;
+  anglaisMin: number; lectureMin: number; frontMin: number; cloudMin: number; archiMin: number; projetsMin: number;
   /** Durée du « point finances » le premier dimanche de chaque mois (0 = désactivé). */
   financesMin: number;
   /** Livre en cours (affiché dans le bloc de lecture) et score visé au TOEIC. */
   livre?: string; toeicGoal?: number | null;
   /** Rappels activés par type (absent = activé). Ne sert qu'une fois les notifications autorisées sur un appareil. */
-  reminders?: Partial<Record<'routine' | 'sport' | 'bilan' | 'saisie', boolean>>;
+  reminders?: Partial<Record<'seance' | 'routine' | 'sport' | 'bilan' | 'saisie', boolean>>;
   /** Intensité de chaque domaine, par mois (« AAAA-MM »). Un mois sans réglage reprend celui du mois précédent. */
   months?: Record<string, MonthPlan>;
   /** Réajuste automatiquement le planning après un retard (activé si absent). */
@@ -37,7 +37,7 @@ export interface Settings {
 /** Intensité d'un domaine pour un mois. */
 export type Level = 'off' | 'leger' | 'normal' | 'intensif';
 /** Domaines réglables mois par mois. */
-export type MonthDomain = 'miage' | 'sport' | 'java' | 'front' | 'anglais' | 'lecture' | 'projets' | 'finances';
+export type MonthDomain = 'miage' | 'sport' | 'java' | 'front' | 'cloud' | 'archi' | 'anglais' | 'lecture' | 'projets' | 'finances';
 /** `null` : retour au réglage du mois précédent (une fusion Firestore ne peut pas supprimer une clé). */
 export type MonthPlan = Partial<Record<MonthDomain, Level | null>>;
 
@@ -86,7 +86,7 @@ export interface Project { name: string; next: string; status: ProjectStatus; mi
 /** Versements du mois (finances) — chiffres saisis par toi, jamais de conseil d'investissement. */
 interface MonthFinance { savings?: number | null; invested?: number | null }
 
-/** users/{uid}/progress/main : tâches MIAGE (d:…, s:…), Java (p1t1…), dev front (f1t1…) et points finances (fin:AAAA-MM:…) cochés. */
+/** users/{uid}/progress/main : tâches MIAGE (d:…, s:…), Java (p1t1…), dev front (f1t1…), Cloud et DevOps (c1t1…), Architecture (a1t1…) et points finances (fin:AAAA-MM:…) cochés. */
 export interface Progress {
   done: Record<string, boolean>;
   /** Dates imposées par toi pour une tâche MIAGE (annule le réajustement automatique). */
@@ -101,7 +101,7 @@ export interface Progress {
 }
 
 export type DomainId = 'matin' | 'sport' | 'alim' | 'sommeil' | 'miage' | 'java' | 'pro' | 'trajet' | 'chabbat' | 'autre'
-  | 'anglais' | 'lecture' | 'front' | 'finances' | 'projets';
+  | 'anglais' | 'lecture' | 'front' | 'cloud' | 'archi' | 'finances' | 'projets';
 export type SportKind = 'push' | 'pull' | 'legs';
 
 /** Un créneau de la journée. `fixed` : imposé (travail, repas) ; sinon placé dans un créneau libre. */

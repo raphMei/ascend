@@ -1,7 +1,6 @@
-/** Objectifs : où tu en es vers chaque cible (poids, TOEIC, parcours, sport…). Seuls ceux qui ont du sens pour toi apparaissent. */
+/** Objectifs d'apprentissage : où tu en es vers chaque cible (cours MIAGE, TOEIC, parcours Java / front / Cloud / Architecture, lecture). Seuls ceux qui ont du sens pour toi apparaissent. */
 import { lastDays, type ISODate } from '@/core/dates';
-import { frNum, sleepDuration } from '@/core/format';
-import { FRONT_HOURS, FRONT_LEVELS, FRONT_PHASES } from '@/content/front/path';
+import { PATHS } from '@/content/paths';
 import type { MiageTask } from '@/content/types';
 import { TOEIC_MAX } from '@/content/english';
 import { jStats, mStats, pathStats } from './progress';
@@ -23,21 +22,12 @@ export interface GoalsInput {
   dropped?: ReadonlySet<string>;
 }
 
+const PATH_EMOJI = { front: '💻', cloud: '☁️', archi: '🏛️' } as const;
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
 export function buildGoals(i: GoalsInput): Goal[] {
   const out: Goal[] = [];
   const { settings: S, days, progress, today } = i;
-
-  /* Poids : du premier poids saisi (sur 400 jours) vers l'objectif. */
-  if (S.weightGoal) {
-    const ws = lastDays(400, today).flatMap((d) => (days[d]?.weight != null ? [{ d, w: Number(days[d]!.weight) }] : []));
-    if (ws.length) {
-      const start = ws[0].w, now = ws[ws.length - 1].w, goal = S.weightGoal;
-      const pct = start === goal ? 100 : ((start - now) / (start - goal)) * 100;
-      out.push({ id: 'poids', emoji: '⚖️', label: 'Poids', value: `${frNum(now)} → ${frNum(goal)} kg`, pct: clamp(pct), domain: 'alim', to: '/dom/alim' });
-    }
-  }
 
   /* TOEIC : meilleur score vers le score visé. */
   const scores = Object.values(progress.toeic ?? {}).filter((x): x is number => x != null);
@@ -52,18 +42,9 @@ export function buildGoals(i: GoalsInput): Goal[] {
   const js = jStats(progress);
   if (js.done > 0 || S.javaHours > 0) out.push({ id: 'java', emoji: '☕', label: 'Java backend', value: js.level, pct: js.pct, domain: 'java', to: '/dom/java' });
 
-  const fs = pathStats(FRONT_PHASES, FRONT_LEVELS, FRONT_HOURS, progress);
-  if (fs.done > 0 || S.frontMin >= 5) out.push({ id: 'front', emoji: '💻', label: 'Dev front', value: fs.level, pct: fs.pct, domain: 'front', to: '/dom/front' });
-
-  /* Sport : séances de la semaine glissante. */
-  const sessions = lastDays(7, today).filter((d) => days[d]?.done?.sport).length;
-  out.push({ id: 'sport', emoji: '🏋️', label: 'Sport (7 jours)', value: `${sessions} / 6 séances`, pct: clamp((sessions / 6) * 100), domain: 'sport', to: '/dom/sport' });
-
-  /* Sommeil : moyenne des 7 dernières nuits par rapport à l'objectif. */
-  const nights = lastDays(7, today).flatMap((d) => { const s = days[d]?.sleep; return s?.bed && s.wake ? [sleepDuration(s.bed, s.wake)] : []; });
-  if (nights.length) {
-    const avg = nights.reduce((a, b) => a + b, 0) / nights.length / 60;
-    out.push({ id: 'sommeil', emoji: '😴', label: 'Sommeil (moyenne 7 nuits)', value: `${frNum(Math.round(avg * 10) / 10)} h / ${frNum(S.sleepGoal)} h`, pct: clamp((avg / S.sleepGoal) * 100), domain: 'sommeil', to: '/dom/sommeil' });
+  for (const path of PATHS) {
+    const ps = pathStats(path.phases, path.levels, path.hours, progress);
+    if (ps.done > 0 || S[path.min] >= 5) out.push({ id: path.id, emoji: PATH_EMOJI[path.id], label: path.name, value: ps.level, pct: ps.pct, domain: path.id, to: '/dom/' + path.id });
   }
 
   /* Lecture : pages des 30 derniers jours. */

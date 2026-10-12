@@ -1,7 +1,7 @@
 import { addDays, dow, range } from '@/core/dates';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
-import { buildSchedule, sportRescue, type Schedule } from '@/domain/schedule';
+import { buildSchedule, type Schedule } from '@/domain/schedule';
 import { genericTasks } from './fixtures';
 import type { DayData, Progress, Settings } from '@/domain/types';
 
@@ -123,7 +123,7 @@ describe('propriétés', () => {
   it('cohérent avec le planificateur : une tâche assignée apparaît ce jour-là, et nulle part ailleurs', () => {
     const today = '2026-10-14';
     const s = run(today);
-    const sched = { dayOf: s.dayOf, sport: s.sport };
+    const sched = { dayOf: s.dayOf };
     const seen: Record<string, string[]> = {};
     for (const d of range(today, addDays(today, 30))) {
       planDay({ date: d, settings: S0, progress: { done: {} }, day: undefined, today, tasks, schedule: sched })
@@ -135,27 +135,5 @@ describe('propriétés', () => {
   it('après une semaine entière manquée, tout rentre avant la dernière échéance (rien de non placé)', () => {
     const s = run('2026-11-25');
     expect(s.unplaced.length).toBeLessThanOrEqual(3);
-  });
-});
-
-describe('sport', () => {
-  it('jambes manquées : rattrapées une fois, à la place de la prochaine séance qui n\'est pas des jambes', () => {
-    // mardi 13 oct. = jambes ; manquées. Aujourd'hui mercredi 14 : la séance « pousser » devient jambes.
-    const r = sportRescue(S0, {}, '2026-10-14');
-    expect(Object.keys(r.sport)).toEqual(['2026-10-14']);
-    expect(r.sport['2026-10-14'].kind).toBe('legs');
-    expect(r.notes[0]).toContain('Jambes manquées');
-  });
-  it('jambes faites : rien à rattraper', () => {
-    expect(sportRescue(S0, { '2026-10-09': { done: { sport: true } }, '2026-10-13': { done: { sport: true } } }, '2026-10-14').sport).toEqual({});
-  });
-  it('séance passée volontairement : pas de rattrapage', () => {
-    expect(sportRescue(S0, { '2026-10-09': { edits: { skip: { sport: true } } }, '2026-10-13': { edits: { skip: { sport: true } } } }, '2026-10-14').sport).toEqual({});
-  });
-  it('le planificateur applique le remplacement et l\'explique', () => {
-    const s = run('2026-10-14');
-    const p = planDay({ date: '2026-10-14', settings: S0, progress: { done: {} }, day: undefined, today: '2026-10-14', tasks, schedule: { dayOf: s.dayOf, sport: s.sport } });
-    const b = p.blocks.find((x) => x.id === 'sport')!;
-    expect(b.sport).toBe('legs'); expect(b.title).toContain('rattrapage'); expect(b.sub).toContain('Jambes manquées');
   });
 });

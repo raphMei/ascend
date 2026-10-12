@@ -28,11 +28,11 @@ describe('édition libre du planning', () => {
 
   it('passe un bloc : il sort du plan et des statistiques, et reste listé dans « skipped »', () => {
     const full = dayStats(plan(TUE));
-    const sport = plan(TUE).blocks.find((b) => b.id === 'sport')!;
-    const p = plan(TUE, { edits: { skip: { sport: true } } });
-    expect(p.blocks.some((b) => b.id === 'sport')).toBe(false);
-    expect(p.skipped?.map((b) => b.id)).toEqual(['sport']);
-    expect(dayStats(p).pl).toBe(full.pl - (sport.end - sport.start));
+    const first = plan(TUE).blocks.find((b) => b.checkable)!;
+    const p = plan(TUE, { edits: { skip: { [first.id]: true } } });
+    expect(p.blocks.some((b) => b.id === first.id)).toBe(false);
+    expect(p.skipped?.map((b) => b.id)).toEqual([first.id]);
+    expect(dayStats(p).pl).toBe(full.pl - (first.end - first.start));
   });
 
   it('un « skip » ou « move » annulé (null) n\'a aucun effet', () => {

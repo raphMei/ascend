@@ -1,6 +1,6 @@
 /* Garde-fou de non-régression : empreinte du planning de chaque jour du 8 oct. 2026 au 28 févr. 2027
    (réglages par défaut). L'empreinte a été calculée sur la version JavaScript d'origine, avant la migration React :
-   elle prouve que la logique n'a pas changé. Si tu modifies VOLONTAIREMENT le planificateur, mets à jour la valeur. */
+   elle prouve que la logique n'a pas changé. Si tu modifies VOLONTAIREMENT le planificateur, mets à jour la valeur (dernière mise à jour volontaire : routine, sport et repas deviennent du temps réservé, non cochable). */
 import { createHash } from 'node:crypto';
 import { range } from '@/core/dates';
 import { planDay } from '@/domain/planner';
@@ -17,9 +17,9 @@ it('le planning de la saison est inchangé', () => {
   const progress = { done: { 'd:2026-10-08': true, p1t1: true } };
   const today = '2026-11-03';
   const lines = range('2026-10-08', '2027-02-28').map((d) => {
-    const day = d === today ? { done: { tephila: true, sport: true } } : {};
+    const day = d === today ? { done: { java: true } } : {};
     const plan = planDay({ date: d, settings: DEFAULT_SETTINGS, progress, day, today, tasks });
     return d + canon({ pl: plan, st: dayStats(plan) });
   });
-  expect(createHash('sha256').update(lines.join('\n')).digest('hex')).toBe('2d59b48e21b29f7661163b98b7d873f9f3de72e1c765b8e84745901086194d86');
+  expect(createHash('sha256').update(lines.join('\n')).digest('hex')).toBe('faea50d86038f2f89b44d453f28fc748511a4112620923e5446d93d18e3cf364');
 });

@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { JOURS, addDays, diffDays, dow, fmt, fmtLong, fmtShort, lastDays } from '@/core/dates';
-import { hm, hours, sleepDuration } from '@/core/format';
+import { addDays, diffDays, dow, fmt, fmtLong, fmtShort, lastDays } from '@/core/dates';
+import { hm, hours } from '@/core/format';
 import { KEY_DATES } from '@/content/calendar';
 import { byId } from '@/content/miage/subjects';
 import { DOM } from '@/domain/domains';
 import { coachLine } from '@/domain/coach';
-import { jStats, mStats } from '@/domain/progress';
+import { PATHS } from '@/content/paths';
+import { jStats, mStats, pathStats } from '@/domain/progress';
+import { recentLearning } from '@/domain/recent';
 import { shabbatFor } from '@/domain/shabbat';
 import { streak } from '@/domain/stats';
 import { Bar } from '@/components/Bar';
 import { dc } from '@/components/Icon';
 import { PageHead } from '@/components/PageHead';
-import { BarsChart } from '@/components/charts/BarsChart';
-import { LineChart } from '@/components/charts/LineChart';
 import { Ring } from '@/components/charts/Ring';
 import { StackedBars } from '@/components/charts/StackedBars';
 import { useClock } from '@/hooks/useClock';
@@ -24,7 +24,7 @@ import { useData } from '@/state/DataContext';
 import { useShabbat } from '@/features/shell/useShabbat';
 import { dayTypeLabel } from './labels';
 
-const LEGEND = ['matin', 'sport', 'sommeil', 'miage', 'java'] as const;
+const LEGEND = ['miage', 'java', 'front', 'cloud', 'archi', 'anglais', 'lecture', 'projets'] as const;
 
 export function HomeScreen() {
   const { state, settings: s, tasks } = useData();
@@ -35,9 +35,8 @@ export function HomeScreen() {
   const droppedSet = useMemo(() => new Set(sched?.dropped ?? []), [sched]);
   const shab = useShabbat();
   const stk = streak(state.days, today);
-  const routine = plan.blocks.filter((b) => b.domain === 'matin' && b.checkable);
   const [line, sub] = coachLine({
-    pct: st.pct, streak: stk, late: plan.late, now, routineDone: routine.length ? routine.every((b) => b.done) : true,
+    pct: st.pct, streak: stk, late: plan.late, now,
     shabbat: !!shab || dow(today) === 6, planned: st.pl
   });
   const nextB = plan.blocks.find((b) => b.checkable && !b.done && b.end > now);
@@ -49,17 +48,9 @@ export function HomeScreen() {
   const shT = shabbatFor(friday, s);
   const proMin = plan.blocks.filter((b) => b.domain === 'pro').reduce((a, b) => a + b.end - b.start, 0);
   const trMin = plan.blocks.filter((b) => b.domain === 'trajet').reduce((a, b) => a + b.end - b.start, 0);
-  const dates14 = lastDays(14, today);
-  const wPts = dates14.map((d) => {
-    const w = state.days[d]?.weight;
-    const parts = fmtShort(d).split(' ');
-    return { x: parts[0] + ' ' + parts[1].slice(0, 3), y: w != null ? +w : null };
-  });
-  const slItems = dates14.slice(-10).map((d) => {
-    const sl = state.days[d]?.sleep;
-    return { x: JOURS[dow(d)].slice(0, 2), y: sl?.bed && sl.wake ? Math.round(sleepDuration(sl.bed, sl.wake) / 6) / 10 : null };
-  });
-  const goalTxt = String(s.sleepGoal).replace('.', ',');
+  const reservedMin = plan.blocks.filter((b) => !b.checkable && b.domain !== 'chabbat' && b.domain !== 'pro' && b.domain !== 'trajet').reduce((a, b) => a + b.end - b.start, 0);
+  const recent = useMemo(() => recentLearning(state.progress, tasks), [state.progress, tasks]);
+  const tracks = useMemo(() => PATHS.map((p) => ({ def: p, stats: pathStats(p.phases, p.levels, p.hours, state.progress) })).filter((t) => t.stats.done > 0 || s[t.def.min] >= 5), [state.progress, s]);
   const plural = (n: number) => (n > 1 ? 's' : '');
 
   return (
@@ -72,24 +63,24 @@ export function HomeScreen() {
       </PageHead>
       <Link to="/stats" className="card" style={{ textDecoration: 'none', display: 'block' }}>
         <div className="sectionhead"><h2>Statistiques</h2><span className="muted">Voir →</span></div>
-        <p className="muted" style={{ marginTop: 4 }}>Régularité par habitude, calendrier des 12 dernières semaines, bilan de la semaine et badges.</p>
+        <p className="muted" style={{ marginTop: 4 }}>Régularité par séance, calendrier des 12 dernières semaines, bilan de la semaine, durées réelles et badges.</p>
       </Link>
       <section className="card coach" aria-label="Message du coach"><div className="eyebrow">Ton coach</div><p className="big">{line}</p><p className="small">{sub}</p></section>
       <section className="card hero">
-        <div className="ring"><Ring pct={st.pct} color="var(--accent)" /><div className="num"><b>{st.pct}%</b><span>du jour</span></div></div>
+        <div className="ring"><Ring pct={st.pct} color="var(--accent)" /><div className="num"><b>{st.pct}%</b><span>appris</span></div></div>
         <div className="grid" style={{ gap: 14 }}>
           <div className="kpis">
             <div className="kpi"><b>{stk}</b><span>jour{plural(stk)} d'affilée</span></div>
-            <div className="kpi"><b>{hours(st.dn)}</b><span>faites sur {hours(st.pl)}</span></div>
-            <div className="kpi"><b>{hours(week)}</b><span>sur 7 jours</span></div>
+            <div className="kpi"><b>{hours(st.dn)}</b><span>appris sur {hours(st.pl)}</span></div>
+            <div className="kpi"><b>{hours(week)}</b><span>appris sur 7 jours</span></div>
           </div>
           {nextB && !shab && <div className="next" style={dc(nextB.domain)}><div><div className="eyebrow">À suivre · {hm(nextB.start)}</div><div className="t">{nextB.title}</div></div></div>}
-          <div className="muted" style={{ fontSize: 14 }}>Travail {hours(proMin)} · Trajets {hours(trMin)} · Pour toi {hours(st.pl)}</div>
-          <Link className="btn primary" style={{ textAlign: 'center', textDecoration: 'none', display: 'block' }} to="/today">Voir ma journée heure par heure</Link>
+          <div className="muted" style={{ fontSize: 14 }}>Temps réservé {hours(reservedMin)} · Travail {hours(proMin)} · Trajets {hours(trMin)}</div>
+          <Link className="btn primary" style={{ textAlign: 'center', textDecoration: 'none', display: 'block' }} to="/today">Voir mes séances du jour</Link>
         </div>
       </section>
       <section className="card">
-        <div className="sectionhead"><h2>Heures accomplies</h2><span className="muted" style={{ fontSize: 14 }}>7 derniers jours</span></div>
+        <div className="sectionhead"><h2>Heures apprises</h2><span className="muted" style={{ fontSize: 14 }}>7 derniers jours</span></div>
         <StackedBars rows={amounts} today={today} />
         <div className="legend" style={{ marginTop: 8 }}>{LEGEND.map((d) => <span key={d}><i style={dc(d)} />{DOM[d].name}</span>)}</div>
       </section>
@@ -105,10 +96,24 @@ export function HomeScreen() {
           <Link className="btn small" style={{ display: 'inline-block', marginTop: 12, textDecoration: 'none' }} to="/dom/java">Ouvrir mon parcours</Link>
         </section>
       </div>
-      <div className="grid two">
-        <section className="card"><h2>Poids</h2><p className="muted" style={{ margin: '4px 0 8px' }}>14 derniers jours</p><LineChart points={wPts} color="--c-alim" label="Poids" /></section>
-        <section className="card"><h2>Sommeil</h2><p className="muted" style={{ margin: '4px 0 8px' }}>Heures par nuit, objectif {goalTxt} h</p><BarsChart items={slItems} color="--c-sommeil" goal={s.sleepGoal} goalLabel={goalTxt + ' h'} label="Sommeil" /></section>
-      </div>
+      {tracks.length > 0 && (
+        <div className="grid two">
+          {tracks.map(({ def, stats }) => (
+            <section className="card" key={def.id} style={dc(def.id)}>
+              <div className="sectionhead"><h2>{def.name}</h2><span className="mono muted">{stats.pct}%</span></div><Bar pct={stats.pct} domain={def.id} />
+              <p className="muted" style={{ marginTop: 10 }}>Statut : <b style={{ color: 'var(--ink)' }}>{stats.level}</b>. {stats.phasesDone} phase{plural(stats.phasesDone)} terminée{plural(stats.phasesDone)} sur {def.phases.length}.</p>
+              <Link className="btn small" style={{ display: 'inline-block', marginTop: 12, textDecoration: 'none' }} to={`/dom/${def.id}`}>Ouvrir mon parcours</Link>
+            </section>
+          ))}
+        </div>
+      )}
+      <section className="card" aria-label="Derniers apprentissages"><h2>Derniers apprentissages</h2>
+        {recent.length ? (
+          <div className="list" style={{ marginTop: 8 }}>
+            {recent.map((r) => <Link key={r.id} to={r.to} className="row" style={{ ...dc(r.domain), textDecoration: 'none', color: 'inherit' }}><span>{r.title}</span><span className="mono muted">{fmt(r.date)}</span></Link>)}
+          </div>
+        ) : <p className="muted" style={{ marginTop: 6 }}>Rien de terminé pour l'instant. Ta première séance apparaîtra ici.</p>}
+      </section>
       <div className="grid two">
         <section className="card"><h2>Projets en cours</h2>
           <div className="list" style={{ marginTop: 8 }}>

@@ -23,13 +23,14 @@ export function adjustTasks(base: readonly MiageTask[], S: Settings): MiageTask[
 }
 
 const key = (S: Settings) => [S.lat, S.lon, S.candle, S.havdalah, S.wake, S.workMin].join('|');
-let cache: { k: string; tasks: MiageTask[] } | null = null;
+let cache: { k: string; base: readonly MiageTask[]; tasks: MiageTask[] } | null = null;
 
-/** Tâches de la saison aux échéances ajustées (mémoïsé tant que les réglages concernés ne changent pas). */
-export function adjustedTasks(S: Settings): MiageTask[] {
+/** Tâches de la saison aux échéances ajustées (mémoïsé tant que les réglages concernés et la liste de départ ne changent pas).
+    `base` : au démarrage `RAW_TASKS` (sans le texte des séances), puis la version complète une fois chargée. */
+export function adjustedTasks(S: Settings, base: readonly MiageTask[] = RAW_TASKS): MiageTask[] {
   const k = key(S);
-  if (cache && cache.k === k) return cache.tasks;
-  const tasks = adjustTasks(RAW_TASKS, S);
-  cache = { k, tasks };
+  if (cache && cache.k === k && cache.base === base) return cache.tasks;
+  const tasks = adjustTasks(base, S);
+  cache = { k, base, tasks };
   return tasks;
 }

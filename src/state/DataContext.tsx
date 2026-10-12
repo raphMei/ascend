@@ -1,5 +1,5 @@
 /** Fournit l'état des données (jours, réglages, progression) et les actions d'écriture à toute l'application. */
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { addDays, todayISO, type ISODate } from '@/core/dates';
 import { inverse } from '@/core/merge';
 import { resolveSettings } from '@/domain/settings';
@@ -113,9 +113,15 @@ export function DataProvider({ children, backend: injected }: { children: ReactN
   // Durées des tâches ajustées au temps réel mesuré : les tâches ne changent que si un coefficient change (clé stable).
   const calibration = useMemo(() => calibrate(state.days), [state.days]);
   const ck = calibKey(calibration);
+  // Les dates, durées et titres des séances sont connus tout de suite ; leur texte et leurs liens arrivent dans un fichier chargé juste après.
+  const [full, setFull] = useState<readonly MiageTask[] | null>(null);
+  useEffect(() => { let alive = true; void import('@/content/miage/full').then((m) => { if (alive) setFull(m.FULL_TASKS); }); return () => { alive = false; }; }, []);
   const tasks = useMemo(
-    () => (settings.calibrate === false ? adjustedTasks(settings) : calibrateTasks(adjustedTasks(settings), calibration)),
-    [settings, ck] // eslint-disable-line react-hooks/exhaustive-deps
+    () => {
+      const base = adjustedTasks(settings, full ?? undefined);
+      return settings.calibrate === false ? base : calibrateTasks(base, calibration);
+    },
+    [settings, ck, full] // eslint-disable-line react-hooks/exhaustive-deps
   );
   const api = useMemo<DataApi>(
     () => ({ state, settings, tasks, calibration, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut }),

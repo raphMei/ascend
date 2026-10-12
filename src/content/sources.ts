@@ -13,7 +13,8 @@ export const jsi = (p: string, title: string) => fr('javascript.info', title, 'h
 export const react = (p: string, title: string) => fr('React', title, 'https://fr.react.dev/' + p);
 /** « Développons en Java » (Jean-Michel Doudoux), cours complet en français. */
 export const jdx = (chap: string, title: string) => fr('Doudoux', title, `https://www.jmdoudoux.fr/java/dej/${chap}.htm`);
-export const wiki = (page: string, title: string) => fr('Wikipédia', title, 'https://fr.wikipedia.org/wiki/' + page);
+/** Wikipédia en français. `page` peut contenir des accents : ils sont encodés (sauf s'il est déjà encodé). */
+export const wiki = (page: string, title: string) => fr('Wikipédia', title, 'https://fr.wikipedia.org/wiki/' + (page.includes('%') ? page : encodeURI(page)));
 export const oc = (id: string, slug: string, title: string) => fr('OpenClassrooms', title, `https://openclassrooms.com/fr/courses/${id}-${slug}`);
 export const sqlsh = (p: string, title: string) => fr('sql.sh', title, 'https://sql.sh/cours/' + p);
 export const gha = (p: string, title: string) => fr('GitHub', title, 'https://docs.github.com/fr/' + p);

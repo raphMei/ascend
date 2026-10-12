@@ -105,7 +105,7 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 | Commande | Contenu |
 |---|---|
-| `npm test` (374 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
+| `npm test` (398 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
 | `npm run test:e2e` (51) | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, polices locales, chargement à la demande, minuteur, import/export, **audit d'accessibilité axe** en clair et en sombre |
 | `npm run test:rules` | **émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections connues, requête fenêtrée) et script d'envoi des rappels de bout en bout (nécessite Java) |
 | `npm run test:all` | tout ce qui précède |

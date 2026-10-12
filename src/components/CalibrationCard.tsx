@@ -5,7 +5,7 @@ import type { DomainId } from '@/domain/types';
 import { useData } from '@/state/DataContext';
 
 const KIND: Record<string, string> = {
-  miage: 'MIAGE (toutes tâches)', 'miage:daily': 'MIAGE · cours du jour', 'miage:fiche': 'MIAGE · fiches', 'miage:rev': 'MIAGE · révisions',
+  miage: 'MIAGE (toutes tâches)', 'miage:daily': 'MIAGE · cours du jour', 'miage:fiche': 'MIAGE · fiches', 'miage:seance': 'MIAGE · séances du plan', 'miage:rev': 'MIAGE · révisions',
   'miage:proj': 'MIAGE · projets', 'miage:setup': 'MIAGE · mise en place', 'miage:org': 'MIAGE · organisation'
 };
 const label = (c: string) => KIND[c] ?? DOM[c as DomainId]?.name ?? c;

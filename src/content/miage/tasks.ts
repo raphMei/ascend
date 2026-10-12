@@ -3,7 +3,9 @@ import { range, dow, type ISODate } from '../../core/dates';
 import { dayType } from '../calendar';
 import { SUBJ, byId } from './subjects';
 import type { MiageTask, TaskKind } from '../types';
-import { PLANS } from './plans';
+import { OUTLINE } from './plans/outline.generated';
+import { toeic } from './plans/toeic';
+import { paceSessions, splitHours, tierOf } from './pacing';
 import type { SubjectPlan } from './plans/types';
 import { ENGLISH_EXERCISES } from '../english';
 
@@ -29,20 +31,26 @@ SUBJ.forEach((s, i) => {
     "Écris au même endroit : la date et le format du contrôle continu, son coefficient, la durée et le format de l'examen final, et les documents autorisés. Si une information manque, demande-la au responsable de la matière. Reporte ensuite chaque date dans ton agenda.", "2026-11-01", 0.25);
 });
 
-const ROT = ["dl", "qa", "sec", "llm", "big", "ri", "gov", "toeic", "eth", "proj"];
+/* Matières à plan précis (« paced ») : leurs séances ont leurs propres échéances (voir pacing.ts). Les autres gardent la rotation :
+   chacune a un créneau « tâche du jour » tous les dix jours d'entreprise. */
+const paced = Object.values(plans).filter((p) => p.paced);
+const pacedIds = new Set(paced.map((p) => p.subject));
+const ROT_ALL = ["dl", "qa", "sec", "llm", "big", "ri", "gov", "toeic", "eth", "proj"];
+const ROT = ROT_ALL.filter((sid) => !pacedIds.has(sid));
+const slotOf = (i: number) => (i % ROT_ALL.length < ROT.length ? ROT[i % ROT_ALL.length] : null);
 const MICRO: [string, (n: string) => string][] = [
   ["Relire et annoter", (n) => { return "Reprends tes notes de la dernière séance de « " + n + " ». Surligne les 5 notions les plus importantes et écris en marge une phrase avec tes mots pour chacune. Si une notion reste floue, ajoute-la à une liste « à demander » pour la prochaine séance."; }],
   ["Exercice sans filet", (n) => { return "Prends un exercice ou un TD de « " + n + " » déjà corrigé, cache la correction et refais-le depuis le début. Compare ensuite avec la correction : note chaque endroit où tu as hésité ou fait une erreur."; }],
   ["Cinq questions-réponses", (n) => { return "Écris 5 questions sur ce que tu as vu en « " + n + " », avec la réponse au dos (papier ou application de cartes mémoire). Garde-les : elles serviront pour les révisions de janvier."; }],
   ["Explique-le à un débutant", (n) => { return "Choisis une notion de « " + n + " » et explique-la à voix haute en 3 minutes, comme à quelqu'un qui n'y connaît rien, avec un exemple concret. Là où tu bloques, ouvre le cours et complète."; }]
 ];
-let rc = 0;
 const occ: Record<string, number> = {};
 /* Nombre de créneaux « tâche du jour » de chaque matière sur la saison : les séances d'un plan sont réparties régulièrement dessus. */
 const slots: Record<string, number> = {};
-ent.forEach((_, i) => { const sid = ROT[i % ROT.length]; slots[sid] = (slots[sid] || 0) + 1; });
-ent.forEach((d) => {
-  const sid = ROT[rc % ROT.length]; rc++;
+ent.forEach((_, i) => { const sid = slotOf(i); if (sid) slots[sid] = (slots[sid] || 0) + 1; });
+ent.forEach((d, i) => {
+  const sid = slotOf(i);
+  if (!sid) return;
   const s = byId[sid]; occ[sid] = occ[sid] || 0; const k = occ[sid] % 4;
   const planUnits = plans[sid]?.units ?? [];
   // La séance i du plan va dans le créneau floor(i × créneaux / séances) : réparties sur toute la saison, plusieurs par créneau s'il y en a plus que de créneaux.
@@ -78,14 +86,17 @@ range("2026-10-11", "2027-02-21").filter((d) => dow(d) === 0).forEach((d) => {
 const BLOCKS: [string, ISODate[]][] = [["novembre", entIn("2026-11-23", "2026-11-27")], ["décembre", entIn("2026-12-21", "2026-12-31")], ["janvier", entIn("2027-01-18", "2027-01-22")]];
 const FICHE = "Après le bloc de cours, rédige une fiche de 1 à 2 pages. D'abord, sans regarder tes notes, liste de mémoire tout ce que tu as retenu. Ensuite, complète avec les notes : les notions clés avec une phrase de définition chacune, un schéma ou un exemple pour les trois plus importantes, les formules ou commandes à connaître, et 5 questions que l'enseignant pourrait poser.";
 STD.forEach((sid, i) => {
-  BLOCKS.forEach((b, bi) => { push(sid + ":f" + bi, sid, "fiche", "Fiche de synthèse · bloc de " + b[0], FICHE, spread(b[1], i, STD.length), 1); });
-  push(sid + ":ex", sid, "rev", "Refaire 3 exercices types sans correction", "Choisis 3 exercices de « " + byId[sid].name + " » (TD, annales ou exercices de ta fiche). Fais-les chronométrés, correction fermée. Pour chaque erreur, écris la règle ou la méthode qui t'aurait évité de la faire.", spread(entIn("2027-01-26", "2027-02-05"), i, STD.length), 1.5);
+  // Un plan précis contient déjà ses fiches, ses exercices et ses révisions chronométrées : on ne les double pas.
+  if (!pacedIds.has(sid)) {
+    BLOCKS.forEach((b, bi) => { push(sid + ":f" + bi, sid, "fiche", "Fiche de synthèse · bloc de " + b[0], FICHE, spread(b[1], i, STD.length), 1); });
+    push(sid + ":ex", sid, "rev", "Refaire 3 exercices types sans correction", "Choisis 3 exercices de « " + byId[sid].name + " » (TD, annales ou exercices de ta fiche). Fais-les chronométrés, correction fermée. Pour chaque erreur, écris la règle ou la méthode qui t'aurait évité de la faire.", spread(entIn("2027-01-26", "2027-02-05"), i, STD.length), 1.5);
+  }
   push(sid + ":memo", sid, "rev", "Fiche mémo d'une page", "Condense tes fiches de bloc en une seule page recto : les définitions, formules, schémas et pièges à connaître par cœur. Elle doit tenir à la lecture en 5 minutes la veille de l'examen. Le bloc du 8 au 12 février y est inclus.", spread(entIn("2027-02-15", "2027-02-19"), i, STD.length), 1);
   push(sid + ":exam", sid, "exam", "Passer l'examen final", "Renseigne la date exacte de l'examen de « " + byId[sid].name + " » dans ton agenda. La veille : relis ta fiche mémo, prépare ton matériel, couche-toi tôt. Le jour même : lis tout le sujet avant de commencer et commence par les questions que tu maîtrises.", "2027-02-26", 2);
 });
 const BLANC: Record<ISODate, string[]> = { "2027-01-31": ["dl", "qa"], "2027-02-07": ["sec", "llm", "big"], "2027-02-14": ["ri", "gov", "eth"] };
 Object.keys(BLANC).forEach((d) => {
-  BLANC[d].forEach((sid) => {
+  BLANC[d].filter((sid) => !pacedIds.has(sid)).forEach((sid) => {
     push(sid + ":blanc", sid, "rev", "Sujet blanc chronométré", "Prends un sujet d'annales de « " + byId[sid].name + " » (à défaut, demande-moi d'en écrire un à partir de ton cours). Fais-le dans la durée réelle de l'examen, sans notes. Corrige ensuite avec une autre couleur et liste les 3 points à retravailler.", d, 1.5);
   });
 });
@@ -108,9 +119,43 @@ const PROJ: { s: string; due: ISODate; h: number; t: string; d: string; k?: Task
   { s: "toeic", due: "2027-02-14", h: 2, k: "rev", t: "Test blanc TOEIC n°3", d: "Dernier test complet avant l'examen. Sers-toi du résultat pour décider où passer ton temps de révision de la dernière semaine." }
 ];
 PROJ.forEach((p, i) => {
+  if (pacedIds.has(p.s)) return;                 // les rendus d'un plan précis viennent de ses `deliverables`
   push(p.s + ":p" + i, p.s, p.k || "proj", p.t, p.d, p.due, p.h);
   const res = plans[p.s]?.projects?.[p.s + ":p" + i];
   if (res?.length) tasks[tasks.length - 1].res = res;
+});
+
+/* Plans précis : une tâche « séance » par séance du plan, avec sa propre échéance, puis les rendus dus après certaines séances. */
+/* Une séance de révision ou d'examen blanc reste d'un seul tenant (c'est le but) ; les autres sont découpées en parties qui tiennent une soirée. */
+const partsOf = (u: { hours?: number; kind?: string }) => (u.kind === "valid" ? [u.hours ?? 1.5] : splitHours(u.hours ?? 1.5));
+const dues = paceSessions(
+  paced.map((p) => ({ id: p.subject, tier: tierOf(byId[p.subject]?.rank), minutes: p.units.flatMap((u) => partsOf(u).map((h) => Math.round(h * 60))) })),
+  "2026-10-13", "2027-02-14"
+);
+paced.forEach((p) => {
+  const s = byId[p.subject]; if (!s) return;
+  let at = 0;
+  const lastOf: number[] = [];                       // rang de la dernière partie de chaque séance, pour dater les rendus
+  p.units.forEach((u, i) => {
+    const parts = partsOf(u);
+    parts.forEach((h, k) => {
+      const hint = parts.length === 1 ? "" : k === 0 ? `Partie 1 sur ${parts.length} : lis et comprends les notions. ` : k === parts.length - 1 ? `Partie ${k + 1} sur ${parts.length} : refais les exercices, passe l'auto-test et écris ta fiche récap. ` : `Partie ${k + 1} sur ${parts.length} : continue la séance. `;
+      const task: MiageTask = {
+        id: p.subject + ":u" + (i + 1) + (parts.length > 1 ? "." + (k + 1) : ""), s: p.subject, k: u.kind === "valid" ? "rev" : "seance",
+        t: u.title + (parts.length > 1 ? " (" + (k + 1) + "/" + parts.length + ")" : "") + " · " + s.short,
+        d: (u.provisional ? "Séance provisoire (plan anticipé) : à réaligner dès que ton professeur publie le contenu. " : "") + hint + u.detail,
+        due: dues[p.subject][at], h };
+      if (u.res?.length) task.res = u.res;
+      if (u.kind) task.step = u.kind;
+      tasks.push(task); at++;
+    });
+    lastOf[i] = at - 1;
+  });
+  (p.deliverables ?? []).forEach((r, i) => {
+    const task: MiageTask = { id: p.subject + ":r" + (i + 1), s: p.subject, k: "proj", t: r.title, d: r.detail, due: dues[p.subject][lastOf[Math.min(r.after, p.units.length) - 1]], h: r.hours };
+    if (r.res?.length) task.res = r.res;
+    tasks.push(task);
+  });
 });
 
 /* Jalons et modalités fournis par les plans de matière. */
@@ -127,5 +172,6 @@ return tasks;
 }
 
 
-/** Tâches MIAGE brutes (échéances d'origine). */
-export const RAW_TASKS: readonly MiageTask[] = buildTasks(PLANS);
+/** Tâches MIAGE brutes (échéances d'origine), au démarrage : les séances des plans précis y figurent sans leur texte ni leurs liens
+    (voir `full.ts` pour la version complète, chargée juste après). */
+export const RAW_TASKS: readonly MiageTask[] = buildTasks({ ...OUTLINE, toeic });

@@ -5,13 +5,15 @@
     retard divisées par la place moyenne d'une journée. Au-delà de 3 jours, l'outil propose de repartir à zéro.
 
     Rien n'est abandonné sans toi : la proposition liste les tâches les moins prioritaires (organisation, cours du
-    jour, mise en place, puis fiches, les plus anciennes d'abord) jusqu'à revenir à 1 jour de retard. Les révisions,
+    jour, mise en place, puis fiches et séances ; à type égal, les matières classées en dernier d'abord, puis les plus anciennes) jusqu'à revenir à 1 jour de retard. Les révisions,
     les projets et les examens ne sont jamais proposés. Valider écrit `progress.pins[id] = 'skip'` (mécanisme existant,
     réversible) et garde la liste dans `progress.resets[jour]` pour pouvoir tout annuler d'un coup.
 
     Fonctions pures. */
 import { addDays, dow, range, type ISODate } from '@/core/dates';
 import type { MiageTask, TaskKind } from '@/content/types';
+import { tierOf } from '@/content/miage/pacing';
+import { byId } from '@/content/miage/subjects';
 import { SKIP, WEIGHT, type Schedule } from './schedule';
 import type { Progress } from './types';
 
@@ -70,7 +72,7 @@ export function resetProposal(debt: Debt): ResetProposal {
   const target = debt.dayCapacity > 0 ? DEBT.TARGET_DAYS * debt.dayCapacity : 0;
   const candidates = debt.late
     .filter((t) => !PROTECTED.has(t.k))
-    .sort((a, b) => WEIGHT[b.k] - WEIGHT[a.k] || (a.due < b.due ? -1 : a.due > b.due ? 1 : a.id < b.id ? -1 : 1));
+    .sort((a, b) => WEIGHT[b.k] - WEIGHT[a.k] || tierOf(byId[b.s]?.rank) - tierOf(byId[a.s]?.rank) || (a.due < b.due ? -1 : a.due > b.due ? 1 : a.id < b.id ? -1 : 1));
   const drop: MiageTask[] = [];
   let rest = debt.min;
   for (const t of candidates) {

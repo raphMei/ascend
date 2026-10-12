@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "test:all": "npm run check && npm run test:e2e && npm run test:rules",
     "check:links": "tsx scripts/check-links.ts",
+    "gen:outline": "tsx scripts/gen-outline.ts",
     "unused": "knip",
     "size": "node scripts/check-size.mjs"
   },

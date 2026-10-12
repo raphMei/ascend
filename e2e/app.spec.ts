@@ -191,6 +191,8 @@ test.describe('performance et confidentialité', () => {
     const external: string[] = [];
     page.on('request', (r) => { if (/googleapis|gstatic/.test(r.url())) external.push(r.url()); });
     await page.goto('/ascend/?demo');
+    // L'application doit être affichée avant de regarder les polices : sinon, sur une machine chargée, rien n'a encore demandé de police.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     expect(external).toEqual([]);
     const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')));

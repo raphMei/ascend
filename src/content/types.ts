@@ -1,7 +1,8 @@
 /** Types des contenus : matières MIAGE, tâches, parcours d'apprentissage (Java, dev front). */
 import type { ISODate } from '../core/dates';
 
-export interface Subject { id: string; name: string; short: string; cr: number; ch: number }
+/** `rank` : ordre de priorité choisi pour le semestre (1 = la plus importante). Il départage les tâches quand tout ne tient pas. */
+export interface Subject { id: string; name: string; short: string; cr: number; ch: number; rank?: number }
 
 /** Un lien vers un cours, un exercice ou une documentation. Le français est préféré : `lang` dit la vérité sur chaque lien. */
 export interface Resource {
@@ -12,7 +13,8 @@ export interface Resource {
   src: string;
 }
 
-export type TaskKind = 'setup' | 'daily' | 'fiche' | 'proj' | 'rev' | 'exam' | 'org';
+/** `seance` : une séance du plan précis d'une matière (chapitre, exercice, révision). Jamais abandonnée seule, seulement reprogrammée. */
+export type TaskKind = 'setup' | 'daily' | 'seance' | 'fiche' | 'proj' | 'rev' | 'exam' | 'org';
 /** Tâche MIAGE. `due` peut être décalée par `adjustedTasks` (Chabbat) ; `h` = durée en heures. `res` : liens du cours / de l'exercice. */
 export interface MiageTask { id: string; s: string; k: TaskKind; t: string; d: string; due: ISODate; h: number; res?: Resource[]; step?: StepKind;
   /** Durée d'origine (heures) quand `h` a été ajustée à ton rythme réel (voir `calibrateTasks`). */

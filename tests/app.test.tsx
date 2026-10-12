@@ -436,11 +436,11 @@ describe('ajustement automatique', () => {
   });
 
   it('une date imposée peut être annulée', async () => {
-    const seed = { progress: { done: {}, pins: { 'dl:f0': '2026-11-10' } } };
+    const seed = { progress: { done: {}, pins: { 'toeic:f0': '2026-11-10' } } };
     const { writes } = renderApp({ hash: '#/today', seed });
     const card = await clickTodayCard();
     await userEvent.click(within(card).getByRole('button', { name: 'Annuler ma date' }));
-    expect(writes.progress[0]).toEqual({ pins: { 'dl:f0': null } });
+    expect(writes.progress[0]).toEqual({ pins: { 'toeic:f0': null } });
   });
 
 

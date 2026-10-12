@@ -7,12 +7,16 @@
     Règles :
     - la place d'un jour = temps libre mesuré par le planificateur, moins ce que les domaines du mois réservent, moins 10 % de marge ;
     - jamais de tâche le samedi (Chabbat), l'examen reste à sa date ;
-    - ordre de priorité : type d'abord (révision/projet, fiche, mise en place, tâche du jour), puis échéance la plus ancienne ;
-    - les petites tâches de routine en retard depuis plus de 2 jours sont abandonnées (la suite du programme les remplace) ;
+    - ordre de priorité : type d'abord (révision/projet, fiche et séance, mise en place, tâche du jour), puis échéance la plus ancienne
+      (les matières que tu as classées en tête ont des échéances plus tôt, voir `content/miage/pacing.ts`), puis ce classement ;
+    - les petites tâches de routine en retard depuis plus de 2 jours sont abandonnées (la suite du programme les remplace) ; les séances
+      d'un plan de matière, elles, ne sont jamais abandonnées seules : elles sont reprogrammées ;
     - mois « léger » : pas de tâches du jour ; mois « intensif » : on avance les tâches des 7 jours suivants s'il reste de la place ;
     - sport : une séance de jambes manquée est rattrapée une fois, à la place de la prochaine séance qui n'est pas des jambes. */
 import { addDays, dow, fmt, fmtShort, lastDays, range, type ISODate } from '@/core/dates';
 import { dayType } from '@/content/calendar';
+import { tierOf } from '@/content/miage/pacing';
+import { byId as subjectById } from '@/content/miage/subjects';
 import type { MiageTask, TaskKind } from '@/content/types';
 import { isFirstSunday } from './habits';
 import { settingsForDate } from './month';
@@ -59,7 +63,9 @@ export interface ScheduleInput {
 }
 
 /** Priorité par type de tâche (0 = la plus importante). */
-export const WEIGHT: Record<TaskKind, number> = { exam: 0, rev: 1, proj: 1, fiche: 2, setup: 3, daily: 4, org: 5 };
+export const WEIGHT: Record<TaskKind, number> = { exam: 0, rev: 1, proj: 1, fiche: 2, seance: 2, setup: 3, daily: 4, org: 5 };
+/** Palier de priorité de la matière d'une tâche (1 = les matières que tu as classées en tête). */
+const tierOfTask = (t: MiageTask) => tierOf(subjectById[t.s]?.rank);
 const MARGIN = 0.9;                // 10 % de marge : les créneaux trop courts ne servent à rien
 const JAVA_FLOOR_MIN = 30;         // on réserve toujours un peu de temps pour Java s'il est actif
 const STALE_DAYS = 2;              // une tâche de routine plus ancienne que ça est abandonnée
@@ -175,7 +181,7 @@ export function buildSchedule(inp: ScheduleInput): Schedule | null {
       const la = a.due <= d ? 0 : 1, lb = b.due <= d ? 0 : 1;             // le retard et l'échéance du jour passent avant l'avance
       // À place égale, l'important d'abord (révisions, projets, fiches), puis le plus ancien : quand tout ne tient plus,
       // ce sont les tâches de routine qui sautent, pas la préparation des examens.
-      return la - lb || WEIGHT[a.k] - WEIGHT[b.k] || (a.due < b.due ? -1 : a.due > b.due ? 1 : a.id < b.id ? -1 : 1);
+      return la - lb || WEIGHT[a.k] - WEIGHT[b.k] || (a.due < b.due ? -1 : a.due > b.due ? 1 : tierOfTask(a) - tierOfTask(b) || (a.id < b.id ? -1 : 1));
     });
     for (const t of ready) {
       const m = minutesOf(t);

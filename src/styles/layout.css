@@ -1,21 +1,30 @@
 /* Mise en page : coque de l'app, navigation basse (mobile) / latérale (bureau). */
 /* ----- Shell ----- */
 #root { min-height: 100vh; }
-.shell { display: block; }
+.shell { display: block; position: relative; }
+.backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; transition: --h1 1.4s ease, --h2 1.4s ease, --h3 1.4s ease;
+  background:
+    radial-gradient(360px 360px at 4% 4%, color-mix(in srgb, var(--h1) calc(var(--halo-o) * 100%), transparent), transparent 72%),
+    radial-gradient(360px 360px at 100% 46%, color-mix(in srgb, var(--h2) calc(var(--halo-o) * 100%), transparent), transparent 72%),
+    radial-gradient(360px 360px at 0% 100%, color-mix(in srgb, var(--h3) calc(var(--halo-o) * 100%), transparent), transparent 72%); }
+@media (min-width: 900px) { .backdrop { background-size: 100% 100%; } }
+.nav, main { position: relative; }
 .nav {
   position: fixed; z-index: 20; left: 0; right: 0; bottom: 0;
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line);
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-top: 1px solid var(--glass-b); box-shadow: inset 0 1px 0 var(--hi);
 }
 .nav button {
-  background: none; border: 0; border-radius: 14px; padding: 8px 4px 6px; display: grid; justify-items: center; gap: 3px;
-  color: var(--muted); font-size: 12px; font-weight: 500; min-height: 52px;
+  background: none; border: 0; border-radius: 18px; padding: 8px 4px 6px; display: grid; justify-items: center; gap: 3px;
+  color: var(--muted); font-size: 12px; font-weight: 500; min-height: 52px; transition: color var(--dur-2), transform var(--dur-3) var(--spring);
 }
+.nav button:active { transform: scale(.92); }
 .nav button svg { width: 24px; height: 24px; }
-.nav button[aria-current="page"] { color: var(--ink); background: var(--surface2); }
-.nav button[aria-current="page"] svg { color: var(--accent); }
+.nav button[aria-current="page"] { color: var(--ink); }
+.nav button[aria-current="page"] svg { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
 .brand { display: none; }
+main > * { min-width: 0; }
 main {
   max-width: 1080px; margin: 0 auto; padding: calc(24px + env(safe-area-inset-top)) 18px calc(var(--nav-h) + 40px + env(safe-area-inset-bottom));
   display: grid; gap: 22px;
@@ -24,9 +33,10 @@ main {
   .shell { display: grid; grid-template-columns: 240px 1fr; }
   .nav {
     position: sticky; top: 0; height: 100vh; grid-template-columns: 1fr; align-content: start; gap: 6px;
-    padding: 28px 16px; border-top: 0; border-right: 1px solid var(--line); background: transparent; backdrop-filter: none;
+    padding: 28px 16px; border-top: 0; border-right: 1px solid var(--glass-b); background: transparent; box-shadow: none; backdrop-filter: none;
   }
   .nav button { grid-auto-flow: column; justify-content: start; gap: 12px; font-size: 16px; padding: 12px 14px; }
+  .nav button[aria-current="page"] { background: var(--glass); box-shadow: inset 0 1px 0 var(--hi); }
   .brand { display: flex; align-items: center; gap: 10px; font: 800 24px "Syne"; padding: 0 14px 18px; }
   .brand img { width: 34px; height: 34px; border-radius: 9px; }
   main { padding: 36px 36px 60px; width: 100%; }

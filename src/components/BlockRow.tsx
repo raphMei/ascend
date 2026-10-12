@@ -19,7 +19,7 @@ export function BlockRow({ block: b, date, today, now, compact }: { block: Block
   const modified = !!state.days[date]?.edits?.move?.[b.id];
   const isNow = date === today && now >= b.start && now < b.end;
   const cls = ['blk', b.fixed && 'fixed', b.done && 'done', isNow && 'now', b.blocked && 'blocked', compact && 'compact'].filter(Boolean).join(' ');
-  const onChange = (v: boolean) => tick(date, b.scope === 'prog' ? { scope: 'prog', key: b.taskId! } : { scope: 'day', key: b.id }, v);
+  const onChange = (v: boolean) => tick(date, b.scope === 'prog' ? { scope: 'prog', key: b.taskId! } : { scope: 'day', key: b.id }, v, b);
   return (
     <div className={cls}>
       <div className="time">{hm(b.start)}<small>{dur(b.end - b.start)}</small></div>

@@ -28,8 +28,10 @@ export interface Settings {
   months?: Record<string, MonthPlan>;
   /** Réajuste automatiquement le planning après un retard (activé si absent). */
   autoReschedule?: boolean;
+  /** Ajuste la durée des tâches MIAGE à ton rythme réel, mesuré au minuteur (activé si absent). */
+  calibrate?: boolean;
   /** Préférences d'affichage (synchronisées entre appareils). */
-  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes'; onboarded?: boolean };
+  ui?: { today?: 'liste' | 'frise'; group?: 'moments' | 'themes'; onboarded?: boolean; sound?: boolean };
 }
 
 /** Intensité d'un domaine pour un mois. */
@@ -61,6 +63,10 @@ export interface DayEdits {
   extra?: Record<string, ExtraBlock | null>;
 }
 
+/** Temps réellement passé sur un bloc, mesuré au minuteur au moment où il est coché.
+    `c` : catégorie (« miage:fiche », « java »…), `p` : minutes prévues, `r` : minutes réelles. */
+export interface TimeEntry { c: string; p: number; r: number }
+
 /** users/{uid}/days/{AAAA-MM-JJ}. `done` : blocs cochés (routine, sport, java, bilan, coucher). */
 export interface DayData {
   done?: Record<string, boolean>;
@@ -70,6 +76,8 @@ export interface DayData {
   sleep?: { bed?: string | null; wake?: string | null };
   stats?: DayStatsSnapshot;
   edits?: DayEdits;
+  /** Temps réels mesurés, par bloc (« identifiant@début »). `null` = mesure effacée. */
+  time?: Record<string, TimeEntry | null>;
 }
 
 export type ProjectStatus = 'actif' | 'pause' | 'fini';
@@ -88,6 +96,8 @@ export interface Progress {
   projects?: Record<string, Project | null>;
   finance?: Record<string, MonthFinance>;      // clé « AAAA-MM »
   toeic?: Record<string, number | null>;       // clé = date du test blanc, valeur = score /990
+  /** « Repartir à zéro » : tâches laissées tomber en bloc, par jour (permet d'annuler). `null` = annulé. */
+  resets?: Record<string, string[] | null>;
 }
 
 export type DomainId = 'matin' | 'sport' | 'alim' | 'sommeil' | 'miage' | 'java' | 'pro' | 'trajet' | 'chabbat' | 'autre'

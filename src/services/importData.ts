@@ -40,6 +40,18 @@ function parseDay(date: string, raw: unknown, errors: string[]): DayData {
     if (isObj(s) && [s.pct, s.pl, s.dn].every(isNum) && isObj(s.planned) && isObj(s.done)) out.stats = s as unknown as DayData['stats'];
     else errors.push(`Jour ${date} : « stats » est invalide.`);
   }
+  if (raw.time !== undefined) {
+    if (!isObj(raw.time)) errors.push(`Jour ${date} : « time » doit être un objet.`);
+    else {
+      const time: NonNullable<DayData['time']> = {};
+      for (const [k, e] of Object.entries(raw.time)) {
+        if (e === null) time[k] = null;
+        else if (isObj(e) && typeof e.c === 'string' && isNum(e.p) && isNum(e.r)) time[k] = { c: e.c, p: e.p, r: e.r };
+        else errors.push(`Jour ${date} : mesure de temps « ${k} » invalide.`);
+      }
+      out.time = time;
+    }
+  }
   if (raw.edits !== undefined) { if (isObj(raw.edits)) out.edits = raw.edits as DayData['edits']; else errors.push(`Jour ${date} : « edits » est invalide.`); }
   return out;
 }
@@ -69,7 +81,7 @@ export function parseBackup(text: string): ImportResult {
       for (const k of STR_SETTINGS) if (s[k] != null) { if (typeof s[k] === 'string') out[k] = s[k]; else errors.push(`Réglage « ${k} » : texte attendu.`); }
       if (s.theme != null) { if (['auto', 'light', 'dark'].includes(s.theme as string)) out.theme = s.theme; else errors.push('Réglage « theme » : auto, light ou dark.'); }
       if (s.onsite != null) { if (Array.isArray(s.onsite) && s.onsite.every((x) => Number.isInteger(x) && x >= 1 && x <= 5)) out.onsite = s.onsite; else errors.push('Réglage « onsite » : liste de jours de 1 à 5.'); }
-      if (s.autoReschedule != null) { if (typeof s.autoReschedule === 'boolean') out.autoReschedule = s.autoReschedule; else errors.push('Réglage « autoReschedule » : vrai ou faux.'); }
+      for (const k of ['autoReschedule', 'calibrate'] as const) if (s[k] != null) { if (typeof s[k] === 'boolean') out[k] = s[k]; else errors.push(`Réglage « ${k} » : vrai ou faux.`); }
       for (const k of ['months', 'reminders', 'ui'] as const) if (s[k] != null) { if (isObj(s[k])) out[k] = s[k]; else errors.push(`Réglage « ${k} » : objet attendu.`); }
       data.settings = out as Partial<Settings>;
     }
@@ -79,7 +91,7 @@ export function parseBackup(text: string): ImportResult {
     else {
       const p = raw.progress;
       data.progress = { done: p.done === undefined ? {} : boolMap(p.done, 'progress.done', errors) };
-      for (const k of ['projects', 'finance', 'toeic', 'pins', 'doneAt'] as const) if (p[k] != null) { if (isObj(p[k])) (data.progress as unknown as Record<string, unknown>)[k] = p[k]; else errors.push(`progress.${k} : objet attendu.`); }
+      for (const k of ['projects', 'finance', 'toeic', 'pins', 'doneAt', 'resets'] as const) if (p[k] != null) { if (isObj(p[k])) (data.progress as unknown as Record<string, unknown>)[k] = p[k]; else errors.push(`progress.${k} : objet attendu.`); }
     }
   }
   if (errors.length) return { ok: false, errors: errors.slice(0, 8).concat(errors.length > 8 ? [`… et ${errors.length - 8} autre(s) problème(s).`] : []) };

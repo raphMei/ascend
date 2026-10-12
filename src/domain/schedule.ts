@@ -58,7 +58,8 @@ export interface ScheduleInput {
   now: number;
 }
 
-const WEIGHT: Record<TaskKind, number> = { exam: 0, rev: 1, proj: 1, fiche: 2, setup: 3, daily: 4, org: 5 };
+/** Priorité par type de tâche (0 = la plus importante). */
+export const WEIGHT: Record<TaskKind, number> = { exam: 0, rev: 1, proj: 1, fiche: 2, setup: 3, daily: 4, org: 5 };
 const MARGIN = 0.9;                // 10 % de marge : les créneaux trop courts ne servent à rien
 const JAVA_FLOOR_MIN = 30;         // on réserve toujours un peu de temps pour Java s'il est actif
 const STALE_DAYS = 2;              // une tâche de routine plus ancienne que ça est abandonnée

@@ -1,7 +1,7 @@
 /** Moteur de planning : construit les blocs horaires d'un jour et place sport → tâches MIAGE → Java dans les créneaux libres.
     Fonction pure : mêmes entrées, même plan. Aucune lecture d'état global, aucun accès au DOM. */
 import { dow, type ISODate } from '@/core/dates';
-import { hm, toMin } from '@/core/format';
+import { dur, hm, toMin } from '@/core/format';
 import { dayType } from '@/content/calendar';
 import { byId } from '@/content/miage/subjects';
 import { JT } from '@/content/java/path';
@@ -175,7 +175,7 @@ export function planDay({ date, settings, progress: prog, day: DD, today, tasks:
   const miLate = mi.filter((t) => t.due < date).length;
   for (const t of mi) {
     const sub = byId[t.s];
-    const it: Item = { min: Math.max(15, Math.round(t.h * 60)), blk: { id: 'm:' + t.id, taskId: t.id, scope: 'prog', fixed: false, checkable: true, title: t.t, domain: 'miage', sub: sub ? sub.short : '', due: t.due, detail: t.d, res: t.res } };
+    const it: Item = { min: Math.max(15, Math.round(t.h * 60)), blk: { id: 'm:' + t.id, taskId: t.id, scope: 'prog', fixed: false, checkable: true, title: t.t, domain: 'miage', sub: sub ? sub.short : '', due: t.due, detail: t.h0 != null ? t.d + '\nDurée ajustée à ton rythme réel : ' + dur(Math.round(t.h0 * 60)) + ' prévues, ' + dur(Math.round(t.h * 60)) + ' comptées.' : t.d, res: t.res } };
     const free = wins.reduce((s, x) => s + (x[1] - x[0]), 0);
     if (free < 15 || !place(it)) { overflow.n++; overflow.min += it.left == null ? it.min : Math.max(it.left, 0); }
   }

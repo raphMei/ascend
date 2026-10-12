@@ -18,3 +18,5 @@ npm run unused     # code mort ; npm run check:links : liens des cours ; npm run
 | [docs/CONTENU-MIAGE.md](docs/CONTENU-MIAGE.md) | remplacer les tâches génériques par le vrai contenu des matières |
 | [docs/COMPTE-RENDU.md](docs/COMPTE-RENDU.md) | tout ce qui a été fait, et ce qu'il reste à faire |
 | [docs/AMELIORATIONS.md](docs/AMELIORATIONS.md) | la liste d'améliorations (performance, usage, progression) |
+| [docs/DESIGN.md](docs/DESIGN.md) | direction « néon verre » : verre, couleurs par domaine, effets et gestes |
+| [docs/CALIBRAGE.md](docs/CALIBRAGE.md) | durées réelles mesurées au minuteur et dette de retard (« Repartir à zéro ») |

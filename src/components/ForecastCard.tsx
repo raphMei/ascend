@@ -1,9 +1,11 @@
 import { fmtLong } from '@/core/dates';
 import { dur } from '@/core/format';
+import type { PathPace } from '@/domain/calibration';
 import type { Forecast } from '@/domain/forecast';
 
 /** « Au rythme actuel, tu termines le … » : prévision d'achèvement d'un parcours. */
-export function ForecastCard({ forecast: f }: { forecast: Forecast }) {
+/** `pace` (facultatif) : temps de séance réellement passé par minute d'étape prévue, sur 28 jours. */
+export function ForecastCard({ forecast: f, pace }: { forecast: Forecast; pace?: PathPace | null }) {
   if (f.finished) return null;
   return (
     <section className="card" aria-label="Prévision d'achèvement">
@@ -15,6 +17,12 @@ export function ForecastCard({ forecast: f }: { forecast: Forecast }) {
         </p>
       ) : (
         <p className="muted" style={{ marginTop: 6 }}>Il te reste {dur(f.remainingMin)}. Coche tes premières étapes : la prévision apparaît dès qu'un rythme existe.</p>
+      )}
+      {pace && pace.ratio !== 1 && (
+        <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>
+          Sur {pace.window} jours : {dur(pace.sessionMin)} de séances pour {dur(pace.stepMin)} d'étapes prévues ({pace.steps} étapes), soit ×{pace.ratio.toString().replace('.', ',')}.
+          {' '}En séances, le reste représente plutôt <b>{dur(Math.round(f.remainingMin * pace.ratio))}</b>.
+        </p>
       )}
     </section>
   );

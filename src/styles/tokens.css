@@ -1,28 +1,57 @@
-/* Design tokens : couleurs, ombres, rayons. Une couleur par domaine (--c-*). Thèmes clair / sombre / automatique. */
+/* Design tokens : couleurs, verre, ombres, rayons, mouvement. Une couleur par domaine (--c-* pour le texte et les traits,
+   --f-* pour les remplissages vifs, identiques dans les deux thèmes). Thèmes clair / sombre / automatique. */
+/* Couleurs des halos : enregistrées pour pouvoir changer en fondu quand le moment de la journée change. */
+@property --h1 { syntax: '<color>'; inherits: true; initial-value: #ffb02e; }
+@property --h2 { syntax: '<color>'; inherits: true; initial-value: #ff5e5e; }
+@property --h3 { syntax: '<color>'; inherits: true; initial-value: #ffd96b; }
 :root {
-  --bg: #f3efe6; --surface: #fffdf8; --surface2: #ebe5d7; --ink: #17181c; --muted: #62646c; --line: #dcd5c4;
+  --bg: #ebe7df; --surface: #fffdf8; --surface2: #ebe5d7; --ink: #17181c; --muted: #464852; --line: #dcd5c4;
   --accent: #b83c0a; --accent-ink: #fff;
   --c-matin: #c88a00; --c-sport: #c42f31; --late: #a52326; --c-alim: #2f9e63; --c-sommeil: #6c5ce7; --c-miage: #1f78d1; --c-java: #d9741a;
-  --c-pro: #6b7280; --c-trajet: #9aa0ab; --c-chabbat: #a8884a; --c-autre: #5b7a8c; --c-anglais: #c2307a; --c-lecture: #8a5a2b; --c-front: #0f9aa8; --c-finances: #3f8f3f; --c-projets: #9b4fd1;
+  --c-pro: #6b7280; --c-trajet: #7d8390; --c-chabbat: #a8884a; --c-autre: #5b7a8c; --c-anglais: #c2307a; --c-lecture: #8a5a2b; --c-front: #0f9aa8; --c-finances: #3f8f3f; --c-projets: #9b4fd1;
+  /* Remplissages vifs : la couleur du domaine quand une tâche est faite. Le texte dessus est toujours --done-ink. */
+  --f-matin: #ffc83d; --f-sport: #ff4d6d; --f-alim: #3ddc84; --f-sommeil: #9b8cff; --f-miage: #4da3ff; --f-java: #ff9a2e; --f-pro: #8b93a5; --f-trajet: #9aa0ab;
+  --f-chabbat: #d8c08a; --f-autre: #8fb3c7; --f-anglais: #ff5ea8; --f-lecture: #ff9f5a; --f-front: #4fd1de; --f-finances: #7fd67f; --f-projets: #c993ff;
+  --done-ink: #0a0a10;
+  /* Verre */
+  --glass: rgba(255,255,255,.62); --glass-b: rgba(255,255,255,.95); --hi: #fff; --track: rgba(20,20,26,.1); --sheet: rgba(255,255,255,.78);
+  --blur: blur(22px) saturate(180%);
   --shadow: 0 1px 0 rgba(0,0,0,.04), 0 12px 30px -18px rgba(40,30,10,.35);
-  --r: 20px; --nav-h: 68px;
+  --r: 24px; --nav-h: 68px;
+  /* Mouvement */
+  --spring: cubic-bezier(.2,.9,.3,1.25); --out: cubic-bezier(.2,.8,.2,1);
+  --dur-1: .12s; --dur-2: .25s; --dur-3: .45s; --dur-4: .7s;
+  /* Halos de fond (changent avec le moment de la journée) */
+  --h1: #ffb02e; --h2: #ff5e5e; --h3: #ffd96b; --halo-o: .45;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0d0e12; --surface: #16181f; --surface2: #20232d; --ink: #f3efe6; --muted: #a2a3ae; --line: #2b2e3a;
+    --bg: #06060b; --surface: #12121a; --surface2: #1c1c27; --ink: #f6f4ef; --muted: #cfced9; --line: #2a2a36;
     --accent: #ff7a3d; --accent-ink: #1a0d05;
-    --c-matin: #f2c14e; --c-sport: #ff6b6b; --late: #ff6b6b; --c-alim: #6fcf97; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
-    --c-pro: #8b93a5; --c-trajet: #6b7280; --c-chabbat: #d8c08a; --c-autre: #8fb3c7; --c-anglais: #ff7ab8; --c-lecture: #d9a066; --c-front: #4fd1de; --c-finances: #7fd67f; --c-projets: #c993ff;
+    --c-matin: #ffc83d; --c-sport: #ff6b7e; --late: #ff6b6b; --c-alim: #3ddc84; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
+    --c-pro: #8b93a5; --c-trajet: #8a91a0; --c-chabbat: #d8c08a; --c-autre: #8fb3c7; --c-anglais: #ff7ab8; --c-lecture: #f0a35e; --c-front: #4fd1de; --c-finances: #7fd67f; --c-projets: #c993ff;
+    --glass: rgba(255,255,255,.07); --glass-b: rgba(255,255,255,.16); --hi: rgba(255,255,255,.26); --track: rgba(255,255,255,.12); --sheet: rgba(26,26,36,.74);
+    --blur: blur(26px) saturate(190%);
     --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 40px -22px rgba(0,0,0,.8);
+    --halo-o: .36;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0d0e12; --surface: #16181f; --surface2: #20232d; --ink: #f3efe6; --muted: #a2a3ae; --line: #2b2e3a;
+  --bg: #06060b; --surface: #12121a; --surface2: #1c1c27; --ink: #f6f4ef; --muted: #cfced9; --line: #2a2a36;
   --accent: #ff7a3d; --accent-ink: #1a0d05;
-  --c-matin: #f2c14e; --c-sport: #ff6b6b; --late: #ff6b6b; --c-alim: #6fcf97; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
-  --c-pro: #8b93a5; --c-trajet: #6b7280; --c-chabbat: #d8c08a; --c-autre: #8fb3c7; --c-anglais: #ff7ab8; --c-lecture: #d9a066; --c-front: #4fd1de; --c-finances: #7fd67f; --c-projets: #c993ff;
+  --c-matin: #ffc83d; --c-sport: #ff6b7e; --late: #ff6b6b; --c-alim: #3ddc84; --c-sommeil: #a79bff; --c-miage: #5eb0ff; --c-java: #ffa94d;
+  --c-pro: #8b93a5; --c-trajet: #8a91a0; --c-chabbat: #d8c08a; --c-autre: #8fb3c7; --c-anglais: #ff7ab8; --c-lecture: #f0a35e; --c-front: #4fd1de; --c-finances: #7fd67f; --c-projets: #c993ff;
+  --glass: rgba(255,255,255,.07); --glass-b: rgba(255,255,255,.16); --hi: rgba(255,255,255,.26); --track: rgba(255,255,255,.12); --sheet: rgba(26,26,36,.74);
+  --blur: blur(26px) saturate(190%);
   --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 40px -22px rgba(0,0,0,.8);
+  --halo-o: .36;
   color-scheme: dark;
+}
+/* Moments de la journée : la teinte des halos suit l'heure (posé sur .shell par la mise en page). */
+.shell[data-moment="apres"] { --h1: #2f8bff; --h2: #19d3da; --h3: #6c63ff; }
+.shell[data-moment="soir"] { --h1: #7a5cff; --h2: #3a2d9c; --h3: #c25cff; }
+@supports not (backdrop-filter: blur(1px)) {
+  :root { --glass: color-mix(in srgb, var(--surface) 88%, transparent); }
 }

@@ -6,6 +6,7 @@ import { DOM } from '@/domain/domains';
 import { habitStats, heatmap, weekReview } from '@/domain/habit-stats';
 import type { DomainId } from '@/domain/types';
 import { Bar } from '@/components/Bar';
+import { CalibrationCard } from '@/components/CalibrationCard';
 import { PageHead, BackLink } from '@/components/PageHead';
 import { Heatmap } from '@/components/habits/Heatmap';
 import { useClock } from '@/hooks/useClock';
@@ -68,6 +69,8 @@ export function StatsScreen() {
           ))}
         </div>
       </section>
+
+      <CalibrationCard />
 
       <section className="card" aria-label="Badges">
         <div className="sectionhead"><h2>Badges</h2><span className="muted" style={{ fontSize: 14 }}>{earned.filter((b) => b.earned).length} / {earned.length}</span></div>

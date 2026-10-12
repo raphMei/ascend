@@ -20,7 +20,7 @@ export function WeekStrip({ date }: { date: ISODate }) {
           <Link key={d} to={d === today ? '/today' : `/today/${d}`} className={'wd' + (d === date ? ' on' : '') + (d === today ? ' today' : '')} aria-current={d === date ? 'date' : undefined} aria-label={`${JOURS[dow(d)]} ${+d.slice(8)}${pct != null ? `, ${pct} % fait` : ''}`}>
             <span className="l">{JOURS[dow(d)].slice(0, 1).toUpperCase()}</span>
             <span className="ring" aria-hidden="true">
-              <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r={r} fill="none" stroke="var(--surface2)" strokeWidth="4" />
+              <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r={r} fill="none" stroke="var(--track)" strokeWidth="4" />
                 {pct != null && pct > 0 && <circle cx="18" cy="18" r={r} fill="none" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(c * Math.min(100, pct)) / 100} ${c}`} transform="rotate(-90 18 18)" />}
               </svg>
               <b>{+d.slice(8)}</b>

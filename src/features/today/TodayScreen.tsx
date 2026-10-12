@@ -7,9 +7,13 @@ import { continueCards } from '@/domain/continue';
 import { buildGoals } from '@/domain/goals';
 import { groupBlocks } from '@/domain/groups';
 import { groupSmallBlocks } from '@/domain/small-blocks';
+import { momentOf } from '@/domain/moment';
+import { nextBlock } from '@/domain/next';
+import { streak as dayStreak } from '@/domain/stats';
 import { toMin } from '@/core/format';
 import type { DomainId } from '@/domain/types';
 import { AdjustmentsCard } from '@/components/AdjustmentsCard';
+import { DebtCard } from '@/components/DebtCard';
 import { AddBlock } from '@/components/BlockEditor';
 import { BlockRow } from '@/components/BlockRow';
 import { EntryReminder } from '@/components/EntryReminder';
@@ -21,8 +25,10 @@ import { ContinueSection } from '@/components/habits/ContinueSection';
 import { GoalsSection } from '@/components/habits/GoalsSection';
 import { GroupSection } from '@/components/habits/GroupSection';
 import { SegmentedControl } from '@/components/habits/SegmentedControl';
+import { Celebration, useDayCelebration } from '@/components/habits/Celebration';
+import { DayHero } from '@/components/habits/DayHero';
+import { NextCard } from '@/components/habits/NextCard';
 import { WeekStrip } from '@/components/habits/WeekStrip';
-import { Ring } from '@/components/charts/Ring';
 import { useClock } from '@/hooks/useClock';
 import { useDayNavigation } from '@/hooks/useDayNavigation';
 import { usePlan } from '@/hooks/usePlan';
@@ -58,12 +64,17 @@ export function TodayScreen() {
   const items = groupSmallBlocks(plan.blocks);
   const setUi = (patch: NonNullable<typeof settings.ui>) => setSettings({ ui: patch });
   const swipe = useDayNavigation(date, today);
+  const next = useMemo(() => nextBlock(plan.blocks, nowHere), [plan.blocks, nowHere]);
+  const streakDays = useMemo(() => dayStreak(state.days, today), [state.days, today]);
+  const [party, closeParty] = useDayCelebration(date === today && checks.length > 0 && checks.every((b) => b.done), date);
 
   return (
-    // « contents » : le conteneur ne change pas la mise en page, il sert seulement à capter les gestes.
-    <div style={{ display: 'contents' }} {...swipe}>
+    <>
+      {/* Le balayage de jour ne couvre que l'en-tête : sur les cartes, balayer sert à cocher ou passer. « contents » : aucun effet sur la mise en page. */}
+      <div style={{ display: 'contents' }} {...swipe}>
       <PageHead eyebrow={date === today ? "Aujourd'hui" : 'Planning'} title={fmtLong(date)} />
       <WeekStrip date={date} />
+      </div>
       {date === today && <OnboardingCard />}
       <div className="daynav">
         <Link className="icon" to={`/today/${addDays(date, -1)}`} aria-label="Jour précédent">‹</Link>
@@ -78,13 +89,9 @@ export function TodayScreen() {
         <Link className="icon" to={`/today/${addDays(date, 1)}`} aria-label="Jour suivant" style={{ marginLeft: 'auto' }}>›</Link>
       </div>
 
-      <section className="card daysum" aria-label="Avancement du jour">
-        <div className="ring"><Ring pct={st.pct} color="var(--accent)" /><div className="num"><b>{st.pct}%</b></div></div>
-        <div className="txt">
-          <b>{checks.filter((b) => b.done).length} / {checks.length} faites</b>
-          <span className="muted">{hours(st.dn)} sur {hours(st.pl)} pour toi · travail {hours(minutes('pro'))} · trajets {hours(minutes('trajet'))}</span>
-        </div>
-      </section>
+      <DayHero pct={st.pct} doneMin={st.dn} plannedMin={st.pl} doneCount={checks.filter((b) => b.done).length} total={checks.length}
+        workMin={minutes('pro')} tripMin={minutes('trajet')} streak={streakDays} calm={momentOf(now) === 'soir'} />
+      {next && <NextCard next={next} date={date} />}
 
       <div className="toolbar">
         <SegmentedControl label="Affichage" value={view} options={[['liste', 'Liste'], ['frise', 'Frise']]} onChange={(v) => setUi({ today: v })} />
@@ -95,6 +102,7 @@ export function TodayScreen() {
       {plan.overflow.n > 0 && (
         <div className="warn"><b>Trop chargé aujourd'hui.</b> {plan.overflow.n} élément{plan.overflow.n > 1 ? 's' : ''} n'ont pas trouvé de place (≈ {hours(plan.overflow.min)}). Ils restent en retard et reviennent demain : décide ce que tu coupes ou ce que tu déplaces.</div>
       )}
+      {date === today && <DebtCard />}
       {date === today && <AdjustmentsCard />}
       {date === today && trackable && <EntryReminder date={date} />}
 
@@ -139,7 +147,8 @@ export function TodayScreen() {
       {view === 'liste' && date === today && <ContinueSection cards={cards} />}
       {view === 'liste' && date === today && <GoalsSection goals={goals} />}
       {adding && <AddBlock date={date} onClose={() => setAdding(false)} />}
+      {party && <Celebration streak={streakDays} onClose={closeParty} />}
       {trackable && <section className="card"><h2>Mes mesures du jour</h2><p className="muted" style={{ margin: '4px 0 14px' }}>Quelques chiffres suffisent. Ils alimentent tes graphiques.</p><TrackerFields date={date} /></section>}
-    </div>
+    </>
   );
 }

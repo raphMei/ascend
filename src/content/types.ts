@@ -14,7 +14,9 @@ export interface Resource {
 
 export type TaskKind = 'setup' | 'daily' | 'fiche' | 'proj' | 'rev' | 'exam' | 'org';
 /** Tâche MIAGE. `due` peut être décalée par `adjustedTasks` (Chabbat) ; `h` = durée en heures. `res` : liens du cours / de l'exercice. */
-export interface MiageTask { id: string; s: string; k: TaskKind; t: string; d: string; due: ISODate; h: number; res?: Resource[]; step?: StepKind }
+export interface MiageTask { id: string; s: string; k: TaskKind; t: string; d: string; due: ISODate; h: number; res?: Resource[]; step?: StepKind;
+  /** Durée d'origine (heures) quand `h` a été ajustée à ton rythme réel (voir `calibrateTasks`). */
+  h0?: number }
 
 export type StepKind = 'cours' | 'exo' | 'projet' | 'valid';
 

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { FocusTimer } from '@/components/habits/FocusTimer';
-import { clearTimers } from '@/hooks/useTimer';
+import { clearTimers, takeElapsed } from '@/hooks/useTimer';
 import { clock, isFinished, pauseTimer, remainingMs, resumeTimer, startTimer } from '@/domain/timer';
 
 describe('minuteur (logique)', () => {
@@ -48,14 +48,19 @@ describe('minuteur (composant)', () => {
 
   it('à la fin : signale la fin, vibre et propose de cocher', () => {
     const vibrate = vi.fn(); Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true });
-    const onComplete = vi.fn();
+    // Comme dans l'application : cocher lit le temps écoulé et arrête le minuteur (voir useTick).
+    let elapsed: number | null = null;
+    const onComplete = vi.fn(() => { elapsed = takeElapsed('j:b:2'); });
     render(<FocusTimer id="j:b:2" minutes={10} done={false} onComplete={onComplete} />);
     fireEvent.click(screen.getByRole('button', { name: /Démarrer/ }));
     act(() => { vi.advanceTimersByTime(10 * 60_000 + 1000); });
     expect(screen.getByRole('status')).toHaveTextContent('Séance terminée');
     expect(vibrate).toHaveBeenCalledOnce();
+    act(() => { vi.advanceTimersByTime(2 * 60_000); });
+    expect(screen.getByRole('timer')).toHaveTextContent('+02:01');  // le dépassement est compté
     fireEvent.click(screen.getByRole('button', { name: 'Marquer comme fait' }));
     expect(onComplete).toHaveBeenCalledOnce();
+    expect(elapsed).toBe(12 * 60_000 + 1000);
     expect(screen.getByRole('timer')).toHaveTextContent('10:00');   // remis à zéro
   });
 

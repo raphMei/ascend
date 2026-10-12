@@ -5,6 +5,7 @@ import { inverse } from '@/core/merge';
 import { resolveSettings } from '@/domain/settings';
 import type { Settings } from '@/domain/types';
 import { adjustedTasks } from '@/domain/task-schedule';
+import { calibKey, calibrate, calibrateTasks, type Calibration } from '@/domain/calibration';
 import type { MiageTask } from '@/content/types';
 import { isDemo } from '@/services/config';
 import type { Backup } from '@/services/importData';
@@ -19,6 +20,8 @@ export interface DataApi {
   settings: Settings;
   /** Tâches MIAGE aux échéances ajustées à la vie réelle (Chabbat). */
   tasks: readonly MiageTask[];
+  /** Étalonnage des durées à partir des temps mesurés (affiché dans Statistiques). */
+  calibration: Calibration;
   setDay(date: ISODate, patch: Record<string, unknown>): void;
   /** Plusieurs jours d'un coup : une seule écriture groupée. */
   setDays(entries: { date: ISODate; patch: Record<string, unknown> }[]): void;
@@ -107,10 +110,16 @@ export function DataProvider({ children, backend: injected }: { children: ReactN
   const signOut = useCallback(async () => { await backendRef.current?.signOut(); }, []);
 
   const settings = useMemo(() => resolveSettings(state.settings), [state.settings]);
-  const tasks = useMemo(() => adjustedTasks(settings), [settings]);
+  // Durées des tâches ajustées au temps réel mesuré : les tâches ne changent que si un coefficient change (clé stable).
+  const calibration = useMemo(() => calibrate(state.days), [state.days]);
+  const ck = calibKey(calibration);
+  const tasks = useMemo(
+    () => (settings.calibrate === false ? adjustedTasks(settings) : calibrateTasks(adjustedTasks(settings), calibration)),
+    [settings, ck] // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const api = useMemo<DataApi>(
-    () => ({ state, settings, tasks, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut }),
-    [state, settings, tasks, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut]
+    () => ({ state, settings, tasks, calibration, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut }),
+    [state, settings, tasks, calibration, setDay, setDays, setSettings, setProgress, loadHistory, savePush, importBackup, dismissNotice, signIn, signOut]
   );
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

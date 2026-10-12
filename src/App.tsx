@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toast } from '@/components/Toast';
+import { UndoToastHost } from '@/components/UndoToast';
 import { Layout } from '@/features/shell/Layout';
 import { ShabbatScreen } from '@/features/shell/ShabbatScreen';
 import { SignInScreen } from '@/features/shell/SignInScreen';
@@ -41,6 +42,7 @@ export function App() {
   return (
     <HashRouter>
       <Toast />
+      <UndoToastHost />
       <Suspense fallback={<div className="center"><p>Chargement…</p></div>}>
       <Routes>
         <Route element={<Layout />}>

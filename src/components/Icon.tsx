@@ -35,5 +35,8 @@ export function Icon({ name, strokeWidth = 1.8, width, height }: { name: IconKey
   );
 }
 
-/** Variable CSS `--dc` : couleur du domaine, lue par les composants (.cb, .bar, .chip.dot…). */
-export const dc = (d: DomainId | string): CSSProperties => ({ ['--dc' as string]: `var(${DOM[d as DomainId] ? DOM[d as DomainId].c : '--muted'})` });
+/** Variable CSS `--dc` : couleur du domaine (texte, traits), lue par les composants (.cb, .bar, .chip.dot…) ; `--df` : sa version vive pour les remplissages. */
+export const dc = (d: DomainId | string): CSSProperties => {
+  const token = DOM[d as DomainId]?.c;
+  return { ['--dc' as string]: `var(${token ?? '--muted'})`, ['--df' as string]: `var(${token ? token.replace('--c-', '--f-') : '--muted'})` };
+};

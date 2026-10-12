@@ -57,6 +57,8 @@ export function SettingsScreen() {
       <section className="card"><h2>Ajustement automatique</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Quand tu prends du retard, le planning redistribue les tâches sur les jours à venir selon la place disponible, et explique chaque déplacement.</p>
         <label className="row" style={{ cursor: 'pointer' }}><span>Ajuster automatiquement le planning</span>
           <input type="checkbox" checked={s.autoReschedule !== false} onChange={(e) => setSettings({ autoReschedule: e.target.checked })} aria-label="Ajuster automatiquement le planning" style={{ width: 24, height: 24 }} /></label>
+        <label className="row" style={{ cursor: 'pointer' }}><span>Ajuster les durées à mon rythme réel<br /><span className="muted" style={{ fontSize: 13 }}>Mesuré au minuteur. Détail dans Statistiques.</span></span>
+          <input type="checkbox" checked={s.calibrate !== false} onChange={(e) => setSettings({ calibrate: e.target.checked })} aria-label="Ajuster les durées à mon rythme réel" style={{ width: 24, height: 24 }} /></label>
         <div className="quick"><Link to="/month" className="btn" style={{ textDecoration: 'none' }}>Régler mon mois</Link></div>
       </section>
       <section className="card"><h2>Mes domaines</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Minutes par jour dans ton planning pour chaque domaine. 0 = désactivé : rien n'est ajouté à ta journée.</p>
@@ -80,6 +82,8 @@ export function SettingsScreen() {
         <div className="quick" style={{ marginTop: 8 }}>
           {THEMES.map(([k, n]) => <button key={k} type="button" className="btn small" aria-pressed={s.theme === k} style={s.theme === k ? { outline: '2px solid var(--accent)' } : undefined} onClick={() => setSettings({ theme: k })}>{n}</button>)}
         </div>
+        <label className="row" style={{ cursor: 'pointer', marginTop: 12 }}><span>Petit son de validation<br /><span className="muted" style={{ fontSize: 13 }}>Un « tic » discret quand tu coches une tâche. La vibration, elle, dépend de ton téléphone.</span></span>
+          <input type="checkbox" checked={!!s.ui?.sound} onChange={(e) => setSettings({ ui: { sound: e.target.checked } })} aria-label="Petit son de validation" style={{ width: 24, height: 24 }} /></label>
       </section>
     </>
   );

@@ -3,6 +3,7 @@ import { Fragment, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { dur } from '@/core/format';
 import { paceForecast } from '@/domain/forecast';
+import { pathPace } from '@/domain/calibration';
 import { ForecastCard } from '@/components/ForecastCard';
 import type { PathStep, Phase } from '@/content/types';
 import { STEP_LABEL } from '@/content/labels';
@@ -62,14 +63,16 @@ export function PathPhasePage({ domain, phase, total }: { domain: DomainId; phas
 export function PathOverviewPage({ domain, phases, stats, notice }: { domain: DomainId; phases: Phase[]; stats: PathStats; notice?: ReactNode }) {
   const { state } = useData();
   const { today } = useClock();
-  const forecast = paceForecast(phases.flatMap((p) => p.tasks), state.progress, today);
+  const steps = phases.flatMap((p) => p.tasks);
+  const forecast = paceForecast(steps, state.progress, today);
+  const pace = domain === 'java' || domain === 'front' ? pathPace(steps, state.days, state.progress, domain, today) : null;
   const next = stats.next ? 'Prochain statut : ' + stats.next + '.' : 'Parcours terminé. Bravo.';
   return (
     <>
       <BackLink to="/domains" label="Domaines" /><PageHead eyebrow="Domaine" title={DOM[domain].name} />
       {notice}
       <section className="card"><div className="sectionhead"><h2>{stats.level}</h2><span className="mono muted">{stats.pct}%</span></div><Bar pct={stats.pct} domain={domain} /><p className="muted" style={{ marginTop: 10 }}>{next} Socle : {stats.coreDone} / {stats.core} phases terminées.</p></section>
-      <ForecastCard forecast={forecast} />
+      <ForecastCard forecast={forecast} pace={pace} />
       <section className="grid">
         {phases.map((p) => {
           const ps = phaseStats(p, state.progress);

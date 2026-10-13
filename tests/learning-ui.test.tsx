@@ -41,7 +41,7 @@ describe('bilan de séance', () => {
 describe('réglage du bilan', () => {
   it('se désactive depuis les réglages (synchronisé)', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Bilan après chaque séance' }));
+    await userEvent.click(await screen.findByRole('switch', { name: 'Bilan après chaque séance' }));
     expect(writes.settings).toEqual([{ ui: { bilan: false } }]);
   });
 });

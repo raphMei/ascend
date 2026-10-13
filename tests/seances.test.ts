@@ -161,7 +161,11 @@ describe('réajustement avec les plans précis', () => {
     const s = run('2026-10-12');
     expect(s.unplaced.length).toBeGreaterThan(0);
     const unplaced = new Set(s.unplaced);
-    ['exam', 'rev'].forEach((k) => all.filter((t) => t.k === k && t.due >= '2026-10-12').forEach((t) => expect(unplaced.has(t.id), t.id).toBe(false)));
+    all.filter((t) => t.k === 'exam' && t.due >= '2026-10-12').forEach((t) => expect(unplaced.has(t.id), t.id).toBe(false));
+    // Une révision ou un test blanc ne passe pas avant les séances qui le précèdent : s'il reste sans place, c'est qu'une séance avant lui n'en a pas non plus.
+    all.filter((t) => t.k === 'rev' && /^[a-z]+:u\d/.test(t.id) && unplaced.has(t.id)).forEach((t) => {
+      expect(all.some((x) => x.s === t.s && /^[a-z]+:[ur]\d/.test(x.id) && x.id !== t.id && x.due <= t.due && unplaced.has(x.id)), t.id).toBe(true);
+    });
   });
 
   it('« Repartir à zéro » propose d\'abord les matières classées en dernier', () => {

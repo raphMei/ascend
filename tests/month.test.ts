@@ -1,6 +1,5 @@
 import { range } from '@/core/dates';
 import { MINUTES, SPORT_PROGRAMS, monthPlanFor, settingsForDate } from '@/domain/month';
-import { monthLoad } from '@/domain/month-load';
 import { planDay } from '@/domain/planner';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
 import { genericTasks } from './fixtures';
@@ -62,16 +61,5 @@ describe('Mon mois : intensité par domaine', () => {
   it('sport désactivé : aucune séance', () => {
     const none = range('2026-10-12', '2026-10-18').filter((d) => plan(d, { ...S0, months: { '2026-10': { sport: 'off' } } }).blocks.some((b) => b.id === 'sport'));
     expect(none).toEqual([]);
-  });
-});
-
-describe('charge du mois', () => {
-  it('plus de domaines intensifs : plus de temps réservé, même temps libre', () => {
-    const light = monthLoad(S0, '2026-10', prog, tasks);
-    const heavy = monthLoad({ ...S0, months: { '2026-10': { anglais: 'intensif', lecture: 'intensif', front: 'intensif', projets: 'intensif' } } }, '2026-10', prog, tasks);
-    expect(heavy.reservedAvg).toBeGreaterThan(light.reservedAvg);
-    expect(heavy.ratio).toBeGreaterThan(light.ratio);
-    expect(light.days).toBeGreaterThan(20);
-    expect(light.freeAvg).toBeGreaterThan(0);
   });
 });

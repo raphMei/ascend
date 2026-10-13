@@ -27,7 +27,7 @@ test.describe('application (mode démo)', () => {
 
   test('pas de défilement horizontal sur aucun écran', async ({ page }) => {
     await page.goto('/ascend/?demo');
-    for (const hash of ['#/home', '#/today', '#/domains', '#/dom/sport', '#/dom/miage/dl', '#/dom/java/p1', '#/settings']) {
+    for (const hash of ['#/home', '#/today', '#/domains', '#/dom/miage/dl', '#/dom/java/p1', '#/settings']) {
       await page.evaluate((h) => { location.hash = h; }, hash);
       await page.waitForTimeout(150);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -43,15 +43,6 @@ test.describe('application (mode démo)', () => {
     await expect(box).toBeChecked();
     await page.reload();
     await expect(page.getByRole('checkbox', { name: 'Java backend' })).toBeChecked();
-  });
-
-  test('la saisie du poids (domaine Alimentation) s\'enregistre à la sortie du champ et persiste', async ({ page }) => {
-    await page.goto('/ascend/?demo#/dom/alim');
-    const weight = page.getByLabel('Poids (kg)');
-    await weight.fill('86.5');
-    await weight.blur();
-    await page.reload();
-    await expect(page.getByLabel('Poids (kg)')).toHaveValue('86.5');
   });
 
   test('navigation complète par la barre', async ({ page }) => {
@@ -115,11 +106,9 @@ test.describe('planning modifiable et nouveaux domaines', () => {
   });
 
   test('activer l\'anglais dans les réglages ajoute un bloc au planning', async ({ page }) => {
-    await page.goto('/ascend/?demo#/settings');
-    const input = page.getByLabel('Anglais (min)');
-    await input.fill('20');
-    await input.blur();
-    await page.evaluate(() => { location.hash = '#/today/2026-10-14'; });
+    await page.goto('/ascend/?demo#/domains');
+    await page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Léger' }).click();
+    await page.evaluate(() => { location.hash = '#/today/2026-11-11'; });
     await expect(page.getByRole('checkbox', { name: 'Anglais' })).toBeVisible();
   });
 
@@ -150,10 +139,10 @@ test.describe('ajustement automatique et Mon mois', () => {
   });
 
   test('Mon mois : choisir une intensité change le planning du mois et persiste', async ({ page }) => {
-    await page.goto('/ascend/?demo#/month');
-    await page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Normal' }).click();
+    await page.goto('/ascend/?demo#/domains');
+    await page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Léger' }).click();
     await page.reload();
-    await expect(page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Normal' })).toBeChecked();
+    await expect(page.getByRole('radiogroup', { name: 'Intensité : Anglais' }).getByRole('radio', { name: 'Léger' })).toBeChecked();
     await page.evaluate(() => { location.hash = '#/today/2026-11-11'; });
     await expect(page.getByRole('checkbox', { name: 'Anglais' })).toBeVisible();
   });
@@ -268,9 +257,7 @@ test.describe('progression et usage', () => {
   });
 
   test('exporter puis importer : la sauvegarde exportée est reconnue', async ({ page }) => {
-    await page.goto('/ascend/?demo#/dom/alim');
-    await page.getByLabel('Poids (kg)').fill('86.5'); await page.getByLabel('Poids (kg)').blur();
-    await page.evaluate(() => { location.hash = '#/settings'; });
+    await page.goto('/ascend/?demo#/settings');
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Exporter mes données' }).click();
     const file = await download;

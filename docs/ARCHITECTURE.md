@@ -18,7 +18,7 @@ main.tsx → App.tsx → features/ (écrans) ──→ components/ (UI réutilis
 | Dossier | Rôle | React ? |
 |---|---|---|
 | `core/` | Dates ISO, formatage, fusion profonde | non |
-| `content/` | Données : calendrier CFA, matières et tâches MIAGE, plans de matière, parcours Java, dev front, Cloud et DevOps, Architecture logicielle (chapitres + liens ; registre `content/paths.ts`) | non |
+| `content/` | Données : calendrier CFA, matières et tâches MIAGE, plans de matière, parcours Java, dev front, Cloud et DevOps, Architecture, Métier assurance, Data et SQL, Agilité (chapitres + liens ; registre `content/paths.ts`) | non |
 | `domain/` | Règles métier **pures** : planning (modifications libres, jours exceptionnels), réajustement, intensité du mois, Chabbat, stats et rattrapage, séries, objectifs, badges, prévisions, rappels, groupes, minuteur, types du modèle | non |
 | `services/` | `Backend` (interface) + implémentations Firebase et démo ; notifications push ; export JSON | non |
 | `state/` | Réducteur (pur) + `DataProvider` (contexte React, écritures optimistes) | oui |
@@ -66,12 +66,9 @@ L'affichage regroupe les petites tâches MIAGE consécutives (`domain/small-bloc
 ## Liste d'habitudes (écran « Aujourd'hui », historique)
 
 L'application s'ouvre sur **Aujourd'hui** : bandeau de la semaine (anneau d'avancement par jour), résumé du jour, puis la **liste groupée** (vue « Liste ») ou la frise horaire (vue « Frise »).
-- `domain/groups.ts` : groupes **par moments** (dans l'ordre de la journée) ou **par thèmes** (un par sujet d'apprentissage : MIAGE, Java, Front-end, Cloud et DevOps, Architecture, Anglais et lecture, Projets ; le temps réservé n'est pas dans la liste, il est replié dessous) ; l'écran n'affiche que les séances. Fonctions pures, testées : aucun bloc perdu ni dupliqué.
 - `domain/streaks.ts` : série 🔥 par habitude (un jour où elle n'est pas prévue ne la casse pas ; aujourd'hui non plus tant que la journée n'est pas finie).
-- `domain/goals.ts` : section **Objectifs** d'apprentissage (TOEIC, MIAGE, Java, parcours actifs, lecture), seulement ce qui a du sens pour toi.
-- `domain/habit-meta.ts` : emoji par bloc et par domaine.
+- - `domain/habit-meta.ts` : emoji par bloc et par domaine.
 - Préférences d'affichage (vue, regroupement) : `settings.ui`, synchronisées. Groupes repliés : `localStorage` (par appareil).
-- Pour ajouter un groupe ou changer une règle de regroupement : `domain/groups.ts` seulement.
 
 ## Parcours d'apprentissage
 
@@ -106,7 +103,7 @@ Règle de compatibilité : on **ajoute** des champs, on ne renomme jamais ceux q
 
 | Commande | Contenu |
 |---|---|
-| `npm test` (≈ 415 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
+| `npm test` (≈ 430 tests) | logique (`domain.test`, `core.test`, `planning-edits`, `habits`, `reminders`, `backfill`, `miage-plans`, `schedule`, `month`, `groups`, `curriculum`, `habit-stats`, `forecast`, `track`, `import`, `timer`, `performance`), empreinte du planning de toute la saison (`planning.golden`), réducteur, service worker, et l'application entière avec un faux backend (`app.test.tsx`) |
 | `npm run test:e2e` (51) | Chromium (iPhone et bureau) sur le site de production : navigation, persistance, Chabbat, PWA, aucun débordement, polices locales, chargement à la demande, minuteur, import/export, **audit d'accessibilité axe** en clair et en sombre |
 | `npm run test:rules` | **émulateur Firestore** : règles de sécurité (isolation entre utilisateurs, collections connues, requête fenêtrée) et script d'envoi des rappels de bout en bout (nécessite Java) |
 | `npm run test:all` | tout ce qui précède |

@@ -1,7 +1,7 @@
 import { dow, range } from '@/core/dates';
 import { englishExerciseFor } from '@/content/english';
 import { FRONT_PHASES, FRONT_TASKS, FRONT_LEVELS, FRONT_HOURS } from '@/content/front/path';
-import { financeKey, habitItems, isFirstSunday } from '@/domain/habits';
+import { habitItems } from '@/domain/habits';
 import { planDay } from '@/domain/planner';
 import { pathStats } from '@/domain/progress';
 import { DEFAULT_SETTINGS } from '@/domain/settings';
@@ -10,7 +10,7 @@ import { genericTasks } from './fixtures';
 import type { Progress, Settings } from '@/domain/types';
 
 const tasks = genericTasks(DEFAULT_SETTINGS);
-const ON: Settings = { ...DEFAULT_SETTINGS, anglaisMin: 20, lectureMin: 20, frontMin: 45, projetsMin: 30, financesMin: 30, livre: 'Dune' };
+const ON: Settings = { ...DEFAULT_SETTINGS, anglaisMin: 20, lectureMin: 20, frontMin: 45, projetsMin: 30, livre: 'Dune' };
 const plan = (date: string, S: Settings, progress: Progress = { done: {} }) => planDay({ date, settings: S, progress, day: undefined, today: '2026-10-13', tasks });
 
 describe('domaines optionnels', () => {
@@ -26,17 +26,6 @@ describe('domaines optionnels', () => {
       expect(mine[0].checkable).toBe(true);
     }
     expect(p.blocks.find((b) => b.id === 'lecture')!.sub).toBe('Dune');
-  });
-
-  it('le point finances n\'apparaît que le premier dimanche du mois', () => {
-    const sundays = range('2026-10-08', '2027-02-28').filter((d) => dow(d) === 0);
-    sundays.forEach((d) => expect(plan(d, ON).blocks.some((b) => b.id === 'fin-point'), d).toBe(isFirstSunday(d)));
-    expect(isFirstSunday('2026-11-01')).toBe(true); expect(isFirstSunday('2026-11-08')).toBe(false);
-  });
-
-  it('le point finances se coche via la progression du mois', () => {
-    const p = plan('2026-11-01', ON, { done: { [financeKey('2026-11', 'point')]: true } });
-    expect(p.blocks.find((b) => b.id === 'fin-point')!.done).toBe(true);
   });
 
   it('jamais de bloc cochable pendant Chabbat, domaines activés', () => {

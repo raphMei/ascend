@@ -6,7 +6,7 @@ describe('reducer', () => {
   it('connexion puis première synchro', () => {
     let s = reducer(initialState(false), { type: 'auth', user, demo: false });
     expect(s.sync).toBe('loading'); expect(s.authReady).toBe(true);
-    s = reducer(s, { type: 'days', days: { '2026-11-03': { weight: 87 } } });
+    s = reducer(s, { type: 'days', days: { '2026-11-03': { pages: 87 } } });
     expect(s.sync).toBe('ok');
   });
   it('mode démo : reste « demo »', () => {
@@ -16,14 +16,14 @@ describe('reducer', () => {
   });
   it('déconnexion : efface les données', () => {
     let s = reducer(initialState(false), { type: 'auth', user, demo: false });
-    s = reducer(s, { type: 'days', days: { d: { weight: 1 } } });
+    s = reducer(s, { type: 'days', days: { d: { pages: 1 } } });
     s = reducer(s, { type: 'auth', user: null, demo: false });
     expect(s.days).toEqual({}); expect(s.user).toBeNull();
   });
   it('écritures optimistes en merge', () => {
     let s = reducer(initialState(false), { type: 'patchDay', date: 'd', patch: { done: { a: true } } });
-    s = reducer(s, { type: 'patchDay', date: 'd', patch: { done: { b: true }, weight: 80 } });
-    expect(s.days.d).toEqual({ done: { a: true, b: true }, weight: 80 });
+    s = reducer(s, { type: 'patchDay', date: 'd', patch: { done: { b: true }, pages: 80 } });
+    expect(s.days.d).toEqual({ done: { a: true, b: true }, pages: 80 });
     s = reducer(s, { type: 'patchProgress', patch: { done: { x: true } } });
     expect(s.progress.done).toEqual({ x: true });
     s = reducer(s, { type: 'patchSettings', patch: { theme: 'dark' } });

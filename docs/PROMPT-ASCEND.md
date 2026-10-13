@@ -23,11 +23,11 @@ Je suis Raphaël, étudiant en M1 MIAGE en alternance chez AXA. Ascend organise 
    - Chaque tâche : case à cocher, durée, minuteur, séries (streak), ajout/modification/déplacement/suppression de blocs ("Blocs passés" restaurables).
    - Type de journée modifiable : normale, congé, télétravail, sur site.
    - Section « Reprendre là où je me suis arrêté » (cours en cours) et **Objectifs**.
-   - Mesures du jour : poids, eau, calories, protéines, sommeil (coucher/lever), pages lues.
+   - Pages lues (domaine Lecture) ; bilan de séance (note, difficulté, à revoir) dans le journal.
 3. **Domaines** : une page par domaine (voir §5) avec ses détails, son programme et ses cartes.
 4. **Mon mois** : choix, mois par mois, de l'**intensité de chaque domaine** (léger/normal/intensif ou désactivé) ; un mois sans réglage reprend le précédent ; charge du mois visible.
-5. **Statistiques** : bilan de la semaine (vs semaine précédente), séries, courbes (poids, eau, calories, sommeil…), habitudes, prévisions de fin de parcours, badges, conseils du « coach ».
-6. **Réglages** : horaires (lever/coucher), jours sur site, objectifs (eau, protéines, calories, sommeil, poids, TOEIC), minutes par domaine, thème clair/sombre/auto, rappels, Chabbat, sauvegarde (export/import JSON), mode d'emploi.
+5. **Statistiques** : bilan de la semaine (vs semaine précédente), séries, courbes d'heures apprises, habitudes, prévisions de fin de parcours, badges, conseils du « coach ».
+6. **Réglages** : horaires (lever/coucher), jours sur site, sport (séances par semaine), apprentissage (ajustement, bilan, son), thème clair/sombre/auto, rappels, Chabbat, sauvegarde (export/import JSON), mode d'emploi.
 
 ## 4. Le moteur de planning (le cœur de l'outil)
 - Le planning du jour est **calculé** (fonction pure), jamais saisi à la main : heures de travail, trajets, repas, sport selon le jour de la semaine, cours MIAGE, Java, front, anglais, lecture, projets, finances.
@@ -37,10 +37,10 @@ Je suis Raphaël, étudiant en M1 MIAGE en alternance chez AXA. Ascend organise 
 - Mes modifications (passer un bloc, le déplacer, en ajouter, forcer le type de jour) sont conservées comme « corrections » sur la journée.
 
 ## 5. Les domaines suivis
-- **Temps réservé** (rien à cocher, pas de série ni de pourcentage) : routine du matin (un seul créneau), sport, repas, sommeil, trajet, travail. Ils bloquent l'agenda pour calculer le temps libre ; la liste du jour les affiche repliés. Les habitudes quotidiennes se suivent dans Grit, pas ici. Les mesures (poids, eau, nuit, sport) restent saisissables dans « Mes suivis personnels » (écran Domaines).
+- **Temps réservé** (rien à cocher, pas de série ni de pourcentage) : routine du matin (un seul créneau), sport, repas, sommeil, trajet, travail. Ils bloquent l'agenda pour calculer le temps libre ; la liste du jour les affiche repliés. Les habitudes quotidiennes se suivent dans Grit, pas ici. Il n'y a plus de suivi du poids, de l'eau, du sommeil ni des finances.
 - **MIAGE** : 10 matières avec plans (unités de cours réparties sur les créneaux, projets, jalons, examen), petites tâches regroupées.
-- **Java** : parcours en 14 phases / 149 étapes. **Front-end** : 9 phases / 95 étapes. **Cloud et DevOps** : 8 phases (Linux et Git, réseau, Docker, CI/CD, cloud, Terraform, Kubernetes, observabilité). **Architecture logicielle** : 8 phases (principes, patrons, hexagonal, DDD, microservices, événements, résilience, décisions documentées). Chaque étape = chapitre avec type (cours, exercice, projet, validation), durée, et liens vers des ressources de préférence en français (337 liens vérifiés, ~78 % en français). Les heures par phase sont la somme des étapes.
-- **Anglais** (préparation TOEIC avec score visé), **Lecture** (livre en cours, pages), **Projets** perso/freelance (statut actif/pause/fini, prochaine action, minutes), **Finances** (point mensuel le premier dimanche : versements, épargne ; jamais de conseil d'investissement).
+- **Java** : parcours en 14 phases / 149 étapes. **Front-end** : 9 phases / 95 étapes. **Métier assurance, Data et SQL, Agilité et gestion de projet** : socles de deux phases à compléter. **Cloud et DevOps** : 8 phases (Linux et Git, réseau, Docker, CI/CD, cloud, Terraform, Kubernetes, observabilité). **Architecture logicielle** : 8 phases (principes, patrons, hexagonal, DDD, microservices, événements, résilience, décisions documentées). Chaque étape = chapitre avec type (cours, exercice, projet, validation), durée, et liens vers des ressources de préférence en français (337 liens vérifiés, ~78 % en français). Les heures par phase sont la somme des étapes.
+- **Anglais** (préparation TOEIC avec score visé), **Lecture** (livre en cours, pages), **Projets** perso/freelance (statut actif/pause/fini, prochaine action, minutes).
 
 ## 6. Suivi, motivation et analyse
 - Séries (streak) par habitude et globale (jours ≥ 70 %), badges, objectifs, prévisions de date de fin des parcours, bilan hebdomadaire, courbes, coach qui propose des ajustements.
@@ -50,7 +50,7 @@ Je suis Raphaël, étudiant en M1 MIAGE en alternance chez AXA. Ascend organise 
 Un seul type : la prochaine séance d'apprentissage (5 minutes avant). Envoyés toutes les 20 minutes par GitHub Actions (script web-push), jamais pendant Chabbat. Demande clés VAPID et un compte de service (voir docs/RAPPELS.md).
 
 ## 8. Données et sécurité
-- Firestore : users/{uid}/days/{date} (cases faites, poids, eau, kcal, protéines, sommeil, stats, corrections, pages), settings/main, progress/main (avancement, épinglages, projets, finances, TOEIC), push/main.
+- Firestore : users/{uid}/days/{date} (séances faites, stats, corrections, pages, journal d'apprentissage), settings/main, progress/main (avancement, épinglages, projets, TOEIC), push/main.
 - Règles : chaque utilisateur ne lit et n'écrit que ses propres documents, testé sur l'émulateur. Règle d'évolution : on **ajoute** des champs, on ne renomme jamais les anciens.
 - Écritures optimistes avec retour en arrière en cas d'échec ; export/import de sauvegarde validé.
 

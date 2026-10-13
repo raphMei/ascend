@@ -15,12 +15,12 @@ const partsOf = (u: { hours?: number; kind?: string }) => (u.kind === 'valid' ? 
 export function buildTasks(plans: Record<string, SubjectPlan> = {}): MiageTask[] {
   const tasks: MiageTask[] = [];
   const push = (id: string, s: string, k: TaskKind, t: string, d: string, due: ISODate, h: number) => { tasks.push({ id, s, k, t, d, due, h }); };
-  const weekdays = range('2026-10-12', '2026-10-23').filter((d) => dow(d) !== 0 && dow(d) !== 6);
+  const weekdays = range('2026-10-13', '2026-10-23').filter((d) => dow(d) !== 0 && dow(d) !== 6);
 
   /* Mise en place, une fois par matière. */
   SUBJ.filter((s) => s.id !== 'org').forEach((s, i) => {
     push(s.id + ':s1', s.id, 'setup', 'Récupérer les supports et créer le dossier',
-      'Télécharge tous les supports de « ' + s.name + ' » (cours, TD, sujets d\'annales s\'il y en a). Crée un dossier à ce nom avec quatre sous-dossiers : cours, td, fiches, projet. Cinq minutes, mais tout le reste s\'appuie dessus.', '2026-10-11', 0.25);
+      'Télécharge tous les supports de « ' + s.name + ' » (cours, TD, sujets d\'annales s\'il y en a). Crée un dossier à ce nom avec quatre sous-dossiers : cours, td, fiches, projet. Cinq minutes, mais tout le reste s\'appuie dessus.', '2026-10-13', 0.25);
     if (!plans[s.id]) push(s.id + ':s2', s.id, 'setup', 'Envoyer le contenu de la matière à Claude',
       'Envoie-moi le programme de « ' + s.name + ' » : plan du cours, liste des chapitres, ce qui a déjà été vu, et les consignes des travaux demandés. Je remplace alors les tâches de cette matière par des séances précises sur ton vrai contenu.', weekdays[i % weekdays.length], 0.25);
     push(s.id + ':s3', s.id, 'setup', 'Noter les modalités du contrôle continu et de l\'examen',
@@ -70,7 +70,6 @@ export function buildTasks(plans: Record<string, SubjectPlan> = {}): MiageTask[]
 
   /* Tâches uniques (pas de routine : ni relecture quotidienne, ni revue hebdomadaire à cocher). */
   push('o:nuit', 'org', 'org', 'Nuit de l\'info : participer et noter ce que tu as appris', 'Participe à l\'événement des 3 et 4 décembre. À la fin, écris en trois lignes ce que tu as appris et une idée de projet que tu veux garder.', '2026-12-04', 0.5);
-  push('o:tetp', 'org', 'org', 'Préparer la réunion TE/TP du 12 octobre', 'Liste tes missions du moment, les compétences vues en cours que tu peux y mettre en pratique, et deux questions à poser. Écris tout sur une demi-page que tu peux lire pendant la réunion.', '2026-10-11', 0.5);
   push('o:plan', 'org', 'org', 'Planifier les quatre semaines de révisions', 'Les examens commencent le 22 février. Pour chaque matière, place dans l\'agenda une session de sujet blanc et une session de fiche mémo. Garde un créneau libre par semaine pour rattraper.', '2027-01-24', 0.5);
   push('o:exdates', 'org', 'org', 'Noter les dates et heures des examens', 'Dès que les convocations sont disponibles, note la date, l\'heure et la salle de chaque examen dans ton agenda, avec un rappel la veille.', '2027-02-07', 0.25);
   push('o:relgen', 'org', 'org', 'Relecture générale des fiches mémo', 'Relis dans l\'ordre des examens les fiches mémo d\'une page de chaque matière, sans ouvrir les cours. Marque en rouge ce qui ne te revient pas et rouvre le cours uniquement pour ces points.', '2027-02-21', 2);

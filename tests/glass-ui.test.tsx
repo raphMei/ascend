@@ -215,7 +215,7 @@ describe('célébration (rendu)', () => {
 describe('réglage du son', () => {
   it('le petit son de validation est désactivé par défaut et s\'active sans écraser les autres préférences d\'affichage', async () => {
     const { writes } = renderApp({ hash: '#/settings', seed: { settings: { ui: { today: 'frise' } } } });
-    const box = await screen.findByRole('checkbox', { name: 'Petit son de validation' });
+    const box = await screen.findByRole('switch', { name: 'Petit son de validation' });
     expect(box).not.toBeChecked();
     await userEvent.click(box);
     expect(writes.settings).toContainEqual({ ui: { sound: true } });

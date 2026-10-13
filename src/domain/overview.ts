@@ -11,7 +11,7 @@ import { jStats, mStats, pathStats } from './progress';
 import type { DayData, Level, MonthDomain, Progress, Settings } from './types';
 
 /** Domaines d'apprentissage, dans l'ordre d'affichage. */
-export const LEARNING: readonly MonthDomain[] = ['miage', 'java', 'front', 'cloud', 'archi', 'anglais', 'lecture', 'projets'];
+export const LEARNING: readonly MonthDomain[] = ['miage', 'java', 'front', 'cloud', 'archi', 'assurance', 'data', 'agile', 'anglais', 'lecture', 'projets'];
 
 export interface Overview {
   id: MonthDomain;

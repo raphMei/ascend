@@ -1,17 +1,15 @@
-/** Domaines optionnels placés dans le planning : anglais, lecture, parcours (dev front, Cloud et DevOps, Architecture), projets perso, point finances mensuel.
-    Chacun est désactivé tant que ses minutes valent 0 dans les réglages. */
-import { dow, type ISODate } from '@/core/dates';
+/** Domaines optionnels placés dans le planning : anglais, lecture, parcours (front, Cloud et DevOps, Architecture, métier assurance, data, agilité) et projets perso.
+    Chacun est désactivé tant que ses minutes valent 0 (l'intensité du mois les fixe : voir `month.ts`). */
+import type { ISODate } from '@/core/dates';
 import { englishExerciseFor } from '@/content/english';
 import { PATHS } from '@/content/paths';
-import { frNum } from '@/core/format';
 import type { PlanItem, Progress, Settings } from './types';
 
-export { monthOf } from './month';
-import { monthOf } from './month';
-/** Premier dimanche du mois ? */
-export const isFirstSunday = (date: ISODate): boolean => dow(date) === 0 && +date.slice(8, 10) <= 7;
-/** Identifiant de la tâche « point du mois » (clé dans progress.done). */
-export const financeKey = (month: string, item: 'point' | 'budget' | 'epargne' | 'invest'): string => `fin:${month}:${item}`;
+type Minutes = Pick<Settings, 'anglaisMin' | 'lectureMin' | 'projetsMin' | 'javaHours' | typeof PATHS[number]['min']>;
+/** Minutes par jour réservées aux domaines optionnels (hors Java). Moins de 5 minutes = désactivé. */
+export const habitMinutes = (S: Minutes): number => [S.anglaisMin, S.lectureMin, S.projetsMin, ...PATHS.map((p) => S[p.min])].filter((x) => x >= 5).reduce((a, b) => a + b, 0);
+/** Minutes par jour de Java (moins de 25 minutes = désactivé). */
+export const javaMinutes = (S: Pick<Settings, 'javaHours'>): number => (S.javaHours * 60 >= 25 ? S.javaHours * 60 : 0);
 
 export function habitItems(date: ISODate, S: Settings, prog: Progress): PlanItem[] {
   const out: PlanItem[] = [];
@@ -20,7 +18,7 @@ export function habitItems(date: ISODate, S: Settings, prog: Progress): PlanItem
     out.push({ min: S.anglaisMin, blk: { id: 'anglais', fixed: false, checkable: true, title: 'Anglais', domain: 'anglais', sub: name, detail: text } });
   }
   if (S.lectureMin >= 5) {
-    out.push({ min: S.lectureMin, blk: { id: 'lecture', fixed: false, checkable: true, title: 'Lecture', domain: 'lecture', sub: S.livre ? S.livre : 'Livre en cours', detail: 'Lis sans écran autour de toi. À la fin, note le nombre de pages lues dans « Mes mesures du jour » : la courbe de lecture se remplit toute seule.' } });
+    out.push({ min: S.lectureMin, blk: { id: 'lecture', fixed: false, checkable: true, title: 'Lecture', domain: 'lecture', sub: S.livre ? S.livre : 'Livre en cours', detail: 'Lis sans écran autour de toi. À la fin, note le nombre de pages lues dans le domaine Lecture : la courbe se remplit toute seule.' } });
   }
   for (const path of PATHS) {
     if (S[path.min] < 5) continue;
@@ -31,10 +29,6 @@ export function habitItems(date: ISODate, S: Settings, prog: Progress): PlanItem
     const active = Object.values(prog.projects ?? {}).filter((p): p is NonNullable<typeof p> => !!p && p.status === 'actif');
     const first = active[0];
     out.push({ min: S.projetsMin, blk: { id: 'projets', fixed: false, checkable: true, title: 'Projets perso', domain: 'projets', sub: first ? first.name : 'Aucun projet actif', detail: first ? 'Prochaine action : ' + first.next : 'Ajoute un projet dans le domaine « Projets perso », avec sa prochaine action concrète.' } });
-  }
-  if (S.financesMin >= 5 && isFirstSunday(date)) {
-    const month = monthOf(date);
-    out.push({ min: S.financesMin, blk: { id: 'fin-point', scope: 'prog', taskId: financeKey(month, 'point'), fixed: false, checkable: true, title: 'Point finances du mois', domain: 'finances', sub: 'Budget, épargne, versements', detail: 'Relis le mois écoulé : où est parti l\'argent, ce que tu as épargné (' + frNum(S.financesMin) + ' minutes suffisent), ce que tu verses ce mois-ci. Note les chiffres dans le domaine « Finances ».' } });
   }
   return out;
 }

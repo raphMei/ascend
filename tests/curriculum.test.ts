@@ -7,7 +7,7 @@ const tracks: [string, Phase[], PathStep[]][] = [['Java', PHASES, JT], ...PATHS.
 describe.each(tracks)('parcours %s : structure en chapitres', (_name, phases, steps) => {
   it('identifiants uniques et stables (p1t1…), durées positives', () => {
     expect(new Set(steps.map((s) => s.id)).size).toBe(steps.length);
-    steps.forEach((s) => { expect(s.id).toMatch(/^[pfca]\d+t\d+$/); expect(s.min, s.id).toBeGreaterThan(0); expect(s.t.length, s.id).toBeGreaterThan(5); });
+    steps.forEach((s) => { expect(s.id).toMatch(/^[pfcaidg]\d+t\d+$/); expect(s.min, s.id).toBeGreaterThan(0); expect(s.t.length, s.id).toBeGreaterThan(5); });
   });
 
   it('chaque phase a un objectif, des chapitres, au moins un exercice ou un projet et une validation', () => {

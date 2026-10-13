@@ -29,6 +29,9 @@ export const ICON: Record<IconKey, string> = {
   layout: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>',
   cloud: '<path d="M7 18a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 8.5a4.5 4.5 0 0 1 .5 9.5z"/>',
   blocks: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="8" y="13" width="8" height="8" rx="1.5"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  database: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  flow: '<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/>',
   coins: '<circle cx="9" cy="9" r="6"/><path d="M15.5 6.5A6 6 0 0 1 15 18.5M9 6.5v5M7 9h4"/>',
   rocket: '<path d="M5 16c-1.5 1.5-2 5-2 5s3.5-.5 5-2"/><path d="M9 15l-3-3"/><path d="M14 5c3.5-1 6-1 6-1s0 2.5-1 6c-1 3-3.5 5.5-6.5 7l-4-4c1.5-3 4-5.5 5.5-8z"/><circle cx="15" cy="9" r="1.5"/>'
 };

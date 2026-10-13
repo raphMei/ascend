@@ -1,7 +1,7 @@
 /** Import d'une sauvegarde JSON (celle que produit « Exporter mes données ») : validation stricte, rien n'est écrit si le fichier est invalide.
     Les champs inconnus sont ignorés ; les valeurs de type inattendu font échouer l'import avec un message précis. */
 import type { ISODate } from '@/core/dates';
-import type { DayData, Progress, Settings } from '@/domain/types';
+import type { DayData, JournalEntry, Progress, Settings } from '@/domain/types';
 
 export interface Backup { days: Record<ISODate, DayData>; settings: Partial<Settings>; progress: Progress }
 export type ImportResult =
@@ -10,13 +10,12 @@ export type ImportResult =
 
 const MAX_DAYS = 5000;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
-const NUM_SETTINGS = ['lat', 'lon', 'javaHours', 'waterGoal', 'protGoal', 'kcalGoal', 'sleepGoal', 'workMin', 'candle', 'havdalah', 'weightGoal', 'anglaisMin', 'lectureMin', 'frontMin', 'cloudMin', 'archiMin', 'projetsMin', 'financesMin', 'toeicGoal'] as const;
+const NUM_SETTINGS = ['lat', 'lon', 'javaHours', 'workMin', 'candle', 'havdalah', 'anglaisMin', 'lectureMin', 'frontMin', 'cloudMin', 'archiMin', 'assuranceMin', 'dataMin', 'agileMin', 'projetsMin', 'toeicGoal'] as const;
 const STR_SETTINGS = ['wake', 'bed', 'livre'] as const;
-const DAY_NUMS = ['weight', 'water', 'kcal', 'protein', 'pages'] as const;
+const DAY_NUMS = ['pages'] as const;
 
 function boolMap(v: unknown, where: string, errors: string[]): Record<string, boolean> {
   const out: Record<string, boolean> = {};
@@ -30,10 +29,17 @@ function parseDay(date: string, raw: unknown, errors: string[]): DayData {
   if (!isObj(raw)) { errors.push(`Jour ${date} : un objet est attendu.`); return out; }
   for (const k of DAY_NUMS) if (raw[k] != null) { if (isNum(raw[k])) out[k] = raw[k] as number; else errors.push(`Jour ${date} : « ${k} » doit être un nombre.`); }
   if (raw.done !== undefined) out.done = boolMap(raw.done, `Jour ${date} : done`, errors);
-  if (raw.sleep !== undefined) {
-    const s = raw.sleep;
-    if (isObj(s) && [s.bed, s.wake].every((t) => t == null || (typeof t === 'string' && TIME.test(t)))) out.sleep = { bed: (s.bed as string | null | undefined) ?? null, wake: (s.wake as string | null | undefined) ?? null };
-    else errors.push(`Jour ${date} : « sleep » attend des heures HH:MM.`);
+  if (raw.journal !== undefined) {
+    if (!isObj(raw.journal)) errors.push(`Jour ${date} : « journal » doit être un objet.`);
+    else {
+      const journal: NonNullable<DayData['journal']> = {};
+      for (const [k, e] of Object.entries(raw.journal)) {
+        if (e === null) journal[k] = null;
+        else if (isObj(e) && typeof e.t === 'string' && typeof e.k === 'string') journal[k] = e as unknown as JournalEntry;
+        else errors.push(`Jour ${date} : le bilan « ${k} » est invalide.`);
+      }
+      out.journal = journal;
+    }
   }
   if (raw.stats !== undefined) {
     const s = raw.stats;
@@ -91,7 +97,7 @@ export function parseBackup(text: string): ImportResult {
     else {
       const p = raw.progress;
       data.progress = { done: p.done === undefined ? {} : boolMap(p.done, 'progress.done', errors) };
-      for (const k of ['projects', 'finance', 'toeic', 'pins', 'doneAt', 'resets'] as const) if (p[k] != null) { if (isObj(p[k])) (data.progress as unknown as Record<string, unknown>)[k] = p[k]; else errors.push(`progress.${k} : objet attendu.`); }
+      for (const k of ['projects', 'toeic', 'pins', 'doneAt', 'resets'] as const) if (p[k] != null) { if (isObj(p[k])) (data.progress as unknown as Record<string, unknown>)[k] = p[k]; else errors.push(`progress.${k} : objet attendu.`); }
     }
   }
   if (errors.length) return { ok: false, errors: errors.slice(0, 8).concat(errors.length > 8 ? [`… et ${errors.length - 8} autre(s) problème(s).`] : []) };

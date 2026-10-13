@@ -7,7 +7,7 @@ import { dayStats } from './stats';
 import type { DayData, DayStatsSnapshot, Progress, Settings } from './types';
 
 /** Premier jour de l'application : on ne calcule rien avant. */
-export const APP_START: ISODate = '2026-10-08';
+export const APP_START: ISODate = '2026-10-13';
 /** On ne rattrape que les jours récents pour limiter le nombre d'écritures. */
 const BACKFILL_DAYS = 60;
 

@@ -9,17 +9,12 @@ export interface Settings {
   lat: number; lon: number;
   onsite: number[];            // jours sur site (1 = lundi … 5 = vendredi)
   javaHours: number;
-  waterGoal: number; protGoal: number; kcalGoal: number; sleepGoal: number;
   wake: string; bed: string;   // « HH:MM »
   workMin: number;
   candle: number; havdalah: number; // minutes avant le coucher / après le coucher du soleil
   theme: ThemeMode;
-  /** Objectif de poids (kg), optionnel : affiché en pointillés sur la courbe. */
-  weightGoal?: number | null;
   /** Minutes par jour consacrées aux nouveaux domaines (0 = désactivé : aucun bloc dans le planning). */
-  anglaisMin: number; lectureMin: number; frontMin: number; cloudMin: number; archiMin: number; projetsMin: number;
-  /** Durée du « point finances » le premier dimanche de chaque mois (0 = désactivé). */
-  financesMin: number;
+  anglaisMin: number; lectureMin: number; frontMin: number; cloudMin: number; archiMin: number; assuranceMin: number; dataMin: number; agileMin: number; projetsMin: number;
   /** Livre en cours (affiché dans le bloc de lecture) et score visé au TOEIC. */
   livre?: string; toeicGoal?: number | null;
   /** Rappels activés par type (absent = activé). Ne sert qu'une fois les notifications autorisées sur un appareil. */
@@ -37,7 +32,7 @@ export interface Settings {
 /** Intensité d'un domaine pour un mois. */
 export type Level = 'off' | 'leger' | 'normal' | 'intensif';
 /** Domaines réglables mois par mois. */
-export type MonthDomain = 'miage' | 'sport' | 'java' | 'front' | 'cloud' | 'archi' | 'anglais' | 'lecture' | 'projets' | 'finances';
+export type MonthDomain = 'miage' | 'sport' | 'java' | 'front' | 'cloud' | 'archi' | 'assurance' | 'data' | 'agile' | 'anglais' | 'lecture' | 'projets';
 /** `null` : retour au réglage du mois précédent (une fusion Firestore ne peut pas supprimer une clé). */
 export type MonthPlan = Partial<Record<MonthDomain, Level | null>>;
 
@@ -70,10 +65,8 @@ export interface TimeEntry { c: string; p: number; r: number }
 /** users/{uid}/days/{AAAA-MM-JJ}. `done` : blocs cochés (routine, sport, java, bilan, coucher). */
 export interface DayData {
   done?: Record<string, boolean>;
-  weight?: number | null; water?: number | null; kcal?: number | null; protein?: number | null;
   /** Pages lues ce jour-là (domaine Lecture). */
   pages?: number | null;
-  sleep?: { bed?: string | null; wake?: string | null };
   stats?: DayStatsSnapshot;
   edits?: DayEdits;
   /** Temps réels mesurés, par bloc (« identifiant@début »). `null` = mesure effacée. */
@@ -92,8 +85,6 @@ export interface JournalEntry {
 export type ProjectStatus = 'actif' | 'pause' | 'fini';
 /** Projet perso / freelance (users/{uid}/progress/main → projects). */
 export interface Project { name: string; next: string; status: ProjectStatus; minutes: number; created: string }
-/** Versements du mois (finances) — chiffres saisis par toi, jamais de conseil d'investissement. */
-interface MonthFinance { savings?: number | null; invested?: number | null }
 
 /** users/{uid}/progress/main : tâches MIAGE (d:…, s:…), Java (p1t1…), dev front (f1t1…), Cloud et DevOps (c1t1…), Architecture (a1t1…) et points finances (fin:AAAA-MM:…) cochés. */
 export interface Progress {
@@ -103,14 +94,13 @@ export interface Progress {
   /** Jour où chaque étape ou tâche a été terminée (sert à estimer le rythme). */
   doneAt?: Record<string, string | null>;
   projects?: Record<string, Project | null>;
-  finance?: Record<string, MonthFinance>;      // clé « AAAA-MM »
   toeic?: Record<string, number | null>;       // clé = date du test blanc, valeur = score /990
   /** « Repartir à zéro » : tâches laissées tomber en bloc, par jour (permet d'annuler). `null` = annulé. */
   resets?: Record<string, string[] | null>;
 }
 
 export type DomainId = 'matin' | 'sport' | 'alim' | 'sommeil' | 'miage' | 'java' | 'pro' | 'trajet' | 'chabbat' | 'autre'
-  | 'anglais' | 'lecture' | 'front' | 'cloud' | 'archi' | 'finances' | 'projets';
+  | 'anglais' | 'lecture' | 'front' | 'cloud' | 'archi' | 'assurance' | 'data' | 'agile' | 'finances' | 'projets';
 export type SportKind = 'push' | 'pull' | 'legs';
 
 /** Un créneau de la journée. `fixed` : imposé (travail, repas) ; sinon placé dans un créneau libre. */

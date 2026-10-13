@@ -19,7 +19,7 @@ export function dayType(s: ISODate): DayType {
 }
 
 export const KEY_DATES: [ISODate, string][] = [
-  ["2026-10-12", "Réunion TE/TP"], ["2026-11-02", "Début du bloc de cours (2 au 20 nov.)"], ["2026-12-03", "Nuit de l'info (3 et 4 déc.)"],
+  ["2026-11-02", "Début du bloc de cours (2 au 20 nov.)"], ["2026-12-03", "Nuit de l'info (3 et 4 déc.)"],
   ["2026-12-14", "Cours du 14 au 18 déc."], ["2027-01-04", "Cours du 4 au 15 janv."], ["2027-02-08", "Dernière semaine de cours"],
   ["2027-02-22", "Examens du 22 au 26 févr."]
 ];

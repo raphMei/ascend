@@ -17,7 +17,7 @@ import { dayType } from '@/content/calendar';
 import { tierOf } from '@/content/miage/pacing';
 import { byId as subjectById } from '@/content/miage/subjects';
 import type { MiageTask, TaskKind } from '@/content/types';
-import { isFirstSunday } from './habits';
+import { habitMinutes, javaMinutes } from './habits';
 import { settingsForDate } from './month';
 import { planDay, type PlanSchedule } from './planner';
 import type { DayData, Progress, Settings } from './types';
@@ -63,9 +63,13 @@ export const WEIGHT: Record<TaskKind, number> = { exam: 0, rev: 1, proj: 1, fich
 /** Palier de priorité de la matière d'une tâche (1 = les matières que tu as classées en tête). */
 const tierOfTask = (t: MiageTask) => tierOf(subjectById[t.s]?.rank);
 const MARGIN = 0.9;                // 10 % de marge : les créneaux trop courts ne servent à rien
+/** Plafond de leçons MIAGE par jour : un dimanche libre ne devient pas une journée de 10 heures. */
+export const MAX_DAY_MIN = 420;
 const JAVA_FLOOR_MIN = 30;         // on réserve toujours un peu de temps pour Java s'il est actif
 const STALE_DAYS = 2;              // une tâche de routine plus ancienne que ça est abandonnée
 const AHEAD_DAYS = 7;              // mois intensif : on peut avancer les tâches des 7 prochains jours
+/** Séances et rendus d'un plan de matière (`dl:u3`, `dl:u3.2`, `dl:r1`) : ils se suivent dans l'ordre. */
+const CHAIN = /^[a-z]+:[ur]\d/;
 const MIN_HORIZON = 14;
 const MAX_HORIZON = 200;
 
@@ -92,11 +96,10 @@ export function buildSchedule(inp: ScheduleInput): Schedule | null {
     if (dow(d) === 6) { capacity[d] = 0; continue; }          // Chabbat : aucune tâche
     const Sd = settingsForDate(S, d);
     const m = planDay({ date: d, settings: S, progress, day: days[d], today, tasks: [], schedule: { dayOf: {} }, measure: { fromMin: d === today ? now : 0 } });
-    const habits = [Sd.anglaisMin, Sd.lectureMin, Sd.frontMin, Sd.cloudMin, Sd.archiMin, Sd.projetsMin].filter((x) => x >= 5).reduce((a, b) => a + b, 0)
-      + (Sd.financesMin >= 5 && isFirstSunday(d) ? Sd.financesMin : 0);
-    const java = Sd.javaHours * 60 >= 25 && dayType(d) !== 'exam' ? Math.min(JAVA_FLOOR_MIN, Sd.javaHours * 60) : 0;
+    const habits = habitMinutes(Sd);
+    const java = dayType(d) !== 'exam' ? Math.min(JAVA_FLOOR_MIN, javaMinutes(Sd)) : 0;
     const extras = Object.values(days[d]?.edits?.extra ?? {}).reduce((a, x) => a + (x && x.checkable !== false ? x.end - x.start : 0), 0);
-    capacity[d] = Math.max(0, Math.floor(((m.freeMin ?? 0) - habits - java - extras) * MARGIN));
+    capacity[d] = Math.min(MAX_DAY_MIN, Math.max(0, Math.floor(((m.freeMin ?? 0) - habits - java - extras) * MARGIN)));
   }
 
   const initialCapacity: Readonly<Record<ISODate, number>> = { ...capacity };
@@ -145,6 +148,17 @@ export function buildSchedule(inp: ScheduleInput): Schedule | null {
   const byId = new Map(inp.tasks.map((t) => [t.id, t]));
   const queue = [...free].map((id) => byId.get(id)!).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : WEIGHT[a.k] - WEIGHT[b.k] || (a.id < b.id ? -1 : 1)));
   const left = new Set(queue.map((t) => t.id));
+  /* Les séances et rendus d'une matière suivent l'ordre de son plan : on n'attaque pas une séance (ni un test blanc) avant celle qui la précède.
+     `prev` donne, pour chacune, la précédente encore à faire dans la même matière. */
+  const prev = new Map<string, string>();
+  const chains = new Map<string, MiageTask[]>();
+  for (const t of pending) if (CHAIN.test(t.id)) (chains.get(t.s) ?? chains.set(t.s, []).get(t.s)!).push(t);
+  for (const list of chains.values()) {
+    list.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.id.localeCompare(b.id, 'fr', { numeric: true })));
+    list.forEach((t, i) => { if (i > 0) prev.set(t.id, list[i - 1].id); });
+  }
+  /** La précédente est-elle réglée (placée, abandonnée, ou déjà faite) ? */
+  const settled = (id: string | undefined) => !id || dayOf[id] !== undefined || dropped.includes(id) || !!progress.done[id];
   for (const d of horizon) {
     if (!left.size) break;
     const intensif = settingsForDate(S, d).miageLevel === 'intensif';
@@ -155,13 +169,18 @@ export function buildSchedule(inp: ScheduleInput): Schedule | null {
       // ce sont les tâches de routine qui sautent, pas la préparation des examens.
       return la - lb || WEIGHT[a.k] - WEIGHT[b.k] || (a.due < b.due ? -1 : a.due > b.due ? 1 : tierOfTask(a) - tierOfTask(b) || (a.id < b.id ? -1 : 1));
     });
-    for (const t of ready) {
-      const m = minutesOf(t);
-      if (!fits(m, d)) continue;
-      dayOf[t.id] = d; capacity[d] = Math.max(0, capacity[d] - m); left.delete(t.id);
-      if (t.due < today) change(t, d, 'retard', d === today ? `En retard depuis ${fmt(t.due)} : à faire aujourd'hui.` : `En retard depuis ${fmt(t.due)} : aujourd'hui est complet, reprogrammée ${fmt(d)}.`);
-      else if (d > t.due) change(t, d, 'charge', `Le ${fmt(t.due)} est trop chargé : décalée au ${fmt(d)}.`);
-      else if (d < t.due) change(t, d, 'avance', `Mois intensif : avancée du ${fmtShort(t.due)} au ${fmtShort(d)}.`);
+    // Plusieurs passes : placer une séance peut débloquer la suivante le même jour.
+    for (let again = true; again;) {
+      again = false;
+      for (const t of ready) {
+        if (!left.has(t.id) || !settled(prev.get(t.id))) continue;
+        const m = minutesOf(t);
+        if (!fits(m, d)) continue;
+        dayOf[t.id] = d; capacity[d] = Math.max(0, capacity[d] - m); left.delete(t.id); again = true;
+        if (t.due < today) change(t, d, 'retard', d === today ? `En retard depuis ${fmt(t.due)} : à faire aujourd'hui.` : `En retard depuis ${fmt(t.due)} : aujourd'hui est complet, reprogrammée ${fmt(d)}.`);
+        else if (d > t.due) change(t, d, 'charge', `Le ${fmt(t.due)} est trop chargé : décalée au ${fmt(d)}.`);
+        else if (d < t.due) change(t, d, 'avance', `Mois intensif : avancée du ${fmtShort(t.due)} au ${fmtShort(d)}.`);
+      }
     }
   }
   const unplaced = [...left];

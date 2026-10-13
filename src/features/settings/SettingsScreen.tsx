@@ -1,17 +1,34 @@
-import type { ThemeMode } from '@/domain/types';
-import { CommitInput } from '@/components/CommitInput';
 import { Link } from 'react-router-dom';
+import { LEVELS, LEVEL_LABEL, levelOf } from '@/domain/month';
+import type { Level, ThemeMode } from '@/domain/types';
+import { CommitInput } from '@/components/CommitInput';
 import { PageHead } from '@/components/PageHead';
+import { Switch } from '@/components/Switch';
+import { useClock } from '@/hooks/useClock';
 import { useData } from '@/state/DataContext';
 import { BackupCard } from './BackupCard';
 import { RemindersCard } from './RemindersCard';
 
-const WEEK: [number, string][] = [[1, 'Lundi'], [2, 'Mardi'], [3, 'Mercredi'], [4, 'Jeudi'], [5, 'Vendredi']];
+const WEEK: [number, string][] = [[1, 'Lun'], [2, 'Mar'], [3, 'Mer'], [4, 'Jeu'], [5, 'Ven']];
 const THEMES: [ThemeMode, string][] = [['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']];
 
+/** Une ligne de réglage : titre, explication, interrupteur. */
+function Toggle({ title, hint, checked, onChange }: { title: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="set-row">
+      <span><b>{title}</b><span className="muted">{hint}</span></span>
+      <Switch checked={checked} onChange={onChange} label={title} />
+    </label>
+  );
+}
+
+/** Réglages : compte, semaine de travail, temps réservé (sport), apprentissage, Chabbat, rappels, sauvegarde, apparence.
+    Les minutes de chaque domaine ne se règlent plus ici : c'est l'intensité du mois, dans « Domaines ». */
 export function SettingsScreen() {
   const { state, settings: s, setSettings, signOut } = useData();
-  // Un champ vidé est ignoré (on ne remplace pas un objectif par 0).
+  const { today } = useClock();
+  const month = today.slice(0, 7);
+  // Un champ vidé est ignoré (on ne remplace pas une valeur par 0).
   const num = (key: string) => (v: string | number | null) => { if (v !== null && v !== '') setSettings({ [key]: Number(v) }); };
   const txt = (key: string) => (v: string | number | null) => { if (v) setSettings({ [key]: String(v) }); };
   const toggleOnsite = (w: number, on: boolean) => {
@@ -20,75 +37,75 @@ export function SettingsScreen() {
     cur.add(4); // le jeudi est toujours sur site
     setSettings({ onsite: [...cur].sort() });
   };
+  const sport = levelOf(s, 'sport', today);
+  const setSport = (l: Level) => setSettings({ months: { [month]: { sport: l } } });
   const { user } = state;
   return (
     <>
       <PageHead eyebrow="Réglages" title="Mon Ascend" />
-      <section className="card"><h2>Compte</h2><p className="muted" style={{ margin: '4px 0 12px' }}>{user?.email || user?.displayName || ''}</p>
+
+      <section className="card set" aria-label="Compte">
+        <h2>Compte</h2>
+        <p className="muted">{user?.email || user?.displayName || ''}</p>
         <p className={'sync' + (state.sync === 'error' ? ' bad' : '')}>
           {state.sync === 'error' ? 'Synchronisation interrompue : ' + state.error : state.sync === 'demo' ? 'Mode démo : données gardées uniquement sur cet appareil' : '● Synchronisé entre tes appareils'}
         </p>
         <div className="quick"><button type="button" className="btn" onClick={() => void signOut()}>Se déconnecter</button></div>
       </section>
-      <section className="card"><h2>Ma semaine de travail</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Coche tes jours sur site chez AXA (le jeudi est obligatoire). Les autres jours sont en télétravail.</p>
-        <div className="quick" style={{ marginTop: 0 }}>
+
+      <section className="card set" aria-label="Ma semaine">
+        <h2>Ma semaine</h2>
+        <p className="muted">Tes jours sur site chez AXA (le jeudi est obligatoire) : les autres jours sont en télétravail. Travail, trajets et repas sont du temps réservé : l'apprentissage se place autour.</p>
+        <div className="lv-seg" role="group" aria-label="Jours sur site">
           {WEEK.map(([w, n]) => (
-            <label key={w} className="btn small" style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-              <input type="checkbox" checked={s.onsite.includes(w)} disabled={w === 4} onChange={(e) => toggleOnsite(w, e.target.checked)} /> {n}
-            </label>
+            <button key={w} type="button" role="checkbox" aria-checked={s.onsite.includes(w)} disabled={w === 4} onClick={() => toggleOnsite(w, !s.onsite.includes(w))}>{n}</button>
           ))}
         </div>
         <div className="fields" style={{ marginTop: 14 }}>
-          <label className="f">Heures de travail (min)<CommitInput type="number" value={s.workMin} onCommit={num('workMin')} /></label>
-          <label className="f">Java par jour (h)<CommitInput type="number" step={0.5} min={0} max={6} value={s.javaHours} onCommit={num('javaHours')} /></label>
           <label className="f">Réveil<CommitInput type="time" value={s.wake} onCommit={txt('wake')} /></label>
           <label className="f">Coucher<CommitInput type="time" value={s.bed} onCommit={txt('bed')} /></label>
+          <label className="f">Temps de travail par jour (min)<CommitInput type="number" value={s.workMin} onCommit={num('workMin')} /></label>
         </div>
       </section>
-      <section className="card"><h2>Mes objectifs santé</h2>
-        <div className="fields" style={{ marginTop: 12 }}>
-          <label className="f">Calories<CommitInput type="number" value={s.kcalGoal} onCommit={num('kcalGoal')} /></label>
-          <label className="f">Protéines (g)<CommitInput type="number" value={s.protGoal} onCommit={num('protGoal')} /></label>
-          <label className="f">Eau (ml)<CommitInput type="number" value={s.waterGoal} onCommit={num('waterGoal')} /></label>
-          <label className="f">Sommeil (h)<CommitInput type="number" step={0.5} value={s.sleepGoal} onCommit={num('sleepGoal')} /></label>
-          <label className="f">Poids visé (kg)<CommitInput type="number" step={0.1} min={30} max={250} value={s.weightGoal} placeholder="facultatif" onCommit={(v) => setSettings({ weightGoal: v === '' ? null : v })} /></label>
+
+      <section className="card set" aria-label="Sport">
+        <h2>Sport</h2>
+        <p className="muted">Temps réservé : il bloque ton agenda, il n'y a rien à cocher. Moins de séances, c'est plus de temps libre pour apprendre.</p>
+        <div className="lv-seg" role="radiogroup" aria-label="Séances de sport par semaine">
+          {LEVELS.map((l) => <button key={l} type="button" role="radio" aria-checked={sport === l} onClick={() => setSport(l)}>{l === 'off' ? 'Aucune' : l === 'leger' ? '3 / semaine' : l === 'normal' ? '5 / semaine' : '6 / semaine'}</button>)}
         </div>
+        <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>Réglage du mois en cours ({LEVEL_LABEL[sport]}). Les mois suivants le reprennent tant que tu ne le changes pas.</p>
       </section>
-      <section className="card"><h2>Ajustement automatique</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Quand tu prends du retard, le planning redistribue les tâches sur les jours à venir selon la place disponible, et explique chaque déplacement.</p>
-        <label className="row" style={{ cursor: 'pointer' }}><span>Ajuster automatiquement le planning</span>
-          <input type="checkbox" checked={s.autoReschedule !== false} onChange={(e) => setSettings({ autoReschedule: e.target.checked })} aria-label="Ajuster automatiquement le planning" style={{ width: 24, height: 24 }} /></label>
-        <label className="row" style={{ cursor: 'pointer' }}><span>Ajuster les durées à mon rythme réel<br /><span className="muted" style={{ fontSize: 13 }}>Mesuré au minuteur. Détail dans Statistiques.</span></span>
-          <input type="checkbox" checked={s.calibrate !== false} onChange={(e) => setSettings({ calibrate: e.target.checked })} aria-label="Ajuster les durées à mon rythme réel" style={{ width: 24, height: 24 }} /></label>
-        <label className="row" style={{ cursor: 'pointer' }}><span>Bilan après chaque séance<br /><span className="muted" style={{ fontSize: 13 }}>Une courte note et la révision espacée, rangées dans le journal.</span></span>
-          <input type="checkbox" checked={s.ui?.bilan !== false} onChange={(e) => setSettings({ ui: { bilan: e.target.checked } })} aria-label="Bilan après chaque séance" style={{ width: 24, height: 24 }} /></label>
+
+      <section className="card set" aria-label="Apprentissage">
+        <h2>Apprentissage</h2>
+        <Toggle title="Ajuster automatiquement le planning" hint="Si tu rates une séance, elle est replacée au prochain créneau libre et le reste est décalé." checked={s.autoReschedule !== false} onChange={(v) => setSettings({ autoReschedule: v })} />
+        <Toggle title="Ajuster les durées à mon rythme réel" hint="Mesuré au minuteur. Détail dans Statistiques." checked={s.calibrate !== false} onChange={(v) => setSettings({ calibrate: v })} />
+        <Toggle title="Bilan après chaque séance" hint="Une courte note et la révision espacée, rangées dans le journal." checked={s.ui?.bilan !== false} onChange={(v) => setSettings({ ui: { bilan: v } })} />
+        <Toggle title="Petit son de validation" hint="Un « tic » discret quand tu termines une séance. La vibration dépend de ton téléphone." checked={!!s.ui?.sound} onChange={(v) => setSettings({ ui: { sound: v } })} />
         <div className="quick"><Link to="/domains" className="btn" style={{ textDecoration: 'none' }}>Régler mes domaines du mois</Link></div>
       </section>
-      <section className="card"><h2>Mes domaines</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Minutes par jour dans ton planning pour chaque domaine. 0 = désactivé : rien n'est ajouté à ta journée.</p>
-        <div className="fields">
-          <label className="f">Anglais (min)<CommitInput type="number" min={0} max={120} step={5} value={s.anglaisMin} onCommit={num('anglaisMin')} /></label>
-          <label className="f">Lecture (min)<CommitInput type="number" min={0} max={120} step={5} value={s.lectureMin} onCommit={num('lectureMin')} /></label>
-          <label className="f">Dev front (min)<CommitInput type="number" min={0} max={240} step={5} value={s.frontMin} onCommit={num('frontMin')} /></label>
-          <label className="f">Cloud et DevOps (min)<CommitInput type="number" min={0} max={240} step={5} value={s.cloudMin} onCommit={num('cloudMin')} /></label>
-          <label className="f">Architecture logicielle (min)<CommitInput type="number" min={0} max={240} step={5} value={s.archiMin} onCommit={num('archiMin')} /></label>
-          <label className="f">Projets perso (min)<CommitInput type="number" min={0} max={240} step={5} value={s.projetsMin} onCommit={num('projetsMin')} /></label>
-          <label className="f">Point finances mensuel (min)<CommitInput type="number" min={0} max={120} step={5} value={s.financesMin} onCommit={num('financesMin')} /></label>
-        </div>
-      </section>
-      <section className="card"><h2>Chabbat</h2><p className="muted" style={{ margin: '4px 0 12px' }}>Heures calculées pour la région de Deuil-la-Barre. Ce sont des valeurs approchées : vérifie avec ton calendrier habituel et ajuste les minutes si besoin.</p>
+
+      <section className="card set" aria-label="Chabbat">
+        <h2>Chabbat</h2>
+        <p className="muted">Aucune séance ni rappel du vendredi à l'allumage au samedi à la sortie. Heures calculées pour la région de Deuil-la-Barre : des valeurs approchées, ajuste si besoin.</p>
         <div className="fields">
           <label className="f">Allumage : minutes avant le coucher du soleil<CommitInput type="number" value={s.candle} onCommit={num('candle')} /></label>
           <label className="f">Sortie : minutes après le coucher du soleil<CommitInput type="number" value={s.havdalah} onCommit={num('havdalah')} /></label>
         </div>
       </section>
+
       <RemindersCard />
-      <BackupCard />
-      <section className="card"><h2>Apparence</h2>
-        <div className="quick" style={{ marginTop: 8 }}>
-          {THEMES.map(([k, n]) => <button key={k} type="button" className="btn small" aria-pressed={s.theme === k} style={s.theme === k ? { outline: '2px solid var(--accent)' } : undefined} onClick={() => setSettings({ theme: k })}>{n}</button>)}
+
+      <section className="card set" aria-label="Apparence">
+        <h2>Apparence</h2>
+        <div className="lv-seg" role="radiogroup" aria-label="Thème">
+          {THEMES.map(([k, n]) => <button key={k} type="button" role="radio" aria-checked={s.theme === k} onClick={() => setSettings({ theme: k })}>{n}</button>)}
         </div>
-        <label className="row" style={{ cursor: 'pointer', marginTop: 12 }}><span>Petit son de validation<br /><span className="muted" style={{ fontSize: 13 }}>Un « tic » discret quand tu coches une tâche. La vibration, elle, dépend de ton téléphone.</span></span>
-          <input type="checkbox" checked={!!s.ui?.sound} onChange={(e) => setSettings({ ui: { sound: e.target.checked } })} aria-label="Petit son de validation" style={{ width: 24, height: 24 }} /></label>
       </section>
+
+      <BackupCard />
+
     </>
   );
 }

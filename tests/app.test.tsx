@@ -52,29 +52,6 @@ describe('aujourd\'hui', () => {
     expect(patch).toMatchObject({ done: { java: true }, stats: { dn: expect.any(Number) } });
   });
 
-  it('les mesures (poids, eau) ne sont plus sur « Aujourd\'hui » : elles vivent dans le domaine Alimentation', async () => {
-    renderApp({ hash: '#/today' });
-    await screen.findByRole('checkbox', { name: 'Java backend' });
-    expect(screen.queryByLabelText('Poids (kg)')).not.toBeInTheDocument();
-    expect(screen.queryByText('Mes mesures du jour')).not.toBeInTheDocument();
-  });
-
-  it('saisir le poids enregistre à la fin de la saisie (pas à chaque frappe)', async () => {
-    const { writes } = renderApp({ hash: '#/dom/alim' });
-    const input = await screen.findByLabelText('Poids (kg)');
-    await userEvent.type(input, '86.5');
-    const today = () => writes.days.filter(([d]) => d === TUESDAY.today);
-    expect(today()).toHaveLength(0);
-    await userEvent.tab();
-    expect(today()).toEqual([[TUESDAY.today, { weight: 86.5 }]]);
-  });
-
-  it('+ 500 ml ajoute à l\'eau déjà bue', async () => {
-    const { writes } = renderApp({ hash: '#/dom/alim', seed: { days: { [TUESDAY.today]: { water: 1000 } } } });
-    await userEvent.click(await screen.findByRole('button', { name: '+ 500 ml' }));
-    expect(writes.days.filter(([d]) => d === TUESDAY.today).map(([, p]) => p)).toEqual([{ water: 1500 }]);
-  });
-
   it('navigue au jour précédent', async () => {
     renderApp({ hash: '#/today' });
     await userEvent.click(await screen.findByRole('link', { name: 'Jour précédent' }));
@@ -86,10 +63,9 @@ describe('domaines', () => {
   it('toutes les cartes sont présentes et mènent à leur page', async () => {
     renderApp({ hash: '#/domains' });
     for (const name of ['Cours MIAGE', 'Java backend']) expect(await screen.findByRole('region', { name })).toBeInTheDocument();
-    for (const name of ['Routine du matin', 'Sport', 'Alimentation', 'Sommeil']) expect((await screen.findAllByRole('heading', { level: 3, name })).length).toBeGreaterThan(0);
   });
 
-  it.each(['matin', 'sport', 'alim', 'sommeil', 'miage', 'java'])('la page « %s » s\'affiche', async (id) => {
+  it.each(['miage', 'java'])('la page « %s » s\'affiche', async (id) => {
     renderApp({ hash: `#/dom/${id}` });
     expect(await screen.findByText('Domaine')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Domaines' })).toBeInTheDocument();
@@ -119,32 +95,32 @@ describe('domaines', () => {
 describe('réglages', () => {
   it('le jeudi reste obligatoirement sur site ; cocher un jour enregistre', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
-    const thu = await screen.findByRole('checkbox', { name: /Jeudi/ });
+    const thu = await screen.findByRole('checkbox', { name: 'Jeu' });
     expect(thu).toBeDisabled(); expect(thu).toBeChecked();
-    await userEvent.click(screen.getByRole('checkbox', { name: /Lundi/ }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Lun' }));
     expect(writes.settings).toEqual([{ onsite: [1, 2, 4] }]);
   });
 
   it('changer le thème enregistre et applique l\'attribut sur <html>', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
-    await userEvent.click(await screen.findByRole('button', { name: 'Sombre' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Sombre' }));
     expect(writes.settings).toEqual([{ theme: 'dark' }]);
     await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'dark'));
   });
 
   it('un objectif numérique est enregistré en nombre', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
-    const kcal = await screen.findByLabelText('Calories');
-    fireEvent.change(kcal, { target: { value: '2800' } });
-    fireEvent.blur(kcal);
-    expect(writes.settings).toEqual([{ kcalGoal: 2800 }]);
+    const work = await screen.findByLabelText('Temps de travail par jour (min)');
+    fireEvent.change(work, { target: { value: '420' } });
+    fireEvent.blur(work);
+    expect(writes.settings).toEqual([{ workMin: 420 }]);
   });
 });
 
 describe('réglages : champ vidé', () => {
   it('ne remplace pas un objectif par 0', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
-    const kcal = await screen.findByLabelText('Calories');
+    const kcal = await screen.findByLabelText('Temps de travail par jour (min)');
     fireEvent.change(kcal, { target: { value: '' } });
     fireEvent.blur(kcal);
     expect(writes.settings).toEqual([]);
@@ -272,32 +248,11 @@ describe('édition libre des blocs', () => {
   });
 });
 
-describe('poids : objectif et historique', () => {
-  it('l\'objectif de poids est enregistré depuis les réglages', async () => {
-    const { writes } = renderApp({ hash: '#/settings' });
-    const input = await screen.findByLabelText('Poids visé (kg)');
-    fireEvent.change(input, { target: { value: '82' } });
-    fireEvent.blur(input);
-    expect(writes.settings).toEqual([{ weightGoal: 82 }]);
-  });
-  it('« 1 an » charge l\'historique plus ancien à la demande', async () => {
-    const { history } = renderApp({ hash: '#/dom/alim' });
-    await userEvent.click(await screen.findByRole('button', { name: '1 an' }));
-    expect(history).toHaveLength(1);
-    expect(history[0]).toBe('2025-11-03');   // 365 jours avant l'horloge figée (3 nov. 2026)
-  });
-  it('« 30 jours » ne charge rien de plus', async () => {
-    const { history } = renderApp({ hash: '#/dom/alim' });
-    await screen.findByRole('button', { name: '30 jours' });
-    expect(history).toHaveLength(0);
-  });
-});
-
 describe('nouveaux domaines', () => {
-  it('tous les domaines d\'apprentissage ont leur carte dans « Mes domaines », les suivis personnels sont en retrait', async () => {
+  it('tous les domaines d\'apprentissage et du métier ont leur carte dans « Mes domaines », sans suivis personnels', async () => {
     renderApp({ hash: '#/domains' });
-    for (const name of ['Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Projets perso']) expect(await screen.findByRole('region', { name })).toBeInTheDocument();
-    expect((await screen.findAllByRole('heading', { level: 3, name: 'Finances' })).length).toBeGreaterThan(0);
+    for (const name of ['Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Métier assurance', 'Data et SQL', 'Agilité et gestion de projet', 'Anglais', 'Lecture', 'Projets perso']) expect(await screen.findByRole('region', { name })).toBeInTheDocument();
+    expect(screen.queryByText(/suivis personnels/)).not.toBeInTheDocument();
   });
 
   it('un domaine sans créneau propose de l\'activer dans les réglages', async () => {
@@ -308,14 +263,6 @@ describe('nouveaux domaines', () => {
   it('activer l\'anglais ajoute un bloc cochable à la journée', async () => {
     renderApp({ hash: '#/today/2026-10-14', seed: { settings: { anglaisMin: 20 } } });
     expect(await screen.findByRole('checkbox', { name: 'Anglais' })).toBeInTheDocument();
-  });
-
-  it('réglage : les minutes d\'un domaine sont enregistrées', async () => {
-    const { writes } = renderApp({ hash: '#/settings' });
-    const input = await screen.findByLabelText('Lecture (min)');
-    fireEvent.change(input, { target: { value: '25' } });
-    fireEvent.blur(input);
-    expect(writes.settings).toEqual([{ lectureMin: 25 }]);
   });
 
   it('lecture : les pages lues sont enregistrées dans le jour', async () => {
@@ -332,16 +279,6 @@ describe('nouveaux domaines', () => {
     fireEvent.change(input, { target: { value: '720' } });
     fireEvent.blur(input);
     expect(writes.progress).toEqual([{ toeic: { [TUESDAY.today]: 720 } }]);
-  });
-
-  it('finances : cocher une étape du mois et saisir l\'épargne', async () => {
-    const { writes } = renderApp({ hash: '#/dom/finances' });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Budget du mois revu' }));
-    expect(writes.progress[0]).toEqual({ done: { 'fin:2026-11:budget': true }, doneAt: { 'fin:2026-11:budget': TUESDAY.today } });
-    const input = screen.getByLabelText('Épargné ce mois (€)');
-    fireEvent.change(input, { target: { value: '300' } });
-    fireEvent.blur(input);
-    expect(writes.progress.at(-1)).toEqual({ finance: { '2026-11': { savings: 300 } } });
   });
 
   it('projets : ajouter, changer le statut, ajouter du temps, supprimer', async () => {
@@ -464,10 +401,10 @@ describe('Mon mois (dans « Domaines »)', () => {
   it('liste les domaines et enregistre l\'intensité choisie pour le mois', async () => {
     const { writes } = renderApp({ hash: '#/domains' });
     expect(await screen.findByRole('heading', { level: 1, name: 'Novembre 2026' })).toBeInTheDocument();
-    for (const n of ['Cours MIAGE', 'Sport', 'Java backend', 'Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Anglais', 'Lecture', 'Projets perso', 'Finances']) expect(screen.getByRole('radiogroup', { name: `Intensité : ${n}` })).toBeInTheDocument();
-    await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' }));
-    expect(writes.settings).toEqual([{ months: { '2026-11': { anglais: 'intensif' } } }]);
-    expect(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Intensif' })).toBeChecked();
+    for (const n of ['Cours MIAGE', 'Java backend', 'Dev front', 'Cloud et DevOps', 'Architecture logicielle', 'Métier assurance', 'Data et SQL', 'Agilité et gestion de projet', 'Anglais', 'Lecture', 'Projets perso']) expect(screen.getByRole('radiogroup', { name: `Intensité : ${n}` })).toBeInTheDocument();
+    await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Léger' }));
+    expect(writes.settings).toEqual([{ months: { '2026-11': { anglais: 'leger' } } }]);
+    expect(within(screen.getByRole('radiogroup', { name: 'Intensité : Anglais' })).getByRole('radio', { name: 'Léger' })).toBeChecked();
   });
 
   it('le choix du mois change le planning des jours de ce mois', async () => {
@@ -485,7 +422,7 @@ describe('Mon mois (dans « Domaines »)', () => {
 
   it('prévient quand les domaines réservent presque tout le temps libre', async () => {
     renderApp({ hash: '#/domains', seed: { settings: { months: { '2026-11': { anglais: 'intensif', lecture: 'intensif', front: 'intensif', projets: 'intensif', java: 'intensif' } } } } });
-    expect(await screen.findByRole('alert')).toHaveTextContent('Allège un domaine');
+    expect(await screen.findByText(/ont besoin d'environ/)).toBeInTheDocument();
   });
 
   it('l\'ancienne adresse #/month renvoie vers Domaines', async () => {
@@ -557,7 +494,7 @@ describe('agenda du jour', () => {
 describe('ajustement automatique : réglage', () => {
   it('se désactive dans les réglages, et le journal disparaît', async () => {
     const { writes } = renderApp({ hash: '#/settings' });
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Ajuster automatiquement le planning' }));
+    await userEvent.click(await screen.findByRole('switch', { name: 'Ajuster automatiquement le planning' }));
     expect(writes.settings).toEqual([{ autoReschedule: false }]);
   });
   it('désactivé : plus de journal sur « Aujourd\'hui »', async () => {
@@ -635,12 +572,12 @@ describe('importer une sauvegarde (interface)', () => {
     const { writes } = renderApp({ hash: '#/settings' });
     const input = await screen.findByLabelText('Importer une sauvegarde');
     await waitFor(() => expect(writes.batches).toHaveLength(1));   // le rattrapage des stats au démarrage
-    await userEvent.upload(input, file({ days: { '2026-10-20': { weight: 90 }, '2026-10-21': { weight: 89 } }, settings: { kcalGoal: 2900 }, progress: { done: { p1t1: true } } }));
+    await userEvent.upload(input, file({ days: { '2026-10-20': { pages: 90 }, '2026-10-21': { pages: 89 } }, settings: { workMin: 400 }, progress: { done: { p1t1: true } } }));
     expect(await screen.findByText(/2 jours/)).toBeInTheDocument();
     expect(writes.batches).toHaveLength(1);                       // rien n'est écrit avant confirmation
     await userEvent.click(screen.getByRole('button', { name: 'Importer' }));
-    await waitFor(() => expect(writes.batches.some((b) => b.length === 2 && b.every((e) => 'weight' in e.patch))).toBe(true));
-    expect(writes.settings).toEqual([{ kcalGoal: 2900 }]);
+    await waitFor(() => expect(writes.batches.some((b) => b.length === 2 && b.every((e) => 'pages' in e.patch))).toBe(true));
+    expect(writes.settings).toEqual([{ workMin: 400 }]);
     expect(writes.progress).toEqual([{ done: { p1t1: true } }]);
     expect(await screen.findByText(/Importé : 2 jours, 1 réglage, 1 tâche cochée/)).toBeInTheDocument();
   });
@@ -663,8 +600,8 @@ describe('importer une sauvegarde (interface)', () => {
   });
 
   it('un lot refusé par le serveur est annulé en entier, avec un message', async () => {
-    const { failWrites } = renderApp({ hash: '#/settings', seed: { days: { '2026-10-20': { weight: 90 } } } });
-    await userEvent.upload(await screen.findByLabelText('Importer une sauvegarde'), file({ days: { '2026-10-20': { weight: 70 } } }));
+    const { failWrites } = renderApp({ hash: '#/settings', seed: { days: { '2026-10-20': { pages: 90 } } } });
+    await userEvent.upload(await screen.findByLabelText('Importer une sauvegarde'), file({ days: { '2026-10-20': { pages: 70 } } }));
     failWrites.on = true;
     await userEvent.click(await screen.findByRole('button', { name: 'Importer' }));
     expect(await screen.findByText(/valeurs précédentes ont été rétablies/)).toBeInTheDocument();

@@ -12,7 +12,7 @@ import { useClock } from './useClock';
 import { useSchedule } from './useSchedule';
 import { takeElapsed, timerKey } from './useTimer';
 
-const ASK_DOMAINS: ReadonlySet<string> = new Set(['miage', 'java', 'front', 'cloud', 'archi', 'anglais', 'lecture', 'projets']);
+const ASK_DOMAINS: ReadonlySet<string> = new Set(['miage', 'java', 'front', 'cloud', 'archi', 'assurance', 'data', 'agile', 'anglais', 'lecture', 'projets']);
 const SKIP_KINDS: ReadonlySet<string> = new Set(['setup', 'org']);
 
 export type TickTarget = { scope: 'day'; key: string } | { scope: 'prog'; key: string };

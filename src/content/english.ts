@@ -10,7 +10,7 @@ export const ENGLISH_EXERCISES: [string, string][] = [
 
 /** Exercice du jour : on fait tourner les quatre en partant du début de la saison. */
 export function englishExerciseFor(date: ISODate): [string, string] {
-  const i = ((diffDays('2026-10-08', date) % 4) + 4) % 4;
+  const i = ((diffDays('2026-10-13', date) % 4) + 4) % 4;
   return ENGLISH_EXERCISES[i];
 }
 
